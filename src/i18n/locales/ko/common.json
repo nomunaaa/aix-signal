@@ -1,0 +1,118 @@
+{
+  "app": {
+    "name": "AiXSignal",
+    "tagline": "AI 기반 트레이딩 시그널"
+  },
+  "navigation": {
+    "home": "홈",
+    "signals": "시그널",
+    "performance": "성과",
+    "insights": "인사이트",
+    "simulation": "모의매매"
+  },
+  "buttons": {
+    "save": "저장",
+    "cancel": "취소",
+    "confirm": "확인",
+    "delete": "삭제",
+    "edit": "수정",
+    "close": "닫기",
+    "back": "뒤로",
+    "next": "다음",
+    "submit": "제출",
+    "retry": "다시 시도"
+  },
+  "common": {
+    "loading": "로딩 중...",
+    "loadingApp": "애플리케이션 로딩 중",
+    "error": "오류",
+    "success": "성공",
+    "warning": "경고",
+    "info": "정보",
+    "noData": "데이터 없음",
+    "search": "검색",
+    "filter": "필터",
+    "sort": "정렬"
+  },
+  "time": {
+    "today": "오늘",
+    "yesterday": "어제",
+    "week": "이번 주",
+    "month": "이번 달",
+    "year": "올해",
+    "all": "전체"
+  },
+  "adminPanel": {
+    "partnerOperations": "파트너 운영",
+    "language": "관리자 페이지 언어",
+    "operator": "관리자",
+    "signOut": "로그아웃",
+    "planned": "계획",
+    "navigation": {
+      "dashboard": {
+        "label": "대시보드",
+        "description": "파트너 운영 현황 요약"
+      },
+      "analytics": {
+        "label": "접속 통계",
+        "description": "일/주/월 활성 사용자 및 현재 접속자"
+      },
+      "partners": {
+        "label": "파트너 관리",
+        "description": "조직도, 상세, 생성 및 수정"
+      },
+      "members": {
+        "label": "회원 관리",
+        "description": "파트너별 회원 관리"
+      },
+      "payments": {
+        "label": "결재",
+        "description": "결제 내역 및 환불"
+      },
+      "settlement": {
+        "label": "정산",
+        "description": "정산 배치 및 지급 상태"
+      },
+      "activity": {
+        "label": "활동로그",
+        "description": "파트너 및 관리자 활동 이력"
+      },
+      "operators": {
+        "label": "관리자 계정관리",
+        "description": "계정, 권한 및 접근 관리"
+      },
+      "subscriptions": {
+        "label": "구독관리",
+        "description": "플랜 및 구독 결제 관리"
+      },
+      "notifications": {
+        "label": "메시지관리",
+        "description": "텔레그램 봇 및 메시지 관리"
+      },
+      "payment-accounts": {
+        "label": "결재정보",
+        "description": "회원용 결제 계좌 및 지갑 정보"
+      },
+      "reports": {
+        "label": "통계",
+        "description": "운영 통계 및 내보내기"
+      },
+      "webhook-monitoring": {
+        "label": "웹훅 모니터링",
+        "description": "웹훅 기록 및 실패 확인"
+      },
+      "webhook-tester": {
+        "label": "웹훅 테스트",
+        "description": "샘플 웹훅 전송"
+      },
+      "batch-upload": {
+        "label": "일괄 업로드",
+        "description": "CSV 및 ZIP 이벤트 등록"
+      },
+      "support-tickets": {
+        "label": "고객문의",
+        "description": "회원 고객문의 관리"
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "settings": {
+    "title": "Trading Settings",
+    "capital": "Trading Capital",
+    "capitalHelp": "The base capital you will invest per position. Leverage will be applied.",
+    "leverage": "Leverage",
+    "leverageHelp": "Higher leverage increases both profits and losses. Use cautiously.",
+    "positionSize": "Position Size",
+    "positionFormula": "{capital} × {leverage}x"
+  }
+}
+

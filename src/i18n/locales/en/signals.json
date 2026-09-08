@@ -1,0 +1,51 @@
+{
+  "card": {
+    "viewDetails": "View Details",
+    "signalDna": "Signal DNA",
+    "consensus": "Consensus",
+    "enterTrade": "Enter Trade",
+    "exitTrade": "Exit Trade"
+  },
+  "pnl": {
+    "grossRoe": "Gross ROE",
+    "netRoe": "Net ROE",
+    "totalPnl": "Total P&L",
+    "unrealizedPnl": "Unrealized P&L"
+  },
+  "trendPnl": {
+    "title": "Trend P&L Summary",
+    "totalPnl": "Total P&L",
+    "avgRoe": "Avg ROE",
+    "winRate": "Win Rate",
+    "empty": "No signal data"
+  },
+  "stats": {
+    "avgHoldTimeLabel": "Avg. hold time",
+    "avgHoldTimeSubtitle": "Closed today",
+    "signals24hLabel": "Signals in 24h",
+    "signals24hSubtitle": "Last 24 hours",
+    "hourlyVolatilityLabel": "Hourly volatility",
+    "hourlyVolatilitySubtitle": "Category moves"
+  },
+  "table": {
+    "reset": "Reset sort",
+    "empty": "No signals",
+    "new": "New",
+    "columns": {
+      "asset": "Asset",
+      "currentPrice": "Current",
+      "entryPrice": "Entry",
+      "pnl": "P&L",
+      "holdTime": "Hold time",
+      "movedAt": "Moved at",
+      "fromCategory": "Previous position",
+      "status": "Status",
+      "mismatchType": "Trend mismatch"
+    },
+    "mismatch": {
+      "long": "Long-term trend",
+      "short": "Short-term trend"
+    }
+  }
+}
+

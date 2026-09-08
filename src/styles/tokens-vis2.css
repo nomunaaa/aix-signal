@@ -1,0 +1,182 @@
+/**
+ * VIS-002 Platform Visual System — 3-axis color tokens + 5-layer glassmorphism.
+ *
+ * Authoritative spec: Notion REF docs VIS-002 / VIS-001 / IND-001.
+ *
+ * Three axes are INDEPENDENT. Never substitute axes:
+ *   - Axis 1 (direction): LONG vs SHORT — emerald / neutral / rose.
+ *   - Axis 2 (score): excellent..bad — green ↔ gray ↔ amber. NO red for scores
+ *     (REF: "빨강 대체 = amber"). Excellent/good intentionally share hex with
+ *     direction-long-strong/long — "좋음" is in the same visual family as "롱".
+ *   - Axis 3 (alert): subtle/warning/danger/critical — 4 tiers, all red family,
+ *     reserved for system messages (errors, chunks, alerts).
+ *
+ * Constraints (CLAUDE.md PART 20):
+ *   - Confidence/heat backgrounds capped at α ≤ 0.18.
+ *   - Numeric values must use var(--font-mono) (JetBrains Mono).
+ *   - No neon colors, no hardcoded RGB outside this file.
+ */
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────
+   * Axis 1 · Direction (VIS-001 — preserved, must not regress).
+   * HSL channels (`H S% L%`) so Tailwind's `hsl(var(--...) / <alpha-value>)`
+   * mapping in tailwind.config.ts can resolve opacity modifiers
+   * (e.g. `bg-direction-long/10`). Hex ↔ HSL equivalents:
+   *   long-strong  #0F6E56 = 163 76% 25%
+   *   long         #1D9E75 = 158 69% 37%
+   *   dir-neutral  #5F5E5A =  48  3% 36%
+   *   short        #A32D2D =   0 56% 41%
+   *   short-strong #791F1F =   0 58% 30%
+   * Exact hex mirrored from src/lib/mock/trend-v8-mock.ts LONG_SHORT_COLORS.
+   * ───────────────────────────────────────────────────────────────── */
+  --long-strong:  163 76% 25%;
+  --long:         158 69% 37%;
+  --dir-neutral:   48  3% 36%;
+  --short:          0 56% 41%;
+  --short-strong:   0 58% 30%;
+
+  /* Softened surfaces for direction-tinted backgrounds (α ≤ 0.18).
+   * Pre-mixed rgba kept for inline style consumers; Tailwind users
+   * should prefer the alpha-modifier form `bg-direction-long/14`. */
+  --long-strong-bg:  rgba(15, 110, 86, 0.14);
+  --long-bg:         rgba(29, 158, 117, 0.14);
+  --dir-neutral-bg:  rgba(95, 94, 90, 0.10);
+  --short-bg:        rgba(163, 45, 45, 0.14);
+  --short-strong-bg: rgba(121, 31, 31, 0.14);
+
+  /* ─────────────────────────────────────────────────────────────────
+   * Axis 2 · Score (VIS-002 REF — signal quality, win-rate, rating).
+   * Palette intent (REF): green (좋음) ↔ gray (보통) ↔ amber (나쁨).
+   * "빨강 대체 = amber" — red (which belongs to Axis 1 direction) MUST
+   * NOT appear on this axis. Excellent/good share hue with
+   * direction-long-strong/long by design ("좋음 = 롱" visual family).
+   * Hex ↔ HSL equivalents:
+   *   score-excellent #0F6E56 = 163 76% 25%
+   *   score-good      #1D9E75 = 158 69% 37%
+   *   score-neutral   #888780 =  51  3% 52%
+   *   score-poor      #BA7517 =  33 78% 41%
+   *   score-bad       #854F0B =  34 85% 28%
+   * ───────────────────────────────────────────────────────────────── */
+  --score-excellent: 163 76% 25%;   /* teal 600 — shared w/ direction-long-strong */
+  --score-good:      158 69% 37%;   /* teal 400 — shared w/ direction-long */
+  --score-neutral:    51  3% 52%;   /* gray 400 */
+  --score-poor:       33 78% 41%;   /* amber 600 — REF "빨강 대체" */
+  --score-bad:        34 85% 28%;   /* amber 800 */
+
+  --score-excellent-bg: rgba(15, 110, 86, 0.12);
+  --score-good-bg:      rgba(29, 158, 117, 0.12);
+  --score-neutral-bg:   rgba(136, 135, 128, 0.10);
+  --score-poor-bg:      rgba(186, 117, 23, 0.14);
+  --score-bad-bg:       rgba(133, 79, 11, 0.14);
+
+  /* Score ring/border tints (for badges / pill dots) */
+  --score-excellent-ring: rgba(15, 110, 86, 0.18);
+  --score-good-ring:      rgba(29, 158, 117, 0.18);
+  --score-neutral-ring:   rgba(136, 135, 128, 0.16);
+  --score-poor-ring:      rgba(186, 117, 23, 0.18);
+  --score-bad-ring:       rgba(133, 79, 11, 0.18);
+
+  /* ─────────────────────────────────────────────────────────────────
+   * Axis 3 · Alert (VIS-002 REF — errors, warnings, system notices).
+   * Four tiers, all red-family: 주의 → 경고 → 위험 → 심각.
+   * Critical hue is shared with direction-short by design (a hard
+   * alert visually rhymes with the short direction). Red is exclusive
+   * to this axis and to direction-short/short-strong — NEVER on score.
+   * Hex ↔ HSL equivalents:
+   *   alert-subtle   #F7C1C1 = 0 78% 87%
+   *   alert-warning  #F09595 = 0 75% 76%
+   *   alert-danger   #E24B4A = 0 73% 59%
+   *   alert-critical #A32D2D = 0 56% 41%
+   * ───────────────────────────────────────────────────────────────── */
+  --alert-subtle:   0 78% 87%;   /* red 200 — 주의 */
+  --alert-warning:  0 75% 76%;   /* red 300 — 경고 */
+  --alert-danger:   0 73% 59%;   /* red 500 — 위험 */
+  --alert-critical: 0 56% 41%;   /* red 700 — 심각 (shared w/ direction-short) */
+
+  --alert-subtle-bg:   rgba(247, 193, 193, 0.14);
+  --alert-warning-bg:  rgba(240, 149, 149, 0.14);
+  --alert-danger-bg:   rgba(226, 75, 74, 0.14);
+  --alert-critical-bg: rgba(163, 45, 45, 0.14);
+
+  /* ─────────────────────────────────────────────────────────────────
+   * Glassmorphism · 5 layers (monotonic progression).
+   * LIGHT mode: darker ink over light backgrounds.
+   * Each layer: --glass-layer-N-bg / -border / -blur.
+   * ───────────────────────────────────────────────────────────────── */
+  --glass-layer-1-bg:     rgba(0, 0, 0, 0.02);
+  --glass-layer-1-border: rgba(0, 0, 0, 0.06);
+  --glass-layer-1-blur:   4px;
+
+  --glass-layer-2-bg:     rgba(0, 0, 0, 0.04);
+  --glass-layer-2-border: rgba(0, 0, 0, 0.08);
+  --glass-layer-2-blur:   8px;
+
+  --glass-layer-3-bg:     rgba(0, 0, 0, 0.06);
+  --glass-layer-3-border: rgba(0, 0, 0, 0.10);
+  --glass-layer-3-blur:   12px;
+
+  --glass-layer-4-bg:     rgba(0, 0, 0, 0.08);
+  --glass-layer-4-border: rgba(0, 0, 0, 0.12);
+  --glass-layer-4-blur:   16px;
+
+  --glass-layer-5-bg:     rgba(0, 0, 0, 0.10);
+  --glass-layer-5-border: rgba(0, 0, 0, 0.14);
+  --glass-layer-5-blur:   24px;
+}
+
+/* Dark-mode overrides — inverse (white ink over dark). */
+:root[data-theme="dark"],
+.dark {
+  --glass-layer-1-bg:     rgba(255, 255, 255, 0.02);
+  --glass-layer-1-border: rgba(255, 255, 255, 0.06);
+  --glass-layer-1-blur:   4px;
+
+  --glass-layer-2-bg:     rgba(255, 255, 255, 0.04);
+  --glass-layer-2-border: rgba(255, 255, 255, 0.08);
+  --glass-layer-2-blur:   8px;
+
+  --glass-layer-3-bg:     rgba(255, 255, 255, 0.06);
+  --glass-layer-3-border: rgba(255, 255, 255, 0.10);
+  --glass-layer-3-blur:   12px;
+
+  --glass-layer-4-bg:     rgba(255, 255, 255, 0.08);
+  --glass-layer-4-border: rgba(255, 255, 255, 0.12);
+  --glass-layer-4-blur:   16px;
+
+  --glass-layer-5-bg:     rgba(255, 255, 255, 0.10);
+  --glass-layer-5-border: rgba(255, 255, 255, 0.14);
+  --glass-layer-5-blur:   24px;
+}
+
+/* Utility classes for the 5 glass layers (use directly on an element). */
+.glass-layer-1 {
+  background-color: var(--glass-layer-1-bg);
+  border: 1px solid var(--glass-layer-1-border);
+  backdrop-filter: blur(var(--glass-layer-1-blur));
+  -webkit-backdrop-filter: blur(var(--glass-layer-1-blur));
+}
+.glass-layer-2 {
+  background-color: var(--glass-layer-2-bg);
+  border: 1px solid var(--glass-layer-2-border);
+  backdrop-filter: blur(var(--glass-layer-2-blur));
+  -webkit-backdrop-filter: blur(var(--glass-layer-2-blur));
+}
+.glass-layer-3 {
+  background-color: var(--glass-layer-3-bg);
+  border: 1px solid var(--glass-layer-3-border);
+  backdrop-filter: blur(var(--glass-layer-3-blur));
+  -webkit-backdrop-filter: blur(var(--glass-layer-3-blur));
+}
+.glass-layer-4 {
+  background-color: var(--glass-layer-4-bg);
+  border: 1px solid var(--glass-layer-4-border);
+  backdrop-filter: blur(var(--glass-layer-4-blur));
+  -webkit-backdrop-filter: blur(var(--glass-layer-4-blur));
+}
+.glass-layer-5 {
+  background-color: var(--glass-layer-5-bg);
+  border: 1px solid var(--glass-layer-5-border);
+  backdrop-filter: blur(var(--glass-layer-5-blur));
+  -webkit-backdrop-filter: blur(var(--glass-layer-5-blur));
+}

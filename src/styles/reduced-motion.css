@@ -1,0 +1,76 @@
+/**
+ * Reduced Motion - 접근성 지원
+ *
+ * 사용자의 prefers-reduced-motion 설정을 존중
+ * 전정기관 장애가 있는 사용자를 위한 WCAG 2.1 준수
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+ */
+
+/* ============================================
+   Global Reduced Motion Override
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  /**
+   * 모든 애니메이션과 전환을 최소화
+   * !important는 의도적으로 사용 - 인라인 스타일 오버라이드 필요
+   */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /**
+   * 스크롤 관련 애니메이션 비활성화
+   */
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  /**
+   * 호버 상태의 transform 효과 유지하되 전환 제거
+   * 사용자가 여전히 호버 피드백을 받을 수 있도록
+   */
+  .motion-reduce\:transform-none {
+    transform: none !important;
+  }
+
+  /**
+   * 특정 요소는 애니메이션을 유지해야 할 경우
+   * .motion-safe 클래스 사용
+   */
+  .motion-safe {
+    animation-duration: inherit !important;
+    animation-iteration-count: inherit !important;
+    transition-duration: inherit !important;
+  }
+}
+
+/* ============================================
+   Utility Classes for Motion Control
+   ============================================ */
+
+/**
+ * 강제로 모션 비활성화 (테스트/디버깅용)
+ */
+.force-reduced-motion *,
+.force-reduced-motion *::before,
+.force-reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/**
+ * 특정 요소에서 reduced-motion 무시
+ * 필수적인 애니메이션에만 사용 (예: 진행률 표시기)
+ */
+.motion-essential {
+  animation-duration: var(--motion-essential-duration, 1s) !important;
+  animation-iteration-count: var(--motion-essential-count, infinite) !important;
+}

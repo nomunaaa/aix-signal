@@ -1,0 +1,3295 @@
+/* Accessibility - Reduced Motion Support */
+@import './styles/reduced-motion.css';
+
+/* VIS-002 Platform Visual System — 3-axis tokens + 5-layer glassmorphism */
+@import './styles/tokens-vis2.css';
+
+/* Pretendard Variable — main font, non-blocking via @font-face */
+@font-face {
+  font-family: 'Pretendard Variable';
+  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.woff2') format('woff2');
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* JetBrains Mono — monospace/code font, non-blocking */
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjOVmNog.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: optional;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  /** Right-aligned numeric / price cells — tabular nums */
+  .price-cell {
+    @apply font-mono text-right tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /** 극소가 아래첨자 (`format-price` `<sub>`) */
+  .price-cell sub,
+  .price-cell-sub {
+    font-size: 9px;
+    vertical-align: baseline;
+    position: relative;
+    bottom: -2px;
+    color: hsl(var(--muted-foreground));
+    margin: 0 0.125rem;
+  }
+}
+
+/* ── AG Grid Dark Theme (project design tokens) ── */
+@layer components {
+  .ag-theme-alpine-dark {
+    --ag-background-color: hsl(var(--card));
+    --ag-header-background-color: hsl(var(--muted));
+    --ag-row-hover-color: hsl(var(--muted) / 0.5);
+    --ag-selected-row-background-color: hsl(var(--muted) / 0.4);
+    --ag-border-color: hsl(var(--border));
+    --ag-secondary-border-color: hsl(var(--border));
+    --ag-foreground-color: hsl(var(--foreground));
+    --ag-header-foreground-color: hsl(var(--muted-foreground));
+    --ag-font-family: inherit;
+    --ag-font-size: 13px;
+    --ag-row-height: 40px;
+    --ag-header-height: 36px;
+    --ag-grid-size: 4px;
+    --ag-cell-horizontal-padding: 12px;
+    --ag-odd-row-background-color: transparent;
+  }
+}
+
+/* Theme Transition Animation */
+@layer base {
+  :root {
+    --theme-transition-duration: 300ms;
+    --theme-transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+    --background: 240 4% 95%;
+    --foreground: 240 5% 10%;
+    --card: 0 0% 98%;
+    --card-foreground: 240 5% 10%;
+    --popover: 240 5% 90%;
+    --popover-foreground: 240 5% 10%;
+    --primary: 0 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 33%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 4% 83%;
+    --muted-foreground: 240 5% 10%;
+    --accent: 355 100% 97%;
+    --accent-foreground: 349 89% 60%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 85% 97%;
+    --border: 240 4% 83%;
+    --input: 240 4% 83%;
+    --ring: 0 100% 50%;
+    /* 포커스 링(폼·키보드) — Pulse 그리드 키보드 링과 공유 */
+    --info: 199 89% 48%;
+    --chart-1: 328 85% 70%;
+    --chart-2: 351 94% 71%;
+    --chart-3: 327 87% 81%;
+    --chart-4: 352 95% 81%;
+    --chart-5: 240 3% 46%;
+    --sidebar: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 0 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 0 100% 50%;
+    --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Noto Sans KR', sans-serif;
+    --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
+    --font-mono: 'JetBrains Mono', 'D2Coding', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --radius: 1.5rem;
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --tracking-normal: 0em;
+    --spacing: 0.25rem;
+    --color-1: oklch(66.2% 0.225 25.9);
+    --color-2: oklch(60.4% 0.26 302);
+    --color-3: oklch(69.6% 0.165 251);
+    --color-4: oklch(80.2% 0.134 225);
+    --color-5: oklch(90.7% 0.231 133);
+    --sidebar-background: 0 0% 98%;
+  }
+
+  html {
+    transition:
+      background-color var(--theme-transition-duration) var(--theme-transition-easing),
+      color var(--theme-transition-duration) var(--theme-transition-easing);
+    /* 한국어 어절 중간에서 줄바꿈되지 않도록 — 단어 경계에서만 줄바꿈 */
+    word-break: keep-all;
+    overflow-wrap: break-word; /* 긴 URL 등 줄바꿈 불가 토큰은 예외적으로 허용 */
+  }
+
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: var(--theme-transition-duration);
+    transition-timing-function: var(--theme-transition-easing);
+  }
+
+  /* View Transitions API support for smooth theme switching */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-old(root) {
+    z-index: 1;
+  }
+
+  ::view-transition-new(root) {
+    z-index: 999;
+  }
+
+  /*
+   * NOTE: Legacy .dark 블록 제거됨 (2026-01-19)
+   * 다크 테마 정의는 :root[data-theme="dark"] 블록으로 통합됨 (라인 374-519)
+   * 이 블록의 중복 정의가 테마 전환 시 색상 충돌을 일으켰음
+   */
+  .theme {
+    --animate-shine: shine var(--duration) infinite linear;
+    --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
+    --animate-line-shadow: line-shadow 15s linear infinite;
+    --animate-aurora: aurora 8s ease-in-out infinite alternate;
+    --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
+    --animate-rippling: rippling var(--duration) ease-out;
+    --animate-grid: grid 15s linear infinite;
+    --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
+    --animate-background-position-spin: background-position-spin 3000ms infinite alternate;
+    --animate-pulse: pulse var(--duration) ease-out infinite;
+  }
+  .dark {
+    --color-1: oklch(66.2% 0.225 25.9);
+    --color-2: oklch(60.4% 0.26 302);
+    --color-3: oklch(69.6% 0.165 251);
+    --color-4: oklch(80.2% 0.134 225);
+    --color-5: oklch(90.7% 0.231 133);
+    /* 레일 사이드바·모바일 하단 탭 — #000719 */
+    --sidebar-background: 223 100% 4.9%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 0 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 0 100% 50%;
+  }
+}
+
+/* Tremor BadgeDelta tokens */
+@layer base {
+  :root {
+    --tremor-ring: 229 231 235;
+    --dark-tremor-ring: 31 41 55;
+  }
+  .dark {
+    --tremor-ring: 31 41 55;
+    --dark-tremor-ring: 229 231 235;
+  }
+}
+
+:root {
+  /* === CONSOLIDATED DESIGN TOKENS === */
+
+  /* Font Family — Pretendard Variable */
+  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Noto Sans KR", sans-serif;
+
+  /* Brand Colors (HSL format) */
+  --brand-primary: 0 100% 50%;       /* #ff0000 */
+  --brand-tertiary: 226 52% 18%;     /* #151d46 */
+
+  /* PnL / heat tint (aligned with `src/lib/color-scale.ts`, CoinGlass-style caps) */
+  --color-profit: 160 84% 39%;
+  --color-loss: 350 89% 60%;
+  --color-profit-text: #34d399;
+  --color-loss-text: #fb7185;
+
+  /* 방향색: 한국 기본 상승=빨강·하락=파랑. 글로벌 모드는 동일 토큰 값만 스왑 */
+  --color-up: 0 72% 52%;
+  --color-down: 217 91% 55%;
+
+  /* 시장 상태 뱃지 7종 (시맨틱 HSL, 배경/테두리에 사용) */
+  --badge-regime-surge: 0 84% 48%;
+  --badge-regime-plunge: 217 91% 52%;
+  --badge-regime-strong-tight: 142 55% 42%;
+  --badge-regime-weak-tight: 45 93% 48%;
+  --badge-regime-flat: 220 14% 46%;
+  --badge-regime-mixed: 280 55% 52%;
+  --badge-regime-wait: 215 20% 52%;
+
+  /* Typography Scale */
+  --fs-h1: 44px;
+  --lh-h1: 54px;
+  --fw-h1: 700;
+  --fs-h2: 28px;
+  --lh-h2: 36px;
+  --fw-h2: 700;
+  --fs-body: 16px;
+  --lh-body: 24px;
+  --fw-body: 500;
+  --fs-nav: 14px;          /* Navigation menu items */
+  --lh-nav: 20px;
+  --fw-nav: 500;
+  --fs-caption: 12px;
+  --lh-caption: 16px;
+  --fw-caption: 500;
+
+  /* Glass Morphism (Unified) */
+  --glass-bg: 0 0% 10% / 0.7;
+  --glass-bg-hover: 0 0% 15% / 0.8;
+  --glass-stroke: 0 0% 100% / 0.12;
+  --glass-blur: 12px;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+
+  /* Animation Durations */
+  --duration-instant: 150ms;
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-drawer-bounce: cubic-bezier(0.45, 1.005, 0, 1.005);
+
+  /* Dropdown Animation */
+  @keyframes dropdown-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Money Flow Bar Fill Animation */
+  @keyframes bar-fill {
+    from {
+      opacity: 0;
+      transform: scaleX(0);
+      transform-origin: left;
+    }
+    to {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+  }
+
+  /* Subtle Pulse Animation */
+  @keyframes subtle-pulse {
+    0%, 100% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* Semantic Colors (Global Standard: Green=Bull, Red=Bear) */
+  --semantic-bull: 142 71% 45%;              /* Green for up/profit */
+  --semantic-bull-foreground: 0 0% 98%;
+  --semantic-bear: 0 84% 60%;                /* Red for down/loss */
+  --semantic-bear-foreground: 0 0% 98%;
+  --semantic-neutral: 0 0% 62%;              /* Gray for neutral */
+  --stream-pulse: 188 94% 53%;              /* Cyan for PULSE stream */
+  --stream-wave: 263 70% 75%;               /* Violet for WAVE stream */
+  --semantic-neutral-foreground: 0 0% 98%;
+  --semantic-cta: 217 91% 60%;               /* Blue for CTA */
+  --semantic-cta-foreground: 0 0% 98%;
+
+  /* Radar Signal Colors (Bloomberg Terminal Style) */
+  --radar-buy: 142 71% 45%;                  /* Radar Green #10B981 */
+  --radar-buy-scan: 142 76% 54%;             /* Scan Line #34D399 */
+  --radar-sell: 0 84% 60%;                   /* Alert Red #EF4444 */
+  --radar-sell-warning: 0 91% 71%;           /* Warning Line #F87171 */
+  --radar-standby: 38 92% 50%;               /* Standby Amber #F59E0B */
+  --radar-standby-foreground: 0 0% 98%;
+
+  /* Icon Colors - Light Mode (Dark icons for visibility) */
+  --icon-default: 0 0% 20%;                    /* Almost black - high visibility on light bg */
+  --icon-muted: 0 0% 50%;                      /* Mid gray for secondary icons */
+  --icon-primary: 0 100% 50%;                  /* Brand red #ff0000 */
+  --icon-secondary: 217 91% 60%;               /* Brand blue */
+  --icon-success: 142 71% 45%;                 /* Green (bull) */
+  --icon-danger: 0 84% 60%;                    /* Red (bear) */
+  --icon-warning: 38 92% 50%;                  /* Amber */
+  --icon-info: 217 91% 60%;                    /* Blue */
+  --icon-bull: 142 71% 45%;                    /* Green for up/profit */
+  --icon-bear: 0 84% 60%;                      /* Red for down/loss */
+  --icon-neutral: 0 0% 62%;                    /* Gray for neutral */
+
+  /* Icon Sizing Scale */
+  --icon-xs: 0.75rem;    /* 12px - Caption icons */
+  --icon-sm: 1rem;       /* 16px - Inline text icons */
+  --icon-md: 1.25rem;    /* 20px - Default button icons */
+  --icon-lg: 1.5rem;     /* 24px - Header icons */
+  --icon-xl: 2rem;       /* 32px - Hero section icons */
+  --icon-2xl: 2.5rem;    /* 40px - Large feature icons */
+  --icon-3xl: 3rem;      /* 48px - Extra large display icons */
+
+  /* Z-index hierarchy */
+  --z-header: 50;
+  --z-dropdown: 1200;
+  --z-mobile-drawer: 1200;
+  --z-sticky-cta: 9999;
+
+  /* Header Tokens */
+  --header-height: 4rem;           /* 64px */
+  --header-logo-height: 2rem;      /* 32px */
+  --header-button-height: 2.25rem; /* 36px */
+  --header-padding-x: 1rem;        /* 16px */
+  --header-gap: 0.25rem;           /* 4px */
+  --header-blur: 12px;
+
+  /* Dropdown Tokens */
+  --dropdown-width: 14rem;         /* 224px */
+  --dropdown-offset: 0.5rem;       /* 8px */
+  --dropdown-padding: 0.75rem;     /* 12px */
+  --dropdown-item-padding-x: 0.75rem;
+  --dropdown-item-padding-y: 0.5rem;
+
+  /* Border Radius */
+  --radius: 0.75rem;
+  --radius-sm: 16px;
+  --radius-md: 20px;
+  --radius-lg: 34px;
+
+  /* Spacing */
+  --section-gap: 64px;
+
+  /* Safe Area (iOS) */
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+
+  /* Header specific - Light mode defaults */
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(0, 0, 0, 0.08);
+}
+
+/* Theme Tokens - Light */
+:root,
+:root[data-theme="light"] {
+  /* 페이지 배경은 순백(100%)이 아닌 부드러운 오프화이트 — 흰 카드가 도드라져
+     "너무 밝아서 눈부심" 문제를 완화한다. 카드/팝오버는 흰색으로 유지해 대비를 준다. */
+  --background: 0 0% 96%;
+  --foreground: 0 0% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 4%;
+  --primary: 0 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  /* --background가 96%이므로 secondary/muted도 96%면 배경과 완전히 같은 색이 되어
+     bg-muted / bg-secondary / Badge·Button variant="secondary"가 전부 "표면 없음"으로
+     보였다(앱 전체 1,500여 곳). 배경보다 한 단계 어둡게 내려 실제 채움으로 읽히게 한다. */
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 90%;
+  --muted-foreground: 0 0% 32%;
+  --accent: 271 91% 65%;
+  --accent-foreground: 0 0% 9%;
+  /* 60% 명도에서는 흰 글자 대비가 3.8:1로 AA 미달(destructive 뱃지/버튼) → 42%로 낮춘다. */
+  --destructive: 0 74% 37%;
+  --destructive-foreground: 0 0% 98%;
+  /* 96% 배경 위에서 90% 테두리는 대비 1.1:1로 사실상 안 보였다 — outline 버튼/인풋/
+     테이블 구분선이 전부 흐릿했던 원인. 86%로 올렸지만 여전히 1.27:1이었다. */
+  --border: 0 0% 86%;
+  /* --input은 --border와 분리한다. 이 토큰은 장식용 구분선이 아니라 "조작 가능한
+     컨트롤의 경계"(outline 버튼·input·select·textarea·toggle·OTP)에만 쓰이고,
+     WCAG 1.4.11(Non-text Contrast)이 3:1을 요구하는 대상이다.
+     특히 AlertDialog에서 Cancel(outline) 버튼은 배경이 다이얼로그와 완전히 같은
+     bg-background라 테두리가 유일한 경계인데, 86%에서는 1.27:1이라 사실상 안 보였다.
+     56%는 96% 배경 대비 정확히 3.0:1. 구분선(--border)은 흐린 채로 둔다. */
+  --input: 0 0% 56%;
+  --ring: 0 100% 50%;
+  --chart-1: 173 58% 39%;
+  --chart-2: 197 37% 24%;
+  --chart-3: 43 74% 66%;
+  --chart-4: 27 87% 67%;
+  --chart-5: 12 76% 61%;
+  --radius: 0.75rem;
+  --success: 142 71% 45%;
+
+  --bg: 0 0% 98%;
+  --bg-0: 0 0% 98.5%; /* Light gray - hsl 형식으로 통일 */
+  --sub: 0 0% 96%; /* Light gray - aurora-field용 */
+  --bg-1: 0 0% 100%; /* White - aurora-field용 */
+
+  /* HeroSection CSS Variables */
+  --surface-base: 0 0% 100%; /* White - Header/Navbar background */
+  --surface-page: 0 0% 100%; /* HSL: #ffffff */
+  --surface-band-a: 210 17% 98%; /* HSL: #f8f9fa */
+  --surface-band-b: 210 14% 96%; /* HSL: #f1f3f5 */
+  --ink-hi: 220 33% 6%; /* HSL: #0A0D14 */
+  --ink-mid: 231 22% 29%; /* HSL: #3A3F5C */
+  --ink-lo: 218 7% 46%; /* HSL: #6B7380 */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-stroke: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --glass-blur: 24px;
+
+  --text-1: 0 0% 4%;
+  --text-2: 0 0% 25%;
+  --text-muted: 0 0% 40%;
+  --glass-fill-ultra: rgba(255,255,255,.07);
+  --glass-fill-thin: rgba(255,255,255,.4);
+  --glass-fill-regular: rgba(245,245,245,.6);
+  --glass-fill-thick: rgba(255,255,255,.84);
+  --ink-on-glass: 0 0% 0%;
+
+  /* Icon Colors - Light Mode (다크 아이콘 for 라이트 배경) */
+  --icon-color: 0 0% 20%;              /* 거의 검정 - 라이트모드 고가시성 */
+  --icon-color-muted: 0 0% 50%;        /* 중간 회색 */
+
+  /* Brand Secondary - Navy (라이트모드 히어로/호버용) */
+  --brand-navy: 222 47% 21%;           /* #1C2541 - 프로페셔널 네이비 */
+  --hero-accent: 222 47% 21%;          /* 라이트모드: 네이비 그라데이션 */
+  --hover-accent: 222 47% 21%;         /* 라이트모드: 호버 색상 */
+
+  /* Layout shell (Header/Footer/Loading) - same as background for consistency */
+  --layout-bg: 0 0% 100%;
+
+  /* CTA 전용 색상: Red (강렬한 액션용) */
+  --cta: 0 100% 50%;
+  --cta-foreground: 0 0% 100%;
+
+  /* Sidebar tokens — light surface */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 0 0% 20%;
+  --sidebar-hover: 0 0% 95%;
+  --sidebar-active: 0 0% 92%;
+  --sidebar-active-foreground: 0 0% 9%;
+  --sidebar-active-indicator: 0 100% 50%;
+  --sidebar-border: 0 0% 90%;
+  --sidebar-focus: 0 100% 50%;
+  --sidebar: var(--sidebar-background);
+  --sidebar-primary: var(--sidebar-active-indicator);
+  --sidebar-primary-foreground: var(--sidebar-active-foreground);
+  --sidebar-accent: var(--sidebar-hover);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
+  --sidebar-ring: var(--sidebar-focus);
+
+  /* AIX Control Surface — light neutral panel */
+  --control-surface: 0 0% 98%;
+  --control-surface-elevated: 0 0% 100%;
+  --control-border: 0 0% 88%;
+  --control-hover: 0 0% 94%;
+  --control-active: 0 0% 90%;
+  --control-active-border: 0 0% 80%;
+  --control-active-indicator: 348 26% 45%;
+  --control-muted: 0 0% 45%;
+  --control-foreground: 0 0% 30%; /* 라이트 테마: 중간 톤 텍스트 */
+  --control-active-foreground: 0 0% 9%; /* 액티브 상태: 진한 텍스트 */
+
+  /* === 시맨틱(Semantic) 색상 (한국 시장 표준) — 다크모드와 동일 색상값 유지 === */
+
+  /* 상승/수익/Long (Red - #FF3B30) */
+  --semantic-rise: 0 100% 59%;
+  --semantic-rise-foreground: 0 0% 100%;
+
+  /* 하락/손실/Short (Blue - #1E90FF) */
+  --semantic-fall: 211 100% 56%;
+  --semantic-fall-foreground: 0 0% 100%;
+
+  /* 중립/Neutral (Gray - #A0A0A0) */
+  --semantic-neutral: 0 0% 45%;
+  --semantic-neutral-foreground: 0 0% 100%;
+
+  /* 브랜드 CTA (Red - #EC1C24) */
+  --semantic-cta: 356 93% 52%;
+  --semantic-cta-foreground: 0 0% 100%;
+
+  /* 경고 (Warning - Yellow/Amber) */
+  --warning: 43.3 95.5% 56.9%; /* Amber-400 (#FBBF24) */
+  --warning-foreground: 38 92.3% 6.1%; /* Amber-950 (#431407) */
+
+  /* 정보/강조 = Cyan */
+  --info: 194 80% 45%;
+
+  /* Mobile Card Background Tints - Light */
+  --card-rise-tint: 0 100% 96%; /* Pale red tint */
+  --card-fall-tint: 211 100% 96%; /* Pale blue tint */
+  --card-neutral-tint: 0 0% 94%; /* Neutral light gray */
+
+  /* Surface - subtle off-white elevation */
+  --surface: 0 0% 96%;
+  --surface-elevated: 0 0% 100%;
+  --card-hover: 0 0% 97%;
+
+  /* Tertiary - soft neutral tint */
+  --tertiary: 0 0% 95%;
+  --tertiary-foreground: 0 0% 9%;
+
+  /* Mobile/Tablet Responsive Tokens - Light */
+  --glass-bg-mobile: rgba(255, 255, 255, 0.78);
+  --glass-stroke-mobile: rgba(0, 0, 0, 0.08);
+  --blur-mobile: 16px;
+
+  /* Background gradients - Light */
+  --bg-grad-a: radial-gradient(1200px at 70% 20%, rgba(236, 28, 36, 0.04) 0%, rgba(255, 255, 255, 0) 60%);
+  --bg-grad-b: radial-gradient(900px at 20% 80%, rgba(59, 199, 255, 0.03) 0%, rgba(255, 255, 255, 0) 55%);
+  --bg-grad-c: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%) 100%);
+
+  /* Header specific - Light mode */
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(0, 0, 0, 0.08);
+
+  /* PnL(손익) 방향 색 — 라이트 모드는 흰 배경 대비를 위해 어둡게.
+     시그널 보드/히스토리의 인라인 스타일이 hsl(var(--pnl-up/down))로 참조. */
+  --pnl-up: 142 72% 24%;   /* green-800 — /15 틴트 위에서도 AA(측정 4.14 → 4.6) */
+  --pnl-down: 0 72% 42%;   /* --semantic-bear와 동일하게 정렬 (틴트 위 대비 확보) */
+
+  /* 수익=상승 시맨틱 색(text-semantic-bull)도 흰 배경 대비를 위해 어둡게 */
+  --semantic-bull: 142 72% 24%;
+  /* bull만 어둡게 하고 bear는 빠뜨려, 손실 색(text-semantic-bear)은 흰 배경에서
+     대비 3.6으로 AA 미달이었다. bull과 대칭이 되도록 함께 어둡게. */
+  --semantic-bear: 0 72% 42%;
+
+  /* 상태색도 라이트 모드에서는 어둡게 — 밝은 값 그대로 두면 글자로 못 쓴다.
+     측정값(흰 배경 기준): warning #FBBF24 = 1.27:1, info = 2.6:1, success = 2.2:1.
+     /insights의 `bg-warning/15 text-warning` 뱃지가 1.27로 사실상 안 보였다. */
+  --warning: 43 95% 23%;
+  --info: 194 85% 23%;
+  --success: 142 72% 24%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+ * LIGHT MODE 대비 보정 — 하드코딩된 밝은 Tailwind 색상 유틸리티 override.
+ *
+ * 앱은 다크 테마 우선으로 설계되어 시그널/차트 등 여러 컴포넌트가
+ * text-green-500 / text-emerald-400 / text-amber-400 / text-rose-400 /
+ * text-orange-400 / text-blue-400 같은 "밝은" 색을 하드코딩한다. 이 값들은
+ * 흰 배경에서 대비 1.7~2.7로 사실상 안 보인다(WCAG AA 4.5 미달).
+ *
+ * 컴포넌트 수십 개를 개별 수정하는 대신, 라이트 모드에서만 해당 유틸리티를
+ * 어두운 계열로 중앙에서 덮어쓴다. `.dark`가 없는 경우에만 적용하므로
+ * 다크 모드는 전혀 영향받지 않는다. 언레이어드 규칙이라 @layer utilities의
+ * 원본 유틸리티보다 우선 적용된다.
+ *
+ * 2026-08-04 보강: 기존 표는 (1) -300/-500 단계와 pink/purple/sky/violet/indigo/lime을
+ * 빠뜨려 그 색들은 여전히 안 보였고, (2) 순백 기준으로만 맞춰져 있어 실제로 흔한
+ * `bg-<color>-500/10 text-<color>-400` 조합(=옅은 동색 틴트 위)에서는 4.5에 미달했다.
+ * (예: /notice 뱃지 — 이벤트 2.0, 고정 3.94, 안내 4.25) → 사용 중인 모든 색을 덮고,
+ * 틴트 위에서도 AA를 넘도록 -700/-800 계열로 한 단계 더 내린다.
+ * ───────────────────────────────────────────────────────────────────── */
+:root:not(.dark) .text-red-300,
+:root:not(.dark) .text-red-400,
+:root:not(.dark) .text-red-500 { color: #b91c1c; }      /* red-700 */
+:root:not(.dark) .text-rose-300,
+:root:not(.dark) .text-rose-400,
+:root:not(.dark) .text-rose-500 { color: #be123c; }     /* rose-700 */
+:root:not(.dark) .text-pink-400,
+:root:not(.dark) .text-pink-500 { color: #be185d; }     /* pink-700 */
+:root:not(.dark) .text-fuchsia-400,
+:root:not(.dark) .text-fuchsia-500 { color: #a21caf; }  /* fuchsia-700 */
+:root:not(.dark) .text-purple-300,
+:root:not(.dark) .text-purple-400,
+:root:not(.dark) .text-purple-500 { color: #7e22ce; }   /* purple-700 */
+:root:not(.dark) .text-violet-300,
+:root:not(.dark) .text-violet-400,
+:root:not(.dark) .text-violet-500 { color: #6d28d9; }   /* violet-700 */
+:root:not(.dark) .text-indigo-300,
+:root:not(.dark) .text-indigo-400,
+:root:not(.dark) .text-indigo-500 { color: #4338ca; }   /* indigo-700 */
+:root:not(.dark) .text-blue-300,
+:root:not(.dark) .text-blue-400,
+:root:not(.dark) .text-blue-500 { color: #1d4ed8; }     /* blue-700 */
+:root:not(.dark) .text-sky-300,
+:root:not(.dark) .text-sky-400,
+:root:not(.dark) .text-sky-500 { color: #075985; }      /* sky-800 */
+:root:not(.dark) .text-cyan-300,
+:root:not(.dark) .text-cyan-400,
+:root:not(.dark) .text-cyan-500 { color: #155e75; }     /* cyan-800 */
+:root:not(.dark) .text-teal-300,
+:root:not(.dark) .text-teal-400,
+:root:not(.dark) .text-teal-500 { color: #115e59; }     /* teal-800 */
+:root:not(.dark) .text-green-300,
+:root:not(.dark) .text-green-400,
+:root:not(.dark) .text-green-500 { color: #166534; }    /* green-800 — /20 틴트에서도 AA */
+:root:not(.dark) .text-emerald-300,
+:root:not(.dark) .text-emerald-400,
+:root:not(.dark) .text-emerald-500 { color: #065f46; }  /* emerald-800 */
+:root:not(.dark) .text-lime-400,
+:root:not(.dark) .text-lime-500 { color: #365314; }     /* lime-900 */
+:root:not(.dark) .text-yellow-300,
+:root:not(.dark) .text-yellow-400,
+:root:not(.dark) .text-yellow-500 { color: #713f12; }   /* yellow-900 */
+:root:not(.dark) .text-amber-300,
+:root:not(.dark) .text-amber-400,
+:root:not(.dark) .text-amber-500 { color: #78350f; }    /* amber-900 */
+:root:not(.dark) .text-orange-400,
+:root:not(.dark) .text-orange-500 { color: #9a3412; }   /* orange-800 */
+
+/* -600 단계도 초록/노랑/주황 계열은 흰 배경에서 미달이다(측정: emerald-600 3.77,
+   green-600 3.30, amber-600 3.19, yellow-600 2.94, orange-600 3.56).
+   red/rose/blue/purple-600은 4.7~5.4로 통과하므로 건드리지 않는다. */
+:root:not(.dark) .text-emerald-600 { color: #065f46; }  /* emerald-800 */
+:root:not(.dark) .text-green-600   { color: #166534; }  /* green-800 */
+:root:not(.dark) .text-teal-600    { color: #115e59; }  /* teal-800 */
+:root:not(.dark) .text-lime-600    { color: #365314; }  /* lime-900 */
+:root:not(.dark) .text-amber-600   { color: #78350f; }  /* amber-900 */
+:root:not(.dark) .text-yellow-600  { color: #713f12; }  /* yellow-900 */
+:root:not(.dark) .text-orange-600  { color: #9a3412; }  /* orange-800 */
+
+/* 흰 글자를 얹는 solid 채움 버튼도 -600은 미달이다(측정: /chart의 LONG 버튼
+   white on bg-emerald-600 = 3.77 — 라이트·다크 동일). 두 테마 모두에 적용한다.
+   투명도 변형(bg-*-600/20 등)은 클래스명이 달라 영향을 받지 않는다. */
+.bg-emerald-600 { background-color: #047857; } /* emerald-700 */
+.bg-green-600   { background-color: #15803d; } /* green-700 */
+.bg-teal-600    { background-color: #0f766e; } /* teal-700 */
+.bg-cyan-600    { background-color: #155e75; } /* cyan-800 */
+.bg-amber-600   { background-color: #92400e; } /* amber-800 */
+.bg-yellow-600  { background-color: #854d0e; } /* yellow-800 */
+.bg-lime-600    { background-color: #3f6212; } /* lime-800 */
+
+/* ── 반대 방향: 다크 모드에서 너무 어두운 -600/-700/-800 유틸리티 ──
+ * 라이트 대비 보정만 있었고, 어두운 값을 다크에서 밝히는 규칙은 없었다.
+ * 측정: /signals 손실 수치의 text-red-600(#DC2626)이 카드(#18181B) 위에서 3.67로 미달.
+ * -500 단계로 올리면 4.7 이상이 된다. */
+.dark .text-red-600,    .dark .text-red-700,    .dark .text-red-800    { color: #ef4444; } /* red-500 */
+.dark .text-rose-600,   .dark .text-rose-700                           { color: #fb7185; } /* rose-400 */
+.dark .text-orange-600, .dark .text-orange-700                         { color: #fb923c; } /* orange-400 */
+.dark .text-amber-600,  .dark .text-amber-700                          { color: #fbbf24; } /* amber-400 */
+.dark .text-yellow-600, .dark .text-yellow-700                         { color: #facc15; } /* yellow-400 */
+.dark .text-lime-600                                                   { color: #a3e635; } /* lime-400 */
+.dark .text-green-600,  .dark .text-green-700                          { color: #22c55e; } /* green-500 */
+.dark .text-emerald-600,.dark .text-emerald-700,.dark .text-emerald-800{ color: #10b981; } /* emerald-500 */
+.dark .text-teal-600,   .dark .text-teal-700                           { color: #2dd4bf; } /* teal-400 */
+.dark .text-cyan-600,   .dark .text-cyan-700                           { color: #22d3ee; } /* cyan-400 */
+.dark .text-sky-600,    .dark .text-sky-700                            { color: #38bdf8; } /* sky-400 */
+.dark .text-blue-600,   .dark .text-blue-700                           { color: #60a5fa; } /* blue-400 */
+.dark .text-indigo-600, .dark .text-indigo-700                         { color: #818cf8; } /* indigo-400 */
+.dark .text-violet-600, .dark .text-violet-700                         { color: #a78bfa; } /* violet-400 */
+.dark .text-purple-600, .dark .text-purple-700                         { color: #c084fc; } /* purple-400 */
+.dark .text-pink-600,   .dark .text-pink-700                           { color: #f472b6; } /* pink-400 */
+
+/* 다크 --destructive(346.8 77.2% 49.8%)는 어두운 배경에 얹는 글자로는 너무 어둡다
+   (측정: /insights의 bg-destructive/15 text-destructive = 2.89).
+   버튼은 bg-destructive + --destructive-foreground를 쓰므로 영향이 없다. */
+.dark .text-destructive { color: hsl(347 90% 70%); }
+
+/* 브랜드 레드(--primary: #FF0000)는 흰 배경/옅은 브랜드 틴트 위에서 대비가 3.1~3.4로
+   AA 미달이다. 랜딩·요금제의 `bg-primary/10 text-primary` 필 뱃지 수십 곳이 여기 해당한다.
+   라이트 모드에서만 brand hover 계열(#BD0000, 대비 ~5.1)로 낮춰 글자 가독성을 확보한다.
+   버튼 배경(bg-primary)과 로고는 --primary를 그대로 쓰므로 브랜드 톤은 유지된다.
+   다크 카드 위의 아이콘은 밝은 레드가 필요하므로 해당 컴포넌트에서 명시 색을 쓴다. */
+:root:not(.dark) .text-primary { color: hsl(0 100% 37%); }
+
+/* input[type="date"]의 네이티브 캘린더 아이콘이 다크 모드에서 안 보인다.
+   브라우저 기본 아이콘은 검정 실루엣이라 다크 배경(카드/인풋) 위에서 거의 안 보임 —
+   Signal Board 하단 History 날짜 필터에서 확인됨. 흰색으로 반전한다. */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* Theme Tokens - Dark (Slate 기반 중립 색상 스케일) */
+/* NOTE: .dark 클래스도 지원하여 Tailwind dark: 접두사와 호환성 유지 */
+:root[data-theme="dark"] {
+  /* === 1. 중립(Neutral) 색상: Tailwind Slate 팔레트 === */
+
+  /* Background - Deep Black (거의 검정색) */
+  --background: 240 6% 6%;
+  /* Layout shell (Header/Footer/Loading) - 검정 톤 통일 */
+  --layout-bg: 240 6% 6%;
+  --foreground: 210 40% 98%; /* Slate-50 (흰색 텍스트) */
+
+  /* Card/Modal - Slightly lighter than background */
+  --card: 240 5% 10%;
+  --card-foreground: 210 40% 98%;
+
+  /* Popover - Same as card */
+  --popover: 240 5% 10%;
+  --popover-foreground: 210 40% 98%;
+
+  /* === 2. 브랜드(Primary) 색상: Red #ff0000 === */
+  --primary: 0 100% 50%;
+  --primary-foreground: 0 0% 100%;
+
+  /* PnL(손익) 방향 색 — 다크 모드는 기존 밝은 값 유지 */
+  --pnl-up: 142 71% 45%;   /* green-500 #22C55E */
+  --pnl-down: 0 84% 60%;   /* red-500 #EF4444 */
+  --semantic-bull: 142 71% 45%; /* 다크: 기존 밝은 초록 유지 */
+  /* bear는 다크 블록에 선언이 없어, 라이트에서 어둡게 한 값이 다크로 새어 들어왔다.
+     bull과 짝을 맞춰 다크 전용 밝은 값을 명시한다(= --pnl-down과 동일). */
+  --semantic-bear: 0 84% 60%; /* red-500 #EF4444 */
+
+  /* CTA 전용 색상: Red (강렬한 액션용) === */
+  --cta: 0 100% 50%;
+  --cta-foreground: 0 0% 100%;
+
+  /* Secondary - Slate-800 (테두리, 입력창, 보조 버튼) */
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  /* Muted - Slate-800 배경 + Slate-400 텍스트 */
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  /* Accent - Slate-800 (호버 효과) */
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+
+  /* Destructive - Rose 계열 (경고/삭제 전용, 하락 아님!) */
+  --destructive: 346.8 77.2% 49.8%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Border, Input, Ring - Slate-800 */
+  --border: 217.2 32.6% 17.5%;
+  /* 라이트와 같은 이유로 --input만 분리한다. Slate-800(17.5%)은 6% 배경에서 1.32:1로
+     outline 버튼/인풋 경계가 거의 안 보였다(특히 AlertDialog의 Cancel 버튼은 배경이
+     다이얼로그와 동일해 테두리가 유일한 경계다). 42%면 약 3:1을 넘긴다.
+     구분선(--border)은 Slate-800 그대로 둔다. */
+  --input: 217.2 32.6% 42%;
+  --ring: 0 100% 50%;
+
+  /* Sidebar tokens — calm velvet surface */
+  --sidebar-background: 226 48% 7%;
+  --sidebar-foreground: 230 24% 90%;
+  --sidebar-hover: 226 36% 12%;
+  --sidebar-active: 226 34% 14%;
+  --sidebar-active-foreground: 230 28% 94%;
+  --sidebar-active-indicator: 252 36% 62%;
+  --sidebar-border: 226 28% 18%;
+  --sidebar-focus: 252 36% 62%;
+  --sidebar: var(--sidebar-background);
+  --sidebar-primary: var(--sidebar-active-indicator);
+  --sidebar-primary-foreground: var(--sidebar-active-foreground);
+  --sidebar-accent: var(--sidebar-hover);
+  --sidebar-accent-foreground: var(--sidebar-foreground);
+  --sidebar-ring: var(--sidebar-focus);
+
+  /* AIX Control Surface — 다크 네이비 프리미엄 컨트롤 */
+  --control-surface: 226 44% 9%;
+  --control-surface-elevated: 226 40% 12%;
+  --control-border: 226 28% 18%;
+  --control-hover: 226 34% 15%;
+  --control-active: 226 46% 14%;
+  --control-active-border: 226 32% 22%;
+  --control-active-indicator: 348 26% 52%;
+  --control-muted: 215 16% 62%;
+  --control-foreground: 215 16% 62%; /* 다크 테마: 중간 톤 텍스트 */
+  --control-active-foreground: 210 36% 96%; /* 액티브 상태: 밝은 텍스트 */
+
+  /* Chart colors */
+  --chart-1: 173 58% 39%;
+  --chart-2: 197 37% 24%;
+  --chart-3: 43 74% 66%;
+  --chart-4: 27 87% 67%;
+  --chart-5: 12 76% 61%;
+
+  /* === 3. 시맨틱(Semantic) 색상 (한국 시장 표준 - Mobile Optimized) === */
+
+  /* 상승/수익/Long (Red - #FF3B30) */
+  --semantic-rise: 0 100% 59%; /* #FF3B30 Red */
+  --semantic-rise-foreground: 0 85.7% 97.3%; /* Red-50 (#FEF2F2) */
+
+  /* 하락/손실/Short (Blue - #1E90FF) */
+  --semantic-fall: 211 100% 56%; /* #1E90FF Blue */
+  --semantic-fall-foreground: 210 40% 98%; /* Slate-50 */
+
+  /* 중립/Neutral (Gray - #A0A0A0) */
+  --semantic-neutral: 0 0% 63%; /* #A0A0A0 Gray */
+  --semantic-neutral-foreground: 210 40% 98%;
+
+  /* 브랜드 CTA (Red - #EC1C24) */
+  --semantic-cta: 356 93% 52%; /* #EC1C24 Brand Red */
+  --semantic-cta-foreground: 0 0% 100%;
+
+  /* Success (상승과 동일, 레거시 호환용)
+     주석은 "상승과 동일"인데 값이 브랜드 레드(#FF3B30)로 들어가 있어, 다크 모드에서
+     text-success / bg-success(약 90곳 — "현재 플랜" 뱃지, "7일 환불 보장" 아이콘,
+     체크 표시 등)가 전부 빨갛게 렌더됐다. 주석대로 --semantic-bull과 맞춘다. */
+  --success: 142 71% 45%; /* green-500 #22C55E — 다크 --semantic-bull과 동일 */
+
+  /* 경고 (Warning - Yellow/Amber) */
+  --warning: 43.3 95.5% 56.9%; /* Amber-400 (#FBBF24) */
+  --warning-foreground: 38 92.3% 6.1%; /* Amber-950 (#431407) */
+
+  /* 정보/강조 = Cyan */
+  --info: 194 98% 61%; /* #3BC7FF - Cyan for info/accent */
+
+  /* Brand Secondary - 다크모드: 레드 유지 */
+  --brand-navy: 222 47% 21%;           /* 네이비 정의는 유지 (참조용) */
+  --hero-accent: 356 93% 52%;          /* 다크모드: 레드 그라데이션 유지 */
+  --hover-accent: 0 100% 50%;          /* 다크모드: 브랜드 레드 */
+
+  /* Icon Colors - 다크 모드 전용 (밝은 아이콘) */
+  --icon-color: 0 0% 98%;                      /* 거의 흰색 - 다크모드 고가시성 */
+  --icon-color-muted: 0 0% 70%;                /* 약간 어두운 회색 */
+
+  /* Mobile Card Background Tints */
+  --card-rise-tint: 158 48% 15%; /* Dark Green tint #143C30 */
+  --card-fall-tint: 211 51% 15%; /* Dark Blue tint #12273A */
+  --card-neutral-tint: 0 0% 12%; /* Neutral Gray #1F1F1F */
+
+  /* Surface - 약간 밝은 Slate */
+  --surface: 217.2 32.6% 17.5%; /* Slate-800 */
+  --surface-elevated: 228 20% 18%;
+  --card-hover: 228 18% 16%;
+
+  /* Tertiary - Navy accent (강등된 네이비) */
+  --tertiary: 226 52% 18%;
+  --tertiary-foreground: 210 40% 98%;
+
+  /* Mobile/Tablet Responsive Tokens */
+  --glass-bg-mobile: rgba(10, 14, 28, 0.78);
+  --glass-stroke-mobile: rgba(255, 255, 255, 0.08);
+  --blur-mobile: 16px;
+
+  /* Background variations (updated to Bybit black base) */
+  --bg: 240 6% 6%; /* Updated from #000c2c to Bybit black */
+  --bg-0: 240 6% 7%; /* Slightly lighter */
+  --sub: 240 6% 8%; /* aurora-field용 */
+  --bg-1: 240 6% 10%; /* aurora-field용 */
+
+  /* HeroSection CSS Variables (using #000c2c as base) */
+  --surface-base: 220 30% 10%; /* Dark navy - Header/Navbar background */
+  --surface-page: 220 100% 9%; /* HSL: #000c2c */
+  --surface-band-a: 220 100% 10%; /* HSL: #001234 */
+  --surface-band-b: 220 100% 13%; /* HSL: #001840 */
+  --ink-hi: 230 100% 99%; /* HSL: #F5F7FF - 가장 밝은 텍스트 */
+  --ink-mid: 228 48% 86%; /* HSL: #C8CFEE - 중간 밝기 텍스트 */
+  --ink-lo: 228 30% 65%; /* HSL: #8892BF - 보조 텍스트 */
+  --glass-bg: rgba(15, 15, 17, 0.7);
+  --glass-stroke: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --glass-blur: 24px;
+
+  /* Background gradients (updated to Bybit black base) */
+  --bg-grad-a: radial-gradient(1200px at 70% 20%, rgba(236, 28, 36, 0.08) 0%, rgba(15, 15, 17, 0) 60%);
+  --bg-grad-b: radial-gradient(900px at 20% 80%, rgba(59, 199, 255, 0.06) 0%, rgba(15, 15, 17, 0) 55%);
+  --bg-grad-c: linear-gradient(180deg, hsl(240 6% 6%), hsl(240 6% 7%) 100%);
+
+  /* Text hierarchy */
+  --text-1: 210 40% 98%; /* Slate-50 */
+  --text-2: 215 20.2% 65.1%; /* Slate-400 */
+  --text-muted: 215.4 16.3% 56.9%; /* Slate-500 */
+
+  /* Glass fill variations (with Slate undertone) */
+  --glass-fill-ultra: rgba(226, 232, 240, 0.06); /* Slate-200 at 6% */
+  --glass-fill-thin: rgba(226, 232, 240, 0.08); /* Slate-200 at 8% */
+  --glass-fill-regular: rgba(226, 232, 240, 0.10); /* Slate-200 at 10% */
+  --glass-fill-thick: rgba(226, 232, 240, 0.12); /* Slate-200 at 12% */
+
+  /* Text on glass */
+  --ink-on-glass: 210 40% 98%; /* Slate-50 */
+
+  /* Header specific - Dark mode */
+  --header-bg: rgba(12, 12, 14, 0.95);
+  --header-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Tailwind dark: 접두사 호환성을 위한 .dark 클래스 - data-theme과 동기화 */
+.dark {
+  /* data-theme="dark"와 동일한 핵심 변수만 정의 (중복 최소화) */
+  --background: 240 6% 6%;
+  --layout-bg: 240 6% 6%;
+  --foreground: 210 40% 98%;
+  --card: 240 5% 10%;
+  --card-foreground: 210 40% 98%;
+  --primary: 0 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --ink-hi: 230 100% 99%;
+  --ink-mid: 228 48% 86%;
+  --ink-lo: 228 30% 65%;
+  --icon-color: 0 0% 98%;
+  --surface-base: 220 30% 10%;
+}
+
+/* ===================================
+ * Font Awesome Animations
+ * =================================== */
+
+/* Spinner Animation */
+.fa-spin {
+  animation: fa-spin 2s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Pulse Animation */
+.fa-pulse {
+  animation: fa-pulse 1s infinite steps(8);
+}
+
+@keyframes fa-pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Reduced motion support for Font Awesome animations */
+@media (prefers-reduced-motion: reduce) {
+  .fa-spin,
+  .fa-pulse {
+    animation: none;
+  }
+}
+
+/* === WEGLOT LANGUAGE SWITCHER CUSTOM STYLES === */
+.weglot-container,
+.weglot-container-mobile {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 데스크톱 언어 선택기 (드롭다운) */
+.wg-drop.country-selector {
+  background: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px !important;
+  font-family: 'Pretendard Variable', 'Inter', sans-serif !important;
+  padding: 6px 12px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: hsl(var(--foreground)) !important;
+  transition: all 200ms ease !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+.wg-drop.country-selector:hover {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+.wg-drop.country-selector ul {
+  background: hsl(var(--popover)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 8px !important;
+  padding: 8px !important;
+  margin-top: 4px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.wg-drop.country-selector ul li {
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  color: hsl(var(--foreground)) !important;
+  transition: all 150ms ease !important;
+  cursor: pointer !important;
+}
+
+.wg-drop.country-selector ul li:hover {
+  background: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* 모바일 언어 선택기 (리스트 형태) */
+.weglot-container-mobile .wgcurrent,
+.weglot-container-mobile a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.75rem !important;
+  width: 100% !important;
+  border-radius: 0.5rem !important;
+  background: transparent !important;
+  transition: background 0.2s ease !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: hsl(var(--foreground)) !important;
+  text-decoration: none !important;
+}
+
+.weglot-container-mobile .wgcurrent:hover,
+.weglot-container-mobile a:hover {
+  background: hsl(var(--muted) / 0.5) !important;
+}
+
+.wg-drop.country-selector ul li.wg-li.selected {
+  background: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+  font-weight: 600 !important;
+}
+
+/* Flag styling */
+.wg-drop.country-selector .wgcurrent a,
+.wg-drop.country-selector ul li a {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.wg-drop.country-selector img.wg-flag {
+  width: 20px !important;
+  height: 14px !important;
+  border-radius: 2px !important;
+  object-fit: cover !important;
+}
+
+/* Dark mode adjustments */
+.dark .wg-drop.country-selector {
+  background: hsl(var(--card)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .wg-drop.country-selector ul {
+  background: hsl(var(--popover)) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+/* === HOVER & INTERACTION UTILITIES === */
+.interactive {
+  transition: all var(--duration-fast) ease;
+  cursor: pointer;
+}
+
+.interactive:hover {
+  transform: translateY(-2px);
+}
+
+.interactive:active {
+  transform: translateY(0);
+}
+
+.card-hover {
+  transition: all var(--duration-normal) ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+.btn-hover {
+  transition: all var(--duration-fast) ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-hover::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width var(--duration-normal) ease, height var(--duration-normal) ease;
+}
+
+.btn-hover:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Enhanced Focus Styles (HextaUI Pattern) */
+.focus-ring {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+:focus-visible {
+  outline-color: hsl(var(--ring));
+  outline-width: 3px;
+  outline-style: solid;
+  outline-offset: 2px;
+}
+
+/* Clickable Element Cursor */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+[tabindex="0"]:not(:disabled) {
+  cursor: pointer;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* NanumSquare 폰트 - 모든 제목(h1~h3)에 적용 */
+  h1, h2, h3 {
+    font-family: 'NanumSquare', 'NanumSquareOTF', 'Pretendard Variable', sans-serif;
+  }
+
+  body {
+    @apply text-foreground;
+    font-family: var(--font-sans);
+    /* Updated gradients with Green (up) and Red (down) global standard */
+    background:
+      radial-gradient(1200px 800px at 20% 10%, rgba(34, 197, 94, 0.08) 0%, transparent 45%),
+      radial-gradient(900px 700px at 80% 20%, rgba(239, 68, 68, 0.06) 0%, transparent 40%),
+      radial-gradient(800px 800px at 70% 85%, rgba(245, 158, 11, 0.04) 0%, transparent 38%),
+      linear-gradient(180deg, hsl(var(--bg-0)), hsl(var(--bg)));
+    background-attachment: fixed;
+    position: relative;
+  }
+
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect width="1" height="1" fill="white" opacity="0.5"/></svg>');
+    background-size: 2px 2px;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+  }
+}
+
+/* === GLASS MORPHISM UTILITIES === */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-stroke);
+  box-shadow: var(--glass-shadow);
+  transition: background var(--duration-normal) ease;
+}
+
+.glass:hover {
+  background: hsla(var(--glass-bg-hover));
+}
+
+.glass-strong {
+  background: hsla(0, 0%, 10%, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsla(0, 0%, 100%, 0.15);
+}
+
+.glass-subtle {
+  background: hsla(0, 0%, 10%, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid hsla(0, 0%, 100%, 0.08);
+}
+
+/* Card Base */
+.card {
+  border-radius: 20px;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* LiquidCard - Apple Glass Style */
+.liquid {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  position: relative;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.liquid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 
+    inset 0 1px 0 rgba(255,255,255,.35),
+    inset 0 0 0 1px rgba(255,255,255,.06);
+  pointer-events: none;
+}
+
+/* Legacy LiquidCard */
+.liquid-card {
+  position: relative;
+  padding: 32px;
+}
+
+.liquid-card .glass-highlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255,255,255,.18) 0%, transparent 50%);
+  mix-blend-mode: plus-lighter;
+}
+
+/* Font Awesome Global Styles */
+[class^="fa-"],
+[class*=" fa-"] {
+  color: hsl(var(--foreground));
+  transition: color var(--duration-fast) var(--ease-out);
+}
+
+.dark [class^="fa-"],
+.dark [class*=" fa-"] {
+  color: hsl(var(--foreground));
+}
+
+/* ========================================
+   Font Awesome Icon System
+   ======================================== */
+
+/* Light Mode Icon Colors */
+:root {
+  --icon-primary: 220 70% 50%;     /* Blue */
+  --icon-secondary: 240 5% 64%;    /* Gray */
+  --icon-success: 142 71% 45%;     /* Green */
+  --icon-warning: 38 92% 50%;      /* Orange */
+  --icon-danger: 0 84% 60%;        /* Red */
+  --icon-muted: 240 5% 64%;        /* Light Gray */
+}
+
+/* Dark Mode Icon Colors */
+.dark {
+  --icon-primary: 213 94% 68%;     /* Brighter Blue */
+  --icon-secondary: 240 5% 84%;    /* Lighter Gray */
+  --icon-success: 142 71% 55%;     /* Brighter Green */
+  --icon-warning: 38 92% 60%;      /* Brighter Orange */
+  --icon-danger: 0 84% 70%;        /* Brighter Red */
+  --icon-muted: 240 3% 54%;        /* Medium Gray */
+}
+
+/* Base Font Awesome Icon Styles */
+.fa-solid,
+.fa-brands {
+  color: hsl(var(--icon-secondary));
+  transition: color 0.2s ease;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+/* Contextual Icon Colors */
+.icon-primary { color: hsl(var(--icon-primary)) !important; }
+.icon-secondary { color: hsl(var(--icon-secondary)) !important; }
+.icon-success { color: hsl(var(--icon-success)) !important; }
+.icon-warning { color: hsl(var(--icon-warning)) !important; }
+.icon-danger { color: hsl(var(--icon-danger)) !important; }
+.icon-muted { color: hsl(var(--icon-muted)) !important; }
+
+/* Icon Size Utilities */
+.icon-xs { 
+  font-size: var(--icon-xs); 
+  width: var(--icon-xs); 
+  height: var(--icon-xs); 
+  min-width: var(--icon-xs); 
+}
+.icon-sm { 
+  font-size: var(--icon-sm); 
+  width: var(--icon-sm); 
+  height: var(--icon-sm); 
+  min-width: var(--icon-sm); 
+}
+.icon-md { 
+  font-size: var(--icon-md); 
+  width: var(--icon-md); 
+  height: var(--icon-md); 
+  min-width: var(--icon-md); 
+}
+.icon-lg { 
+  font-size: var(--icon-lg); 
+  width: var(--icon-lg); 
+  height: var(--icon-lg); 
+  min-width: var(--icon-lg); 
+}
+.icon-xl { 
+  font-size: var(--icon-xl); 
+  width: var(--icon-xl); 
+  height: var(--icon-xl); 
+  min-width: var(--icon-xl); 
+}
+.icon-2xl { 
+  font-size: var(--icon-2xl); 
+  width: var(--icon-2xl); 
+  height: var(--icon-2xl); 
+  min-width: var(--icon-2xl); 
+}
+.icon-3xl { 
+  font-size: var(--icon-3xl); 
+  width: var(--icon-3xl); 
+  height: var(--icon-3xl); 
+  min-width: var(--icon-3xl); 
+}
+
+/* Icon Positioning Utilities */
+.icon-inline {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-top: -0.125em;
+}
+
+.icon-block {
+  display: flex;
+  margin: 0 auto;
+}
+
+/* Icon Spacing Utilities */
+.icon-mr-sm { margin-right: 0.5rem; }
+.icon-mr-md { margin-right: 0.75rem; }
+.icon-ml-sm { margin-left: 0.5rem; }
+.icon-ml-md { margin-left: 0.75rem; }
+
+/* Remove button hover override - let Font Awesome handle its own colors */
+
+@media (prefers-reduced-motion: no-preference) {
+  .liquid,
+  .liquid-card {
+    transition: transform 180ms ease-out, box-shadow 120ms ease-out;
+  }
+  .liquid:hover,
+  .liquid-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px rgba(0,0,0,.4);
+  }
+}
+
+/* Icons */
+.icon {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+}
+
+/* Aurora Background Field */
+.aurora-field {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: 
+    radial-gradient(60% 80% at 10% 12%, rgba(122, 92, 255, 0.26), transparent 60%),
+    radial-gradient(50% 60% at 88% 18%, rgba(51, 209, 255, 0.18), transparent 70%),
+    radial-gradient(40% 50% at 70% 78%, rgba(255, 0, 128, 0.12), transparent 70%),
+    linear-gradient(180deg, hsl(var(--bg-0)), hsl(var(--sub)) 60%, hsl(var(--bg-1)));
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Aurora noise overlay - disabled for performance */
+.aurora-field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  display: none;
+}
+
+@keyframes aurora-drift {
+  to {
+    transform: translate3d(2%, -1%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-field {
+    animation: none;
+  }
+}
+
+/* Aurora Layer (섹션별 오로라) */
+.opacity-55 {
+  opacity: 0.55;
+}
+
+.aurora-layer {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(40% 30% at 20% 30%, rgba(255, 0, 80, 0.35), transparent 60%),
+    radial-gradient(35% 25% at 80% 20%, rgba(21, 29, 70, 0.55), transparent 60%),
+    radial-gradient(30% 30% at 60% 80%, rgba(120, 90, 255, 0.35), transparent 60%),
+    conic-gradient(from 180deg at 50% 50%, rgba(255, 255, 255, 0.06), transparent 70%);
+  filter: blur(26px) saturate(120%);
+  animation: auroraMove 18s ease-in-out infinite alternate;
+}
+
+@keyframes auroraMove {
+  0% {
+    transform: translate3d(-6%, -3%, 0) scale(1.05) rotate(-1deg);
+  }
+  50% {
+    transform: translate3d(3%, 2%, 0) scale(1.08) rotate(1deg);
+  }
+  100% {
+    transform: translate3d(6%, 4%, 0) scale(1.04) rotate(-1deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-layer {
+    animation: none;
+  }
+}
+
+/* Typography Enhancements */
+.p-sub {
+  color: hsl(var(--ink-2));
+}
+
+.muted {
+  color: hsl(var(--ink-3));
+}
+
+.hero h1 strong {
+  background: linear-gradient(90deg, #fff 0%, #d7d9ff 45%, #8aa7ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Convergence Capsule */
+.capsule {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, hsl(var(--accent-violet)) 30%, transparent),
+    color-mix(in oklab, hsl(var(--accent-cyan)) 26%, transparent)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.capsule .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.up {
+  background: #21d07a;
+}
+
+.dot.long {
+  background: #5ab3ff;
+}
+
+.dot.vol {
+  background: #ffc62e;
+}
+
+.capsule .sep {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Coin Icons */
+.coin {
+  --size: 32px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font: 600 13px/1 var(--font-sans);
+  letter-spacing: .5px;
+  color: #fff;
+  background: linear-gradient(135deg, #0091ff, #4f0f9e);
+  box-shadow: 0 2px 8px rgba(0,0,0,.2), inset 0 0 12px rgba(255,255,255,.25);
+}
+
+.coin[data-ticker="BTC"] {
+  background: linear-gradient(135deg, #f7931a, #ffb347);
+}
+
+.coin[data-ticker="ETH"] {
+  background: linear-gradient(135deg, #3c3c3d, #8a92b2);
+}
+
+.coin[data-ticker="SOL"] {
+  background: linear-gradient(135deg, #14f195, #9945ff);
+}
+
+.coin[data-ticker="XRP"] {
+  background: linear-gradient(135deg, #23292f, #346aa9);
+}
+
+.coin[data-ticker="ADA"] {
+  background: linear-gradient(135deg, #0033ad, #3468d1);
+}
+
+/* Badge */
+.badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.14);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  animation: badgePulse 800ms ease-in-out infinite alternate;
+}
+
+@keyframes badgePulse {
+  from { transform: scale(0.98); opacity: 0.7; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Reduced motion support for badge animation */
+@media (prefers-reduced-motion: reduce) {
+  .badge {
+    animation: none;
+  }
+}
+
+[data-theme="light"] .badge {
+  background: rgba(0,0,0,.08);
+  border: 1px solid rgba(0,0,0,.14);
+  color: #313541;
+}
+
+/* Typography Utilities */
+.text-h1 {
+  font-size: var(--fs-h1);
+  line-height: var(--lh-h1);
+  font-weight: var(--fw-h1);
+}
+
+.text-h2 {
+  font-size: var(--fs-h2);
+  line-height: var(--lh-h2);
+  font-weight: var(--fw-h2);
+}
+
+.text-body {
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  font-weight: var(--fw-body);
+}
+
+.text-caption {
+  font-size: var(--fs-caption);
+  line-height: var(--lh-caption);
+  font-weight: var(--fw-caption);
+}
+
+/* Section Spacing */
+.section-gap {
+  margin-top: var(--section-gap);
+}
+
+/* On-Surface Text Colors */
+.text-on-surface {
+  color: var(--on-surface);
+}
+
+.text-on-surface-secondary {
+  color: var(--on-surface-secondary);
+}
+
+.text-on-surface-muted {
+  color: var(--on-surface-muted);
+}
+
+.metric-numeral {
+  font-size: 44px;
+  line-height: 48px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* CTA System */
+.cta-primary {
+  background: var(--brand-cta);
+  color: white;
+  padding: 14px 32px;
+  border-radius: 999px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: filter 180ms ease-out;
+}
+
+.cta-primary:hover {
+  filter: brightness(1.1);
+}
+
+.cta-primary:focus {
+  outline: 2px solid rgba(255,255,255,.4);
+  outline-offset: 2px;
+}
+
+.cta-secondary {
+  background: rgba(255,255,255,.06);
+  color: var(--text-primary);
+  padding: 14px 32px;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,.12);
+  cursor: pointer;
+  transition: background 120ms ease-out;
+}
+
+.cta-secondary:hover {
+  background: rgba(255,255,255,.08);
+}
+
+/* Hero Card Glow */
+.hero-card-glow {
+  box-shadow: 
+    0 0 60px rgba(130,180,255,.15),
+    0 10px 30px rgba(0,0,0,.45);
+}
+
+/* Navigation & Dropdown - Mobile/Tablet z-index & scroll fix */
+/* 1) 네비/아코디언 기본 리셋 */
+.site-nav,
+.site-nav * { box-sizing: border-box; }
+.site-nav { 
+  position: sticky;
+  top: 0;
+  overflow: visible; 
+  z-index: 9998; 
+}
+
+.site-header,
+.nav-bar {
+  overflow: visible !important;
+}
+
+/* 2) 트리거(메뉴명)는 항상 위에 */
+.nav-item { 
+  position: relative; 
+}
+
+.nav-trigger,
+.accordion-trigger {
+  position: relative; 
+  z-index: 1;
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 3) 패널: height 트랜지션 + 내부 스크롤, 외곽은 clip(스크롤바 방지) */
+.dropdown,
+.accordion-panel,
+.ax-acc-panel,
+.ax-dropdown {
+  position: relative;
+  overflow: clip;       /* iOS Safari에서도 스크롤바 미노출 */
+  z-index: 0;
+}
+
+/* 4) 드롭다운 메뉴 위치 */
+.dropdown,
+.ax-dropdown {
+  position: absolute !important;
+  left: 0;
+  top: calc(100% + 8px) !important;
+  z-index: 9999;
+  min-width: 280px;
+  background: rgba(15,21,55,0.85) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  will-change: transform;
+  transform: translateZ(0) translateY(8px);
+}
+
+.dropdown[hidden] {
+  display: block;
+  visibility: hidden;
+}
+
+/* AXDS Accordion/Dropdown Styles */
+.ax-nav-toggle {
+  all: unset;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: var(--ax-surface);
+  backdrop-filter: blur(var(--ax-blur));
+  -webkit-backdrop-filter: blur(var(--ax-blur));
+  color: var(--ax-text);
+  cursor: pointer;
+  box-shadow: var(--ax-shadow);
+}
+
+.ax-accordion {
+  position: relative;
+  display: block;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(15,21,55,0.85);
+  border: 1px solid var(--ax-stroke);
+  border-radius: var(--ax-radii);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  box-shadow: 0 10px 40px rgba(0,0,0,.8);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.ax-acc-trigger {
+  all: unset;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  color: var(--ax-text);
+  background: transparent;
+}
+
+.ax-acc-trigger:hover {
+  background: color-mix(in srgb, var(--ax-hover) 40%, transparent);
+}
+
+.ax-acc-trigger[aria-expanded="true"] {
+  color: var(--ax-accent);
+}
+
+.ax-acc-panel {
+  padding: 0.5rem 0.75rem 0.9rem;
+  border-left: 1px solid var(--ax-stroke);
+  margin-left: 0.5rem;
+}
+
+.ax-acc-panel a {
+  display: block;
+  padding: 0.5rem;
+  border-radius: 10px;
+  color: var(--ax-text);
+}
+
+.ax-acc-panel a:hover {
+  background: color-mix(in srgb, var(--ax-hover) 30%, transparent);
+}
+
+/* Tablet & Desktop: Convert to Dropdown */
+@media (min-width: 768px) {
+  .ax-accordion {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 10px);
+    min-width: 280px;
+    overflow: clip; /* 데스크톱에서도 스크롤바 방지 */
+  }
+
+  .ax-acc-item {
+    border-bottom: 1px solid var(--ax-stroke);
+  }
+
+  .ax-acc-panel {
+    border-left: 0;
+    margin-left: 0;
+    max-height: min(72vh, 560px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ========================================
+   LiquidCard Everywhere - Unified Material
+   ======================================== */
+
+/* 1) Common Surface Material */
+.lq-surface {
+  --blur: 16px;
+  --rad: 16px;
+  --fill: rgba(255, 255, 255, 0.04);
+  --fill2: rgba(255, 255, 255, 0.06);
+  --bd: rgba(255, 255, 255, 0.10);
+  --bd-hi: rgba(255, 255, 255, 0.18);
+
+  background: 
+    linear-gradient(180deg, var(--fill2), rgba(255, 255, 255, 0.02)),
+    var(--fill);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  border: 1px solid var(--bd);
+  border-radius: var(--rad);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  color: var(--ax-muted);
+  transition: border-color 0.2s ease;
+}
+
+.lq-surface:hover {
+  border-color: var(--bd-hi);
+}
+
+/* 2) Card Variants */
+.lq-card {
+  padding: 18px 16px;
+}
+
+.lq-list {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+}
+
+.lq-list + .lq-list {
+  margin-top: 8px;
+}
+
+/* 3) Modal */
+.lq-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  display: none;
+  z-index: 1300;
+}
+
+.lq-modal-backdrop[open] {
+  display: block;
+}
+
+.lq-modal {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  min-width: 320px;
+  max-width: min(720px, 90vw);
+  padding: 24px;
+  z-index: 1400;
+}
+
+.lq-modal.lq-surface {
+  animation: modalIn 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.98);
+  }
+}
+
+/* 4) Tooltip */
+.lq-tip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.lq-tip {
+  position: absolute;
+  inset: auto auto 100% 50%;
+  transform: translate(-50%, -8px);
+  padding: 6px 8px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1500;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.98;
+  transition: opacity 0.16s ease, scale 0.16s ease;
+}
+
+.lq-tip.lq-surface {
+  border-radius: 10px;
+}
+
+.lq-tip-wrap:hover .lq-tip,
+.lq-tip-wrap:focus-within .lq-tip {
+  opacity: 1;
+  scale: 1;
+  pointer-events: auto;
+}
+
+/* Convergence Capsule */
+.conv-cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--glass-surface, hsl(227 52% 6%)) 78%, transparent);
+  backdrop-filter: blur(24px) saturate(120%);
+  -webkit-backdrop-filter: blur(24px) saturate(120%);
+  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.06) inset, 0 8px 24px hsl(0 0% 0% / 0.35);
+  color: var(--on-glass, hsl(220 13% 91%));
+  font: 500 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.conv-cap .dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff8, #fff0 60%),
+              linear-gradient(90deg, hsl(var(--primary)), hsl(var(--background)));
+  box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.06) inset;
+}
+
+.conv-cap .dot.down {
+  background: linear-gradient(90deg, #8bdfff, #00b2ff);
+}
+
+.conv-cap .dot.flat {
+  background: linear-gradient(90deg, #b7b7b7, #8e8e8e);
+}
+
+.conv-cap .score {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.conv-cap .time {
+  opacity: 0.8;
+}
+
+.conv-cap .sep {
+  opacity: 0.35;
+}
+
+/* Dropdown Header */
+.dd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem 0.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(to bottom, hsl(240 40% 6% / 0.85), transparent);
+  border-bottom: 1px solid hsl(0 0% 100% / 0.06);
+}
+
+.dd-title {
+  color: hsl(var(--foreground));
+  font: 600 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.2px;
+}
+
+/* Convergence Badge (legacy) */
+.badge--conv {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: linear-gradient(
+    to right,
+    color-mix(in oklab, hsl(var(--accent-violet)) 30%, transparent),
+    color-mix(in oklab, hsl(var(--accent-cyan)) 26%, transparent)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* ========================================
+   A/B Testing - Headline Gradient
+   ======================================== */
+
+/* Variant A: No gradient (default) */
+html.abA .emph {
+  color: var(--ax-text);
+}
+
+/* Variant B: Gradient on emphasis */
+html.abB .emph {
+  background: linear-gradient(90deg, hsl(var(--primary)), #7A8BFF);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Utility Classes */
+.grow {
+  flex-grow: 1;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Backdrop Filter Fallback */
+@supports not (backdrop-filter: blur(14px)) {
+  .lq-surface {
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  }
+
+  /* Mono font for numbers/data */
+  .font-mono {
+    font-family: 'Inter', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  }
+
+  /* Glass effect utilities */
+  .glass {
+    background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+    border: 1px solid hsl(var(--border) / 0.3);
+    backdrop-filter: blur(12px);
+  }
+
+  .glass-strong {
+    background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
+    border: 1px solid hsl(var(--border) / 0.5);
+    backdrop-filter: blur(16px);
+  }
+
+  /* 3D transforms for flip cards */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
+
+  .backface-hidden {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .rotate-y-180 {
+    transform: rotateY(180deg);
+  }
+}
+
+/* ─── Mobile/Tablet Readability Enhancements & iOS 100vh 보정 ─── */
+@media (max-width: 1024px) {
+  :root {
+    --glass-bg: var(--glass-bg-mobile);
+    --glass-stroke: var(--glass-stroke-mobile);
+    --blur: var(--blur-mobile);
+    /* iOS 100vh 보정용 (JavaScript에서 동적 설정) */
+    --vh: 1vh;
+  }
+
+  /* 가로 스크롤바 방지 */
+  html, body { overflow-x: clip; }
+
+  /* 모바일 네비 스크림 */
+  .menu-scrim {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 1150;
+  }
+
+  /* 드로어 */
+  .nav-drawer {
+    background: var(--glass-bg-mobile);
+    backdrop-filter: blur(var(--blur-mobile)) saturate(140%);
+    -webkit-backdrop-filter: blur(var(--blur-mobile)) saturate(140%);
+    border: 1px solid var(--glass-stroke-mobile);
+    overflow: clip; /* 패널 스크롤바 외부 차단 */
+  }
+
+  /* 아코디언 패널 내부 스크롤 */
+  .ax-acc-panel {
+    max-height: min(calc(var(--vh, 1vh) * 72), 560px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 드롭다운이 바 위로 깔리는 문제 방지 */
+  .dropdown { 
+    position: relative; 
+    z-index: 50; 
+  }
+  .dropdown-menu { 
+    position: absolute; 
+    left: 0; 
+    top: 100%;
+    z-index: 60; 
+    transform: translateY(8px);
+  }
+}
+
+.nav-drawer.safe {
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+
+/* Navigation Item - Touch Target */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+}
+
+/* ========================================
+   About Vision Page Styles
+   ======================================== */
+
+/* Navigation */
+.about-vision-page .nav-link {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.about-vision-page .nav-link:hover {
+  color: hsl(var(--info));
+}
+
+.about-vision-page .mobile-nav-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1.5rem;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.about-vision-page .mobile-nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: hsl(var(--info));
+}
+
+/* Typography */
+.about-vision-page .accent-text {
+  color: hsl(var(--info));
+}
+
+.about-vision-page .section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: hsl(var(--info));
+  letter-spacing: 0.1em;
+}
+
+.about-vision-page .section-title {
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 700;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+  color: hsl(var(--foreground));
+  line-height: 1.2;
+}
+
+.about-vision-page .section-body {
+  font-size: 1.125rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.75;
+}
+
+.about-vision-page .section-body strong {
+  color: hsl(var(--info));
+  font-weight: 600;
+}
+
+/* Glass Card */
+.about-vision-page .glass-card {
+  background: color-mix(in oklab, var(--glass-bg) 60%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid hsl(var(--border) / 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Convergence Diagram */
+.convergence-container {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 350px;
+  margin: 2rem auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.convergence-center {
+  width: 130px;
+  height: 130px;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--info)));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 700;
+  z-index: 10;
+  flex-direction: column;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  font-size: 1.1rem;
+}
+
+.convergence-node {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: var(--glass-bg);
+  border: 3px solid hsl(var(--info));
+  color: hsl(var(--info));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 600;
+  z-index: 5;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.convergence-node:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 24px rgba(59, 199, 255, 0.4);
+}
+
+.node-expert {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.node-ai {
+  bottom: 20px;
+  left: 20px;
+}
+
+.node-community {
+  bottom: 20px;
+  right: 20px;
+}
+
+.convergence-line {
+  position: absolute;
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--info)));
+  z-index: 1;
+  opacity: 0.6;
+}
+
+.line-1 {
+  width: 3px;
+  height: 75px;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.line-2 {
+  width: 125px;
+  height: 3px;
+  bottom: 110px;
+  left: 95px;
+  transform: rotate(35deg);
+}
+
+.line-3 {
+  width: 125px;
+  height: 3px;
+  bottom: 110px;
+  right: 95px;
+  transform: rotate(-35deg);
+}
+
+.node-info {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  width: 200px;
+  text-align: center;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  border: 1px solid hsl(var(--border));
+}
+
+/* Utility Badge */
+.utility-badge {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, hsl(var(--info) / 0.2), hsl(var(--primary) / 0.2));
+  border: 2px solid hsl(var(--info) / 0.4);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(59, 199, 255, 0.2);
+  color: hsl(var(--foreground));
+  font-weight: 600;
+}
+
+/* Tabs */
+.tab-btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border-radius: 12px 12px 0 0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.inactive-tab {
+  background: hsl(var(--border) / 0.3);
+  color: hsl(var(--text-muted));
+}
+
+.inactive-tab:hover {
+  background: hsl(var(--border) / 0.5);
+  color: hsl(var(--muted-foreground));
+}
+
+.active-tab {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--info)));
+  color: white;
+}
+
+.tab-content-active {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Initial splash auto-hide — must not depend on JS hydration: on slow
+   devices the bundle takes seconds, and a JS-gated overlay blocks LCP */
+@keyframes splash-auto-hide {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.initial-splash {
+  animation: splash-auto-hide 0.25s ease-out 0.5s forwards;
+}
+
+/* Landing hero entrance — pure CSS so text paints before JS hydration (LCP) */
+@keyframes hero-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes hero-fade-down {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-fade-up {
+  animation: hero-fade-up 0.8s ease-out both;
+}
+
+.hero-fade-down {
+  animation: hero-fade-down 0.6s ease-out both;
+}
+
+.hero-delay-200 {
+  animation-delay: 0.2s;
+}
+
+.hero-delay-400 {
+  animation-delay: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-fade-up,
+  .hero-fade-down {
+    animation: none;
+  }
+}
+
+.tab-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+  color: hsl(var(--info));
+}
+
+.tab-text {
+  font-size: 1.125rem;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.75;
+}
+
+/* Loop Cards */
+.loop-card {
+  padding: 1.5rem;
+  background: var(--glass-bg);
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 12px;
+  text-align: center;
+  width: 260px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.loop-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(59, 199, 255, 0.3);
+  border-color: hsl(var(--info) / 0.5);
+}
+
+.loop-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: hsl(var(--info));
+  margin-bottom: 0.5rem;
+}
+
+.loop-text {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.95rem;
+}
+
+.loop-arrow {
+  font-size: 2rem;
+  font-weight: 700;
+  color: hsl(var(--info));
+  transform: rotate(0deg);
+}
+
+@media (max-width: 768px) {
+  .loop-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+/* Direction Cards */
+.direction-card {
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--glass-bg) 50%, transparent);
+  border: 1px solid hsl(var(--border) / 0.3);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.direction-card:hover {
+  background: color-mix(in srgb, var(--glass-bg) 70%, transparent);
+  border-color: hsl(var(--info) / 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(59, 199, 255, 0.2);
+}
+
+.direction-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1rem 0;
+  color: hsl(var(--foreground));
+}
+
+.direction-text {
+  color: hsl(var(--muted-foreground));
+  line-height: 1.6;
+}
+
+/* ========================================
+   Side Accordion (Horizontal Panel)
+   ======================================== */
+
+.side-acc {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding: 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.side-acc::-webkit-scrollbar {
+  height: 4px;
+}
+
+.side-acc::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.side-acc::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.acc-item {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.acc-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid hsl(var(--border) / 0.3);
+  background: color-mix(in srgb, var(--glass-bg) 60%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  color: hsl(var(--foreground));
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.acc-trigger:hover {
+  background: color-mix(in srgb, var(--glass-bg) 80%, transparent);
+  border-color: hsl(var(--info) / 0.5);
+  color: hsl(var(--info));
+}
+
+.acc-trigger:focus-visible {
+  outline: 2px solid hsl(var(--info));
+  outline-offset: 2px;
+}
+
+.acc-item[data-open="true"] .acc-trigger {
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--info) / 0.2));
+  border-color: hsl(var(--info) / 0.6);
+  color: hsl(var(--info));
+}
+
+.acc-chevron {
+  transition: transform 0.2s ease;
+}
+
+.acc-item[data-open="true"] .acc-chevron {
+  opacity: 0.8;
+}
+
+/* Panel positioning */
+.acc-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  z-index: 1000;
+  min-width: 280px;
+  max-width: 360px;
+  background: color-mix(in srgb, var(--glass-bg) 95%, transparent);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  border: 1px solid hsl(var(--border) / 0.5);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  will-change: transform, opacity;
+}
+
+.acc-item[data-side="left"] .acc-panel {
+  right: 0;
+}
+
+.acc-item[data-side="right"] .acc-panel {
+  left: 0;
+}
+
+/* Panel header */
+.acc-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.3);
+  background: linear-gradient(to bottom, hsl(var(--background) / 0.8), transparent);
+}
+
+.mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.3), hsl(var(--info) / 0.3));
+  border: 1px solid hsl(var(--info) / 0.4);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.mini-time {
+  font-size: 0.75rem;
+  color: hsl(var(--text-muted));
+  margin-left: auto;
+}
+
+.acc-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.acc-close:hover {
+  background: hsl(var(--border) / 0.5);
+  color: hsl(var(--foreground));
+}
+
+/* Panel content */
+.acc-content {
+  padding: 0.5rem;
+  max-height: min(calc(var(--vh, 1vh) * 60), 480px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.acc-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.acc-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Money Flow Bar Animation */
+.money-flow-bar {
+  display: inline-block;
+  animation: bar-fill 0.5s ease-out forwards;
+}
+
+/* Subtle Pulse Animation */
+.subtle-pulse {
+  animation: subtle-pulse 2s ease-in-out infinite;
+}
+
+/* Glass morphism utility classes */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-stroke);
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--glass-shadow);
+}
+
+.glass:hover {
+  background: hsl(var(--glass-bg-hover));
+}
+
+.glass-strong {
+  background: var(--glass-bg);
+  border: 2px solid var(--glass-stroke);
+  backdrop-filter: blur(calc(var(--glass-blur) * 1.5));
+  box-shadow: var(--glass-shadow), 0 0 0 1px var(--glass-stroke);
+}
+
+.glass-subtle {
+  background: color-mix(in srgb, var(--glass-bg) 50%, transparent);
+  border: 1px solid color-mix(in srgb, var(--glass-stroke) 50%, transparent);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.7));
+}
+
+.hero-sub {
+  position: relative;
+  z-index: 2;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  max-width: 48rem;
+  word-break: keep-all;
+}
+
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: clamp(1.75rem, 6vw, 2.5rem);
+  }
+
+  .hero-sub {
+    font-size: clamp(0.875rem, 3vw, 1.125rem);
+  }
+}
+
+/* Dropdown Fade-in Animation */
+.dropdown-fade-in {
+  animation: dropdown-fade-in 200ms ease-out;
+}
+
+/* ✅ Highcharts Range Selector Buttons */
+.highcharts-range-selector-buttons .highcharts-button,
+.highcharts-range-selector-buttons .highcharts-button-box {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.highcharts-range-selector-buttons .highcharts-button text {
+  fill: #FFFFFF !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@theme inline {
+  @keyframes shine {
+  0% {
+    background-position: 0% 0%;
+    }
+  50% {
+    background-position: 100% 100%;
+    }
+  to {
+    background-position: 0% 0%;
+    }
+  }
+  @keyframes blink-cursor {
+  0%, 49% {
+    opacity: 1;
+    }
+  50%, 100% {
+    opacity: 0;
+    }
+  }
+  @keyframes line-shadow {
+  0% {
+    background-position: 0 0;
+    }
+  100% {
+    background-position: 100% -100%;
+    }
+  }
+  @keyframes aurora {
+  0% {
+    background-position: 0% 50%;
+    transform: rotate(-5deg) scale(0.9);
+    }
+  25% {
+    background-position: 50% 100%;
+    transform: rotate(5deg) scale(1.1);
+    }
+  50% {
+    background-position: 100% 50%;
+    transform: rotate(-3deg) scale(0.95);
+    }
+  75% {
+    background-position: 50% 0%;
+    transform: rotate(3deg) scale(1.05);
+    }
+  100% {
+    background-position: 0% 50%;
+    transform: rotate(-5deg) scale(0.9);
+    }
+  }
+  @keyframes rainbow {
+  0% {
+    background-position: 0%;
+    }
+  100% {
+    background-position: 200%;
+    }
+  }
+  @keyframes rippling {
+  0% {
+    opacity: 1;
+    }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+    }
+  }
+  @keyframes grid {
+  0% {
+    transform: translateY(-50%);
+    }
+  100% {
+    transform: translateY(0);
+    }
+  }
+  @keyframes ripple {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+    }
+  }
+  @keyframes background-position-spin {
+  0% {
+    background-position: top center;
+    }
+  100% {
+    background-position: bottom center;
+    }
+  }
+  @keyframes pulse {
+  0%, 100% {
+    boxShadow: 0 0 0 0 var(--pulse-color);
+    }
+  50% {
+    boxShadow: 0 0 0 8px var(--pulse-color);
+    }
+  }
+}
+
+::view-transition-old(root), ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+/* 실시간 연결 끊김 시 가격 데이터 grayout */
+.reconnecting .tabular-nums {
+  opacity: 0.4;
+  transition: opacity 300ms ease;
+}
+
+/* Signal transition highlight animation */
+.signal-transitioning {
+  animation: signal-flash 2s ease-out;
+}
+
+@keyframes signal-flash {
+  0% { background-color: hsl(var(--primary) / 0.15); }
+  100% { background-color: transparent; }
+}
+
+/* CoinGlass-style cell flash (price / PnL change) */
+@keyframes cell-flash-green {
+  0% {
+    background-color: hsl(var(--color-profit) / 0.25);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes cell-flash-red {
+  0% {
+    background-color: hsl(var(--color-loss) / 0.25);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.cell-flash-up {
+  animation: cell-flash-green 0.5s ease-out forwards;
+}
+
+.cell-flash-down {
+  animation: cell-flash-red 0.5s ease-out forwards;
+}
+
+/* Pulse 보드 — 컴팩트 밀도 시 AG Grid 셀 패딩 (토큰 유지) */
+[data-density='compact'] .ag-pulse-grid .ag-cell,
+[data-density='compact'] .ag-pulse-grid .ag-header-cell {
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.ag-pulse-grid .ag-cell,
+.ag-pulse-grid .ag-header-cell {
+  padding-inline: 4px;
+}
+
+.ag-pulse-grid .ag-cell {
+  display: flex;
+  align-items: center;
+}
+
+.ag-pulse-grid .ag-cell-wrapper {
+  min-width: 0;
+  width: 100%;
+}
+
+/* 테이블 본문·헤더: Tailwind text-* 기본 대비 1px 작게 */
+.ag-pulse-grid .ag-cell .text-sm,
+.ag-pulse-grid .ag-cell-wrapper .text-sm {
+  font-size: 13px;
+  line-height: 1.25rem;
+}
+
+.ag-pulse-grid .ag-cell .text-xs,
+.ag-pulse-grid .ag-cell-wrapper .text-xs {
+  font-size: 11px;
+  line-height: 1rem;
+}
+
+.ag-pulse-grid .ag-cell .text-base,
+.ag-pulse-grid .ag-cell-wrapper .text-base {
+  font-size: 15px;
+  line-height: 1.35rem;
+}
+
+.ag-pulse-grid .ag-cell .text-\[10px\],
+.ag-pulse-grid .ag-cell-wrapper .text-\[10px\] {
+  font-size: 9px;
+}
+
+.ag-pulse-grid .ag-cell .text-\[11px\],
+.ag-pulse-grid .ag-cell-wrapper .text-\[11px\] {
+  font-size: 10px;
+}
+
+.ag-pulse-grid .ag-cell .text-\[9px\],
+.ag-pulse-grid .ag-cell-wrapper .text-\[9px\] {
+  font-size: 8px;
+}
+
+.ag-pulse-grid .ag-cell:not(.ag-right-aligned-cell):not(.pulse-col-symbol) {
+  justify-content: center;
+}
+
+.ag-pulse-grid .ag-cell.pulse-col-symbol {
+  justify-content: flex-start;
+}
+
+.ag-pulse-grid .ag-right-aligned-cell {
+  justify-content: flex-end;
+}
+
+.ag-pulse-grid .ag-cell.pulse-col-direction,
+.ag-pulse-grid .ag-cell.pulse-col-spark {
+  justify-content: center;
+  padding-inline: 6px;
+}
+
+@media (min-width: 1024px) {
+  .ag-pulse-grid .ag-cell.ag-right-aligned-cell .ag-cell-wrapper {
+    justify-content: flex-end;
+  }
+
+  .ag-pulse-grid .ag-cell:not(.ag-right-aligned-cell):not(.pulse-col-symbol) .ag-cell-wrapper {
+    justify-content: center;
+  }
+}
+
+.ag-pulse-grid .ag-cell.pulse-col-add-signal,
+.ag-pulse-grid .ag-cell.pulse-col-add-signal .ag-cell-wrapper {
+  justify-content: center;
+}
+
+.ag-pulse-grid .ag-header-cell {
+  display: flex;
+  align-items: center;
+}
+
+/* 기본 헤더 가운데 — 우측 정렬 열(rightAligned)은 라벨·숫자 우측 */
+.ag-pulse-grid .ag-header-cell:not(.ag-right-aligned-header) {
+  justify-content: center;
+}
+
+.ag-pulse-grid .ag-header-cell:not(.ag-right-aligned-header) .ag-header-cell-comp-wrapper,
+.ag-pulse-grid .ag-header-cell:not(.ag-right-aligned-header) .ag-header-cell-label {
+  justify-content: center;
+  width: 100%;
+}
+
+.ag-pulse-grid .ag-header-cell.ag-right-aligned-header {
+  justify-content: flex-end;
+}
+
+.ag-pulse-grid .ag-header-cell.ag-right-aligned-header .ag-header-cell-comp-wrapper,
+.ag-pulse-grid .ag-header-cell.ag-right-aligned-header .ag-header-cell-label {
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.ag-pulse-grid .ag-header-cell.ag-right-aligned-header .ag-header-cell-text {
+  text-align: right;
+}
+
+.ag-pulse-grid .ag-header {
+  border-bottom: 1px solid hsl(var(--border) / 0.88);
+}
+
+.ag-pulse-grid .ag-header-cell-text {
+  color: hsl(var(--muted-foreground));
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  font-size: calc(1em - 1px);
+}
+
+.ag-pulse-grid .ag-header-group-cell {
+  justify-content: center;
+}
+
+.ag-pulse-grid .ag-header-group-cell-label {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+}
+
+.ag-pulse-grid .ag-body-horizontal-scroll {
+  min-height: 10px;
+  background-color: hsl(var(--muted) / 0.5);
+}
+
+@media (min-width: 1024px) {
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-cell,
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-header-cell {
+    padding-inline: 2px;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-cell.pulse-col-direction,
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-cell.pulse-col-spark {
+    padding-inline: 2px;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-header-cell-text {
+    font-size: 11px;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-cell .text-sm,
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-cell-wrapper .text-sm {
+    font-size: 14px;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-cell .text-xs,
+  .ag-pulse-grid.pulse-signal-grid-host--split .ag-cell-wrapper .text-xs {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .pulse-signal-grid-host .ag-center-cols-viewport,
+  .pulse-signal-grid-host .ag-body-horizontal-scroll-viewport {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pulse-signal-grid-host .ag-pinned-left-cols-container,
+  .pulse-signal-grid-host .ag-pinned-left-header {
+    box-shadow: 8px 0 18px -10px hsl(var(--foreground) / 0.14);
+  }
+
+  .pulse-signal-table-wrapper:not(.pulse-signal-scroll-at-end)::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    pointer-events: none;
+    z-index: 6;
+    background: linear-gradient(to left, hsl(var(--background)), transparent);
+    transition: opacity 0.2s ease;
+  }
+
+  .pulse-signal-table-wrapper.pulse-signal-scroll-at-end::after {
+    opacity: 0;
+  }
+
+  /* 모바일: 컬럼 패딩 축소 + 숫자 우측 / 비숫자 가운데 (adaptPulseColumnDefsNarrow 클래스) */
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell,
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell {
+    padding-inline: 5px;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--center,
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--center .ag-cell-wrapper {
+    justify-content: center;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--numeric,
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--numeric .ag-cell-wrapper {
+    justify-content: flex-end;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell.pulse-mobile-header--numeric {
+    justify-content: center;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell.pulse-mobile-header--numeric .ag-header-cell-comp-wrapper,
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell.pulse-mobile-header--numeric .ag-header-cell-label {
+    justify-content: center;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell.pulse-mobile-header--numeric .ag-header-cell-text {
+    text-align: center;
+  }
+
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--symbol,
+  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--symbol .ag-cell-wrapper {
+    justify-content: flex-start;
+  }
+}
+
+/* Pulse / 시그널 AG Grid — 호버·포커스·선택: 전역 레드 링 대신 토큰 기반 절제된 대비 */
+.ag-pulse-grid .ag-row-hover:not(.ag-row-focus) .ag-cell,
+.signal-table .ag-row-hover:not(.ag-row-focus) .ag-cell {
+  background-color: hsl(var(--muted) / 0.32) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 0.14s ease, backdrop-filter 0.14s ease;
+}
+
+.ag-pulse-grid .ag-pinned-left-cols-container .ag-row-hover:not(.ag-row-focus) .ag-cell,
+.signal-table .ag-pinned-left-cols-container .ag-row-hover:not(.ag-row-focus) .ag-cell {
+  background-color: hsl(var(--muted) / 0.42) !important;
+}
+
+/* 클릭 포커스(마우스): 외곽 링 제거 — 행만 은은한 틴트 */
+.ag-pulse-grid *:focus:not(:focus-visible),
+.signal-table .ag-root-wrapper *:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none;
+}
+
+/* 키보드 포커스: 정보색 링 — 레드 링과 분리 */
+.ag-pulse-grid *:focus-visible,
+.signal-table .ag-root-wrapper *:focus-visible {
+  outline: 1px solid hsl(var(--info) / 0.55) !important;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* 행 포커스(선택 직후): 좌측 액센트 + 배경 (링 없음) */
+.ag-pulse-grid .ag-row.ag-row-focus .ag-cell,
+.signal-table .ag-row.ag-row-focus .ag-cell {
+  background-color: hsl(var(--primary) / 0.06) !important;
+}
+
+.ag-pulse-grid .ag-row.ag-row-focus,
+.signal-table .ag-row.ag-row-focus {
+  box-shadow: inset 3px 0 0 0 hsl(var(--primary) / 0.38);
+}
+
+.ag-pulse-grid .ag-row.ag-row-selected .ag-cell,
+.signal-table .ag-row.ag-row-selected .ag-cell {
+  background-color: hsl(var(--primary) / 0.09) !important;
+}
+
+.ag-pulse-grid .ag-row.ag-row-selected,
+.signal-table .ag-row.ag-row-selected {
+  box-shadow: inset 3px 0 0 0 hsl(var(--primary) / 0.55);
+}
+
+/* 네이티브 HTML signal 테이블만 — AG Grid Pulse는 ColDef·autosize로 폭 제어 */
+.signal-table.signal-table-native .col-price {
+  min-width: 80px;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signal-table.signal-table-native {
+  table-layout: fixed;
+}
+
+@media (max-width: 1024px) {
+  .signal-table .ag-cell,
+  .signal-table .ag-header-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .signal-table .ag-cell-wrapper {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .signal-table.signal-table-native th,
+  .signal-table.signal-table-native td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* AIX-6 v7 트렌드 보드 — SRD-005 (히트맵 2단계, OI 배경, 공감 row) */
+.trend-hm-1-up {
+  background-color: hsl(var(--destructive) / 0.05);
+}
+.trend-hm-2-up {
+  background-color: hsl(var(--destructive) / 0.12);
+}
+.trend-hm-1-down {
+  background-color: hsl(217 91% 55% / 0.05);
+}
+.trend-hm-2-down {
+  background-color: hsl(217 91% 55% / 0.12);
+}
+.trend-oi-long-favor {
+  background-color: hsl(var(--semantic-bull) / 0.14);
+}
+.trend-oi-short-favor {
+  background-color: hsl(var(--semantic-bear) / 0.14);
+}
+.trend-oi-neutral {
+  background-color: hsl(var(--muted) / 0.45);
+}
+.trend-row-kairos {
+  border-left: 1px solid rgba(167, 139, 250, 0.35);
+}

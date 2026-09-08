@@ -1,0 +1,12 @@
+{
+  "settings": {
+    "title": "交易设置",
+    "capital": "交易资本",
+    "capitalHelp": "每个仓位投资的基础资本。将应用杠杆。",
+    "leverage": "杠杆",
+    "leverageHelp": "杠杆越高，利润和损失都越大。请谨慎设置。",
+    "positionSize": "仓位大小",
+    "positionFormula": "{capital} × {leverage}x"
+  }
+}
+

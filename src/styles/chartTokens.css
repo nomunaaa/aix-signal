@@ -1,0 +1,32 @@
+/* AiXSignal Chart Design Tokens - Single Source of Truth */
+:root {
+  /* ==================== TREND COLORS ==================== */
+  --ax-bull: #e53935;        /* 상승(빨강) */
+  --ax-neutral: #9e9e9e;     /* 보합(회색) */
+  --ax-bear: #1e88e5;        /* 하락(파랑) */
+
+  /* ==================== VOLATILITY COLORS ==================== */
+  --ax-vol-low: #9e9e9e;     /* 낮음(회색) */
+  --ax-vol-med: #ffca28;     /* 중간(노랑) */
+  --ax-vol-high: #e53935;    /* 높음(빨강) */
+
+  /* ==================== SIGNAL MARKERS ==================== */
+  --ax-marker-long: #e53935;   /* Long 포지션 */
+  --ax-marker-short: #1e88e5;  /* Short 포지션 */
+
+  /* ==================== UI ELEMENTS ==================== */
+  --ax-border-weak: rgba(255, 255, 255, 0.12);
+  --ax-grid-line: rgba(255, 255, 255, 0.08);
+  --ax-bg-tint-alpha: 0.12;    /* 장기추세 배경 틴트 알파값 */
+  --ax-tooltip-bg: rgba(0, 0, 0, 0.85);
+  --ax-tooltip-text: #ffffff;
+
+  /* ==================== ANIMATION ==================== */
+  --ax-interpolation-ms: 350;  /* amCharts 보간 지속시간 (ms) */
+}
+
+/* Dark mode overrides */
+.dark {
+  --ax-border-weak: rgba(255, 255, 255, 0.15);
+  --ax-grid-line: rgba(255, 255, 255, 0.1);
+}

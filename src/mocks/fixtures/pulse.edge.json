@@ -1,0 +1,65 @@
+{
+  "as_of": "2025-02-14T12:00:00.000Z",
+  "strategy_id": "S1",
+  "signals": [
+    {
+      "cycle_id": "cyc-edge-empty-opts",
+      "symbol": "BTCUSDT",
+      "direction": "long",
+      "entry_price": 97000,
+      "current_price": 97000,
+      "profit_amount": 0,
+      "profit_rate": 0,
+      "entry_time": "2025-02-14T12:00:00.000Z",
+      "section_time": "2025-02-14T12:00:00.000Z",
+      "section": "NEW_SIGNAL"
+    },
+    {
+      "cycle_id": "cyc-edge-high-vol",
+      "symbol": "ETHUSDT",
+      "direction": "long",
+      "entry_price": 3600,
+      "current_price": 3960,
+      "profit_amount": 360,
+      "profit_rate": 10,
+      "entry_time": "2025-02-14T11:30:00.000Z",
+      "section_time": "2025-02-14T11:55:00.000Z",
+      "section": "TREND_TP",
+      "strategy_id": "S2",
+      "barinterval": "1m",
+      "section_fields": { "locked_amount": 180 }
+    },
+    {
+      "cycle_id": "cyc-edge-high-vol-loss",
+      "symbol": "SOLUSDT",
+      "direction": "short",
+      "entry_price": 150,
+      "current_price": 165,
+      "profit_amount": -15,
+      "profit_rate": -10,
+      "entry_time": "2025-02-14T11:20:00.000Z",
+      "section_time": "2025-02-14T11:50:00.000Z",
+      "section": "TREND_DISCOUNT",
+      "strategy_id": "S3",
+      "barinterval": "1m"
+    },
+    {
+      "cycle_id": "cyc-edge-closing-soon",
+      "symbol": "XRPUSDT",
+      "direction": "long",
+      "entry_price": 0.62,
+      "current_price": 0.6448,
+      "profit_amount": 0.0248,
+      "profit_rate": 4,
+      "entry_time": "2025-02-14T11:40:00.000Z",
+      "section_time": "2025-02-14T11:58:00.000Z",
+      "section": "TREND_TP",
+      "strategy_id": "S2",
+      "barinterval": "1m",
+      "section_fields": {
+        "locked_amount": 0.0124,
+        "countdown_sec": 45
+      }
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "card": {
+    "viewDetails": "詳細を見る",
+    "signalDna": "シグナルDNA",
+    "consensus": "コンセンサス",
+    "enterTrade": "取引開始",
+    "exitTrade": "取引終了"
+  },
+  "pnl": {
+    "grossRoe": "総収益率",
+    "netRoe": "純収益率",
+    "totalPnl": "総損益",
+    "unrealizedPnl": "未実現損益"
+  },
+  "trendPnl": {
+    "title": "トレンド別累積損益",
+    "totalPnl": "累積損益",
+    "avgRoe": "平均ROE",
+    "winRate": "勝率",
+    "empty": "シグナルデータなし"
+  },
+  "stats": {
+    "avgHoldTimeLabel": "平均保有時間",
+    "avgHoldTimeSubtitle": "本日決済基準",
+    "signals24hLabel": "24時間のシグナル数",
+    "signals24hSubtitle": "直近24時間",
+    "hourlyVolatilityLabel": "時間当たりの変動性",
+    "hourlyVolatilitySubtitle": "カテゴリ移動"
+  },
+  "table": {
+    "reset": "基本ソート",
+    "empty": "シグナルがありません",
+    "new": "新規",
+    "columns": {
+      "asset": "資産",
+      "currentPrice": "現在値",
+      "entryPrice": "エントリー",
+      "pnl": "損益",
+      "holdTime": "保有時間",
+      "movedAt": "移動時間",
+      "fromCategory": "以前のポジション",
+      "status": "状態",
+      "mismatchType": "トレンド不一致"
+    },
+    "mismatch": {
+      "long": "長期トレンド",
+      "short": "短期トレンド"
+    }
+  }
+}
+

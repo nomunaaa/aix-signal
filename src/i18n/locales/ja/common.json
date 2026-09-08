@@ -1,0 +1,46 @@
+{
+  "app": {
+    "name": "AiXSignal",
+    "tagline": "AI駆動の取引シグナル"
+  },
+  "navigation": {
+    "home": "ホーム",
+    "signals": "シグナル",
+    "performance": "パフォーマンス",
+    "insights": "インサイト",
+    "simulation": "シミュレーション"
+  },
+  "buttons": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "delete": "削除",
+    "edit": "編集",
+    "close": "閉じる",
+    "back": "戻る",
+    "next": "次へ",
+    "submit": "送信",
+    "retry": "再試行"
+  },
+  "common": {
+    "loading": "読み込み中...",
+    "loadingApp": "アプリケーションを読み込み中...",
+    "error": "エラー",
+    "success": "成功",
+    "warning": "警告",
+    "info": "情報",
+    "noData": "データなし",
+    "search": "検索",
+    "filter": "フィルター",
+    "sort": "並び替え"
+  },
+  "time": {
+    "today": "今日",
+    "yesterday": "昨日",
+    "week": "今週",
+    "month": "今月",
+    "year": "今年",
+    "all": "全期間"
+  }
+}
+

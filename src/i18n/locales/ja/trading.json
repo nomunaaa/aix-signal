@@ -1,0 +1,12 @@
+{
+  "settings": {
+    "title": "取引設定",
+    "capital": "取引資本",
+    "capitalHelp": "ポジションごとに投資する基本資本です。レバレッジが適用されます。",
+    "leverage": "レバレッジ",
+    "leverageHelp": "レバレッジが高いほど利益と損失の両方が大きくなります。慎重に設定してください。",
+    "positionSize": "ポジションサイズ",
+    "positionFormula": "{capital} × {leverage}x"
+  }
+}
+

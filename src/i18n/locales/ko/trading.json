@@ -1,0 +1,12 @@
+{
+  "settings": {
+    "title": "거래 설정",
+    "capital": "투자 자본금",
+    "capitalHelp": "한 포지션에 투입할 기본 자본금입니다. 레버리지가 적용됩니다.",
+    "leverage": "레버리지",
+    "leverageHelp": "레버리지가 높을수록 수익과 손실이 모두 커집니다. 신중하게 설정하세요.",
+    "positionSize": "포지션 크기",
+    "positionFormula": "{capital} × {leverage}x"
+  }
+}
+

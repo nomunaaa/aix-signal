@@ -1,0 +1,51 @@
+{
+  "card": {
+    "viewDetails": "查看详情",
+    "signalDna": "信号DNA",
+    "consensus": "共识",
+    "enterTrade": "进入交易",
+    "exitTrade": "退出交易"
+  },
+  "pnl": {
+    "grossRoe": "总收益率",
+    "netRoe": "净收益率",
+    "totalPnl": "总盈亏",
+    "unrealizedPnl": "未实现盈亏"
+  },
+  "trendPnl": {
+    "title": "趋势盈亏汇总",
+    "totalPnl": "累计盈亏",
+    "avgRoe": "平均ROE",
+    "winRate": "胜率",
+    "empty": "无信号数据"
+  },
+  "stats": {
+    "avgHoldTimeLabel": "平均持仓时间",
+    "avgHoldTimeSubtitle": "今日平仓",
+    "signals24hLabel": "24小时信号数",
+    "signals24hSubtitle": "最近24小时",
+    "hourlyVolatilityLabel": "每小时波动",
+    "hourlyVolatilitySubtitle": "类别移动"
+  },
+  "table": {
+    "reset": "重置排序",
+    "empty": "暂无信号",
+    "new": "新增",
+    "columns": {
+      "asset": "资产",
+      "currentPrice": "现价",
+      "entryPrice": "入场价",
+      "pnl": "盈亏",
+      "holdTime": "持仓时间",
+      "movedAt": "移动时间",
+      "fromCategory": "之前的仓位",
+      "status": "状态",
+      "mismatchType": "趋势不一致"
+    },
+    "mismatch": {
+      "long": "长期趋势",
+      "short": "短期趋势"
+    }
+  }
+}
+

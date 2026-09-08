@@ -1,0 +1,51 @@
+{
+  "card": {
+    "viewDetails": "상세보기",
+    "signalDna": "시그널 DNA",
+    "consensus": "컨센서스",
+    "enterTrade": "모의 진입",
+    "exitTrade": "모의 청산"
+  },
+  "pnl": {
+    "grossRoe": "순수 수익률",
+    "netRoe": "최종 수익률",
+    "totalPnl": "총 손익",
+    "unrealizedPnl": "미실현 손익"
+  },
+  "trendPnl": {
+    "title": "추세별 누적 손익",
+    "totalPnl": "누적 손익",
+    "avgRoe": "평균 ROE",
+    "winRate": "승률",
+    "empty": "시그널 데이터가 없습니다"
+  },
+  "stats": {
+    "avgHoldTimeLabel": "평균 진입-청산 시간",
+    "avgHoldTimeSubtitle": "오늘 청산 기준",
+    "signals24hLabel": "24시간 시그널 횟수",
+    "signals24hSubtitle": "최근 24시간",
+    "hourlyVolatilityLabel": "시간당 변동성",
+    "hourlyVolatilitySubtitle": "카테고리 이동"
+  },
+  "table": {
+    "reset": "기본정렬",
+    "empty": "시그널이 없습니다",
+    "new": "신규",
+    "columns": {
+      "asset": "자산",
+      "currentPrice": "현재가",
+      "entryPrice": "진입가",
+      "pnl": "손익액",
+      "holdTime": "보유시간",
+      "movedAt": "이동시간",
+      "fromCategory": "이전 포지션",
+      "status": "상태",
+      "mismatchType": "불일치 추세"
+    },
+    "mismatch": {
+      "long": "장기추세",
+      "short": "단기추세"
+    }
+  }
+}
+
