@@ -42,18 +42,37 @@ interface TrendEvent {
   value: number;
 }
 
-async function fetchKlines(symbol: string, limit = 200): Promise<Candle[]> {
-  const url = getBinanceRestUrl(`/klines?symbol=${symbol}&interval=1m&limit=${limit}`, 'futures');
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`klines ${res.status}`);
-  const raw = (await res.json()) as Array<[number, string, string, string, string, ...unknown[]]>;
-  return raw.map((k) => ({
-    time: Math.floor(k[0] / 1000) as UTCTimestamp,
-    open: Number(k[1]),
-    high: Number(k[2]),
-    low: Number(k[3]),
-    close: Number(k[4]),
-  }));
+const MAX_KLINES_PER_REQUEST = 1500;
+
+/** rangeMinutes worth of 1m candles, paginating via startTime when it exceeds Binance's 1500-per-request cap. */
+async function fetchKlines(symbol: string, rangeMinutes: number): Promise<Candle[]> {
+  const now = Date.now();
+  let cursor = now - rangeMinutes * 60_000;
+  const candles: Candle[] = [];
+
+  for (;;) {
+    const url = getBinanceRestUrl(
+      `/klines?symbol=${symbol}&interval=1m&startTime=${cursor}&limit=${MAX_KLINES_PER_REQUEST}`,
+      'futures'
+    );
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`klines ${res.status}`);
+    const raw = (await res.json()) as Array<[number, string, string, string, string, ...unknown[]]>;
+    if (raw.length === 0) break;
+    for (const k of raw) {
+      candles.push({
+        time: Math.floor(k[0] / 1000) as UTCTimestamp,
+        open: Number(k[1]),
+        high: Number(k[2]),
+        low: Number(k[3]),
+        close: Number(k[4]),
+      });
+    }
+    const lastOpenMs = raw[raw.length - 1][0];
+    if (raw.length < MAX_KLINES_PER_REQUEST || lastOpenMs + 60_000 >= now) break;
+    cursor = lastOpenMs + 60_000;
+  }
+  return candles;
 }
 
 /** 단기추세 캔들 색상 오버라이드 — useBinanceChart.ts의 shortCandleColorFromValue와 동일 매핑. */
@@ -138,9 +157,10 @@ async function fetchSignalEvents(symbol: string, sinceMs: number): Promise<Signa
 
 interface MultiChartTileProps {
   symbol: string;
+  rangeMinutes: number;
 }
 
-export function MultiChartTile({ symbol }: MultiChartTileProps) {
+export function MultiChartTile({ symbol, rangeMinutes }: MultiChartTileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -194,7 +214,7 @@ export function MultiChartTile({ symbol }: MultiChartTileProps) {
     let cancelled = false;
     setError(null);
 
-    fetchKlines(symbol)
+    fetchKlines(symbol, rangeMinutes)
       .then(async (candles) => {
         if (cancelled || !seriesRef.current || candles.length === 0) return;
         const sinceMs = (candles[0].time as number) * 1000;
@@ -243,7 +263,7 @@ export function MultiChartTile({ symbol }: MultiChartTileProps) {
       cancelled = true;
       ws.close();
     };
-  }, [symbol]);
+  }, [symbol, rangeMinutes]);
 
   return (
     <div className="relative h-full w-full">

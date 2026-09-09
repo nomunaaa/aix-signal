@@ -1,8 +1,11 @@
 'use client';
 
 /**
- * /multichart — fixed 6-symbol chart grid (1m only, first pass).
+ * /multichart — fixed 6-symbol chart grid (1m candles, first pass).
  * No drag/resize/save-layout; each tile has its own symbol picker.
+ * One shared time-range control applies to all 6 tiles (matching the
+ * timeframe pills on chart1m/chart10m, which clamp the visible range
+ * rather than switching the candle interval).
  */
 
 import { useState } from 'react';
@@ -18,8 +21,18 @@ import { MultiChartTile } from '@/components/multichart/MultiChartTile';
 
 const DEFAULT_SYMBOLS = [...VOLUME_TOP5_SYMBOLS, 'DOGEUSDT'];
 
+const RANGE_PRESETS = [
+  { label: '1H', minutes: 60 },
+  { label: '4H', minutes: 240 },
+  { label: '12H', minutes: 720 },
+  { label: '1D', minutes: 1440 },
+  { label: '3D', minutes: 4320 },
+  { label: '1W', minutes: 10080 },
+] as const;
+
 export default function MultiChartGrid() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS);
+  const [rangeMinutes, setRangeMinutes] = useState<number>(240);
 
   const setSymbolAt = (index: number, symbol: string) => {
     setSymbols((prev) => prev.map((s, i) => (i === index ? symbol : s)));
@@ -27,11 +40,29 @@ export default function MultiChartGrid() {
 
   return (
     <div className="flex min-h-[calc(100vh-var(--header-height))] flex-col">
-      <div className="border-b border-border px-4 py-3">
-        <h1 className="text-base font-semibold text-foreground">멀티차트</h1>
-        <p className="text-xs text-muted-foreground">
-          6개 종목 1분봉을 동시에 확인합니다.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div>
+          <h1 className="text-base font-semibold text-foreground">멀티차트</h1>
+          <p className="text-xs text-muted-foreground">
+            6개 종목 1분봉을 동시에 확인합니다. 추세 색상·시그널 화살표 포함.
+          </p>
+        </div>
+        <div className="flex items-center gap-1 rounded-md border border-border bg-card/50 p-1">
+          {RANGE_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => setRangeMinutes(preset.minutes)}
+              className={`h-7 rounded px-2.5 text-xs font-medium transition-colors ${
+                rangeMinutes === preset.minutes
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid flex-1 grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -53,7 +84,7 @@ export default function MultiChartGrid() {
               </SelectContent>
             </Select>
             <div className="mt-2 min-h-0 flex-1">
-              <MultiChartTile symbol={symbol} />
+              <MultiChartTile symbol={symbol} rangeMinutes={rangeMinutes} />
             </div>
           </div>
         ))}
