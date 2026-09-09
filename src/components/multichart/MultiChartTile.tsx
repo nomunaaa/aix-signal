@@ -98,17 +98,30 @@ async function fetchTrendEvents(symbol: string, sinceMs: number): Promise<TrendE
   return data.map((row) => ({ tsMs: new Date(row.ts).getTime(), value: row.value }));
 }
 
+/**
+ * 마지막 추세 이벤트의 유효 구간 상한.
+ * 원본 buildShortRanges는 마지막 구간을 POSITIVE_INFINITY로 열어 두는데,
+ * 그건 이벤트가 계속 들어온다는 전제다. 파이프라인이 멈춘 지금 그대로 쓰면
+ * 며칠 치 캔들이 전부 한 색으로 칠해진다 — 죽은 값을 무한히 신뢰하지 않는다.
+ */
+const TREND_MAX_CARRY_MS = 24 * 60 * 60 * 1000;
+
 function activeTrendValue(candleTimeSec: number, events: TrendEvent[]): number | null {
   const targetMs = candleTimeSec * 1000;
   let active: number | null = null;
+  let activeTs = 0;
   for (const e of events) {
     if (e.tsMs > targetMs) break;
     active = e.value;
+    activeTs = e.tsMs;
   }
+  if (active == null) return null;
+  if (targetMs - activeTs > TREND_MAX_CARRY_MS) return null;
   return active;
 }
 
-function withTrendColor(candle: Candle, events: TrendEvent[]): Candle {
+function withTrendColor(candle: Candle, events: TrendEvent[], enabled: boolean): Candle {
+  if (!enabled) return candle;
   const value = activeTrendValue(candle.time as number, events);
   const color = value != null ? shortTrendColor(value) : null;
   if (!color) return candle;
@@ -169,14 +182,18 @@ function buildMarkers(
 interface MultiChartTileProps {
   symbol: string;
   interval: ChartInterval;
+  /** 추세 색상 오버레이 — /chart의 'Trend short' 체크박스와 같은 역할. 기본은 일반 캔들. */
+  showTrend: boolean;
 }
 
-export function MultiChartTile({ symbol, interval }: MultiChartTileProps) {
+export function MultiChartTile({ symbol, interval, showTrend }: MultiChartTileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const trendEventsRef = useRef<TrendEvent[]>([]);
+  const showTrendRef = useRef(showTrend);
+  showTrendRef.current = showTrend;
   const [error, setError] = useState<string | null>(null);
   const [signalCount, setSignalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -240,7 +257,7 @@ export function MultiChartTile({ symbol, interval }: MultiChartTileProps) {
         ]);
         if (cancelled || !seriesRef.current) return;
         trendEventsRef.current = trendEvents;
-        seriesRef.current.setData(candles.map((c) => withTrendColor(c, trendEvents)));
+        seriesRef.current.setData(candles.map((c) => withTrendColor(c, trendEvents, showTrend)));
         chartRef.current?.timeScale().fitContent();
         const candleTimes = new Set(candles.map((c) => c.time as number));
         const markers = buildMarkers(signalRows, candleTimes, intervalSec);
@@ -273,7 +290,8 @@ export function MultiChartTile({ symbol, interval }: MultiChartTileProps) {
               low: Number(k.l),
               close: Number(k.c),
             },
-            trendEventsRef.current
+            trendEventsRef.current,
+            showTrendRef.current
           )
         );
       } catch {
@@ -286,7 +304,7 @@ export function MultiChartTile({ symbol, interval }: MultiChartTileProps) {
       cancelled = true;
       ws.close();
     };
-  }, [symbol, interval]);
+  }, [symbol, interval, showTrend]);
 
   return (
     <div className="relative h-full w-full">

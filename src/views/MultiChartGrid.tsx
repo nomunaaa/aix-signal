@@ -27,6 +27,7 @@ const DEFAULT_SYMBOLS = [...VOLUME_TOP5_SYMBOLS, 'DOGEUSDT'];
 export default function MultiChartGrid() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS);
   const [interval, setInterval] = useState<ChartInterval>('1m');
+  const [showTrend, setShowTrend] = useState(false);
 
   const setSymbolAt = (index: number, symbol: string) => {
     setSymbols((prev) => prev.map((s, i) => (i === index ? symbol : s)));
@@ -38,25 +39,27 @@ export default function MultiChartGrid() {
         <div>
           <h1 className="text-base font-semibold text-foreground">멀티차트</h1>
           <p className="text-xs text-muted-foreground">
-            6개 종목을 동시에 확인합니다. 추세 색상 · 시그널 화살표 포함.
+            6개 종목을 동시에 확인합니다. 시그널 화살표 · 추세 색상(선택) 지원.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-sm bg-[#22c55e]" />
-              상승추세
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-sm bg-[#9ca3af]" />
-              중립
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block h-2 w-2 rounded-sm bg-[#ef4444]" />
-              하락추세
-            </span>
-          </div>
+          <label className="flex cursor-pointer select-none items-center gap-1.5 text-[11px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={showTrend}
+              onChange={(e) => setShowTrend(e.target.checked)}
+              className="h-3.5 w-3.5 accent-primary"
+            />
+            추세 색상 (단기추세)
+            {showTrend ? (
+              <span className="ml-1 flex items-center gap-1">
+                <span className="inline-block h-2 w-2 rounded-sm bg-[#22c55e]" />
+                <span className="inline-block h-2 w-2 rounded-sm bg-[#9ca3af]" />
+                <span className="inline-block h-2 w-2 rounded-sm bg-[#ef4444]" />
+              </span>
+            ) : null}
+          </label>
 
           <div className="flex items-center gap-1 rounded-md border border-border bg-card/50 p-1">
             {CHART_INTERVALS.map((tf) => (
@@ -96,7 +99,7 @@ export default function MultiChartGrid() {
               </SelectContent>
             </Select>
             <div className="mt-2 min-h-0 flex-1">
-              <MultiChartTile symbol={symbol} interval={interval} />
+              <MultiChartTile symbol={symbol} interval={interval} showTrend={showTrend} />
             </div>
           </div>
         ))}
