@@ -1,11 +1,10 @@
 'use client';
 
 /**
- * /multichart — fixed 6-symbol chart grid (1m candles, first pass).
- * No drag/resize/save-layout; each tile has its own symbol picker.
- * One shared time-range control applies to all 6 tiles (matching the
- * timeframe pills on chart1m/chart10m, which clamp the visible range
- * rather than switching the candle interval).
+ * /multichart — 6-symbol chart grid.
+ * Shared timeframe switches the candle interval for all tiles (same
+ * 1m/5m/15m/1h/4h/1d set as /chart's TF bar). Each tile has its own
+ * symbol picker and draws trend colors + signal arrows.
  */
 
 import { useState } from 'react';
@@ -17,22 +16,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ALL_SYMBOLS, VOLUME_TOP5_SYMBOLS } from '@/config/symbols';
-import { MultiChartTile } from '@/components/multichart/MultiChartTile';
+import {
+  MultiChartTile,
+  CHART_INTERVALS,
+  type ChartInterval,
+} from '@/components/multichart/MultiChartTile';
 
 const DEFAULT_SYMBOLS = [...VOLUME_TOP5_SYMBOLS, 'DOGEUSDT'];
 
-const RANGE_PRESETS = [
-  { label: '1H', minutes: 60 },
-  { label: '4H', minutes: 240 },
-  { label: '12H', minutes: 720 },
-  { label: '1D', minutes: 1440 },
-  { label: '3D', minutes: 4320 },
-  { label: '1W', minutes: 10080 },
-] as const;
-
 export default function MultiChartGrid() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS);
-  const [rangeMinutes, setRangeMinutes] = useState<number>(240);
+  const [interval, setInterval] = useState<ChartInterval>('1m');
 
   const setSymbolAt = (index: number, symbol: string) => {
     setSymbols((prev) => prev.map((s, i) => (i === index ? symbol : s)));
@@ -44,24 +38,42 @@ export default function MultiChartGrid() {
         <div>
           <h1 className="text-base font-semibold text-foreground">멀티차트</h1>
           <p className="text-xs text-muted-foreground">
-            6개 종목 1분봉을 동시에 확인합니다. 추세 색상·시그널 화살표 포함.
+            6개 종목을 동시에 확인합니다. 추세 색상 · 시그널 화살표 포함.
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-md border border-border bg-card/50 p-1">
-          {RANGE_PRESETS.map((preset) => (
-            <button
-              key={preset.label}
-              type="button"
-              onClick={() => setRangeMinutes(preset.minutes)}
-              className={`h-7 rounded px-2.5 text-xs font-medium transition-colors ${
-                rangeMinutes === preset.minutes
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-sm bg-[#22c55e]" />
+              상승추세
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-sm bg-[#9ca3af]" />
+              중립
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block h-2 w-2 rounded-sm bg-[#ef4444]" />
+              하락추세
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 rounded-md border border-border bg-card/50 p-1">
+            {CHART_INTERVALS.map((tf) => (
+              <button
+                key={tf}
+                type="button"
+                onClick={() => setInterval(tf)}
+                className={`h-7 rounded px-2.5 text-xs font-medium transition-colors ${
+                  interval === tf
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                }`}
+              >
+                {tf}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -84,7 +96,7 @@ export default function MultiChartGrid() {
               </SelectContent>
             </Select>
             <div className="mt-2 min-h-0 flex-1">
-              <MultiChartTile symbol={symbol} rangeMinutes={rangeMinutes} />
+              <MultiChartTile symbol={symbol} interval={interval} />
             </div>
           </div>
         ))}
