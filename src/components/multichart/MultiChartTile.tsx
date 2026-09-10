@@ -15,6 +15,10 @@
 
 import { useEffect, useRef } from 'react';
 import { useBinanceChart } from '@/views/Multiplecharts/useBinanceChart';
+import { useMockTrade } from '@/views/Multiplecharts/useMockTrade';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSharedSimulationInput } from '@/hooks/useSharedSimulationInput';
+import { mockMarginFromPct } from '@/lib/mockTradeCapital';
 import type { ChartTradingCategoryFilter, ChartTrendMode } from '@/views/Multiplecharts/types';
 
 export const MULTICHART_TF_KEYS = ['2H', '4H', '6H', '5D'] as const;
@@ -44,13 +48,15 @@ export function MultiChartTile({
 }: MultiChartTileProps) {
   const {
     refs: { containerRef, overlayRef, signalSvgOverlayRef, mockTradeSvgOverlayRef },
-    state: { initialLoading, signalEvents },
+    state: { initialLoading, signalEvents, lastPrice, lastCandleTime },
     actions: {
       handleTimeframeClick,
       setShowTrendShort,
       setShowTrendLong,
       setShowBollinger,
       forceResize,
+      setMockTradeOverlay,
+      clearMockTradeOverlay,
     },
   } = useBinanceChart(symbol, barInterval, {
     tradingCategoryFilter,
@@ -98,6 +104,40 @@ export function MultiChartTile({
     return () => ro.disconnect();
   }, [containerRef]);
 
+  const { isAuthenticated } = useAuth();
+  const [simulationInput] = useSharedSimulationInput();
+
+  const {
+    mockOpen,
+    mockPhase,
+    mockDirection,
+    setMockDirection,
+    mockProfitPct,
+    remainingPct,
+    mockSaving,
+    fills,
+    handleMockEntry,
+    handleCloseAll,
+  } = useMockTrade({ symbol, lastPrice, lastCandleTime, isAuthenticated, barInterval });
+
+  const inPosition = mockOpen && mockPhase !== 'entry' && remainingPct > 0;
+
+  // 진입/청산 체결점 오버레이 — fills는 이미 MockTradeFillPoint[]라 그대로 넘긴다 (Chart1m과 동일).
+  useEffect(() => {
+    if (mockPhase === 'entry' || fills.length === 0) {
+      clearMockTradeOverlay();
+      return;
+    }
+    setMockTradeOverlay({ fills, direction: mockDirection });
+  }, [mockPhase, fills, mockDirection, setMockTradeOverlay, clearMockTradeOverlay]);
+
+  const entryMargin = mockMarginFromPct(simulationInput.capitalRatio);
+
+  const onEntry = (direction: 'long' | 'short') => {
+    setMockDirection(direction);
+    void handleMockEntry(direction, undefined, entryMargin, simulationInput.leverage);
+  };
+
   return (
     <div className="relative h-full w-full overflow-hidden">
       {/* 순서·z-index 모두 Chart1m.tsx와 동일 */}
@@ -105,6 +145,59 @@ export function MultiChartTile({
       <div ref={signalSvgOverlayRef} className="pointer-events-none absolute inset-0 z-20" />
       <div ref={mockTradeSvgOverlayRef} className="pointer-events-none absolute inset-0 z-20" />
       <div ref={containerRef} className="absolute inset-0 z-0" />
+
+      <div className="absolute bottom-1 left-1 right-1 z-30 flex items-center gap-1">
+        {inPosition ? (
+          <>
+            <span
+              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                mockDirection === 'long'
+                  ? 'bg-emerald-500/15 text-emerald-400'
+                  : 'bg-rose-500/15 text-rose-400'
+              }`}
+            >
+              {mockDirection === 'long' ? '롱' : '숏'} {remainingPct}%
+            </span>
+            <span
+              className={`rounded bg-background/70 px-1.5 py-0.5 text-[10px] font-mono font-semibold tabular-nums ${
+                (mockProfitPct ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+              }`}
+            >
+              {(mockProfitPct ?? 0) >= 0 ? '+' : ''}
+              {(mockProfitPct ?? 0).toFixed(2)}%
+            </span>
+            <button
+              type="button"
+              disabled={mockSaving}
+              onClick={() => void handleCloseAll()}
+              className="ml-auto rounded bg-muted/80 px-2 py-0.5 text-[10px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            >
+              전량청산
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              disabled={!isAuthenticated || mockSaving || !lastPrice}
+              onClick={() => onEntry('long')}
+              className="rounded bg-emerald-600/80 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+              title={isAuthenticated ? '모의매매 롱 진입' : '로그인 후 이용할 수 있습니다'}
+            >
+              매수·롱
+            </button>
+            <button
+              type="button"
+              disabled={!isAuthenticated || mockSaving || !lastPrice}
+              onClick={() => onEntry('short')}
+              className="rounded bg-rose-600/80 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+              title={isAuthenticated ? '모의매매 숏 진입' : '로그인 후 이용할 수 있습니다'}
+            >
+              매도·숏
+            </button>
+          </>
+        )}
+      </div>
 
       {initialLoading ? (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/60 text-[11px] text-muted-foreground">
