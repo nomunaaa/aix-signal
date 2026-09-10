@@ -13,7 +13,7 @@
  * remain map 1:1 onto the hook's own actions/state.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useBinanceChart } from '@/views/Multiplecharts/useBinanceChart';
 import type { ChartTradingCategoryFilter, ChartTrendMode } from '@/views/Multiplecharts/types';
 
@@ -70,18 +70,33 @@ export function MultiChartTile({
     setShowBollinger(showBollinger);
   }, [showBollinger, setShowBollinger]);
 
+  /**
+   * handleTimeframeClick / forceResize는 훅에서 useCallback으로 감싸여 있지 않아
+   * 렌더마다 새 함수가 된다. 이걸 그대로 deps에 넣으면 매 렌더마다 다시 실행돼
+   * applyTimeframe이 보이는 구간을 계속 리셋한다 — 드래그로 차트를 못 옮기던 원인.
+   * 최신 함수는 ref로 들고, 실행은 값이 실제로 바뀔 때만 한다.
+   */
+  const handleTimeframeClickRef = useRef(handleTimeframeClick);
+  handleTimeframeClickRef.current = handleTimeframeClick;
+  const forceResizeRef = useRef(forceResize);
+  forceResizeRef.current = forceResize;
+
+  // 훅 기본값이 '6H'라 초기값과 같으면 마운트 시에는 건드리지 않는다.
+  const appliedTfRef = useRef<MultichartTfKey>(timeframe);
   useEffect(() => {
-    handleTimeframeClick(timeframe);
-  }, [timeframe, handleTimeframeClick]);
+    if (appliedTfRef.current === timeframe) return;
+    appliedTfRef.current = timeframe;
+    handleTimeframeClickRef.current(timeframe);
+  }, [timeframe]);
 
   // 타일은 그리드 리플로우로 크기가 바뀌므로 컨테이너 리사이즈를 훅에 알린다.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => forceResize());
+    const ro = new ResizeObserver(() => forceResizeRef.current());
     ro.observe(el);
     return () => ro.disconnect();
-  }, [containerRef, forceResize]);
+  }, [containerRef]);
 
   return (
     <div className="relative h-full w-full overflow-hidden">

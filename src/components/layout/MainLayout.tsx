@@ -69,8 +69,11 @@ const MainLayout = ({
 
       <main
         className={cn(
+          // 차트 라우트는 뷰포트 높이에 맞춘 앱 셸이지만, Chart1m 내부가
+          // min-h-[900px]를 요구한다. overflow-hidden이면 창이 그보다 낮을 때
+          // 상단 필터 바가 잘린 채 스크롤로도 닿지 않는다 → auto로 열어 둔다.
           isChartRoute
-            ? 'flex h-full min-h-0 flex-1 flex-col overflow-hidden'
+            ? 'flex h-full min-h-0 flex-1 flex-col overflow-y-auto'
             : 'flex min-h-0 flex-1 flex-col',
           'pt-[var(--header-height)]'
         )}
