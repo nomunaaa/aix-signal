@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProofPageMock, ProofStatsStream, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
+import type { TradingCategory } from '@/lib/trading-category';
 import {
   reconstructSymbolStats,
   reconstructTotalStatsForSymbols,
@@ -18,7 +19,7 @@ import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import { ProofFooter } from '@/components/proof/ProofFooter';
 import { PROOF_COPY } from './proofCopy';
 import { clamp, proofLanguageFromCode } from './proofFormat';
-import { ALL_STREAMS, ALL_TREND_MODES, PROOF_STREAM_TO_HISTORY_STREAM } from './HistoryEntryCountLink';
+import { ALL_STREAMS, PROOF_STREAM_TO_HISTORY_STREAM } from './HistoryEntryCountLink';
 import { ProofToolbar } from './ProofToolbar';
 import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
@@ -48,12 +49,9 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
   // usePulseStore가 소스 오브 트루스다 — 로컬 state로 들고 있지 않는다.
   const streamFilter = usePulseStore((state) => state.streamFilter);
   const toggleStreamFilterStore = usePulseStore((state) => state.toggleStreamFilter);
-  const trendModeFilter = usePulseStore((state) => state.trendModeFilter);
-  const setTrendModeFilterStore = usePulseStore((state) => state.setTrendModeFilter);
-  const tradingCategories = usePulseStore((state) => state.tradingCategoryFilters);
-  const toggleTradingCategory = usePulseStore((state) => state.toggleTradingCategoryFilter);
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
+  const searchQuery = usePulseStore((state) => state.searchQuery);
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
 
@@ -61,10 +59,8 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
     () => ALL_STREAMS.filter((stream) => streamFilter[PROOF_STREAM_TO_HISTORY_STREAM[stream]]),
     [streamFilter]
   );
-  const trendModes = useMemo(
-    () => ALL_TREND_MODES.filter((mode) => trendModeFilter[mode]),
-    [trendModeFilter]
-  );
+  const trendModes = useMemo<ProofStatsTrendMode[]>(() => ['reversal'], []);
+  const tradingCategories = useMemo<TradingCategory[]>(() => ['E2X2'], []);
 
   const [seed, setSeed] = useState(DEFAULT_SEED);
   const [entryRatio, setEntryRatio] = useState(DEFAULT_ENTRY_RATIO);
@@ -94,6 +90,10 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
     if (showFavoritesOnly) {
       aggregateSymbols = aggregateSymbols.filter((symbol) => favorites.has(symbol));
     }
+    if (searchQuery.trim()) {
+      const query = searchQuery.trim().toUpperCase();
+      aggregateSymbols = aggregateSymbols.filter((symbol) => symbol.includes(query));
+    }
     const totalStats = reconstructTotalStatsForSymbols(
       data.buckets,
       aggregateSymbols,
@@ -115,6 +115,7 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
     qualityWinRateThreshold,
     qualityRiskRewardThreshold,
     qualityPeriod,
+    searchQuery,
   ]);
 
   useEffect(() => {
@@ -168,12 +169,6 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
     toggleStreamFilterStore(PROOF_STREAM_TO_HISTORY_STREAM[stream]);
   };
 
-  const toggleTrendMode = (mode: ProofStatsTrendMode) => {
-    const next = { ...trendModeFilter, [mode]: !trendModeFilter[mode] };
-    if (!next.trend && !next.nonTrend && !next.reversal) return;
-    setTrendModeFilterStore(next);
-  };
-
   const handleSeedChange = (value: number) => {
     const next = clamp(value, MIN_SEED, MAX_SEED);
     setSeed(next);
@@ -197,13 +192,9 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
       <ProofToolbar
         containerRef={toolbarRef}
         streams={streams}
-        trendModes={trendModes}
-        tradingCategories={tradingCategories}
         engines={data.engines}
         copy={copy}
         onToggleStream={toggleStream}
-        onToggleTrendMode={toggleTrendMode}
-        onToggleTradingCategory={toggleTradingCategory}
         seed={seed}
         entryRatio={entryRatio}
         leverage={leverage}

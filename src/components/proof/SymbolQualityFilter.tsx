@@ -57,28 +57,15 @@ export function SymbolQualityFilter({
 
   return (
     <div className="flex flex-nowrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
-      <div
-        className="flex shrink-0 items-center gap-1.5"
-        role="radiogroup"
-        aria-label="Quality period"
+      <select
+        value={period}
+        onChange={(event) => onPeriodChange(event.target.value as ProofQualityPeriod)}
+        className="h-9 w-36 shrink-0 rounded-md border border-border bg-background px-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary"
+        aria-label="Date"
       >
-        {(['last30d', 'last3mo', 'all'] as const).map((value) => (
-          <label
-            key={value}
-            className="flex cursor-pointer items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
-          >
-            <input
-              type="radio"
-              name="proof-quality-period"
-              value={value}
-              checked={period === value}
-              onChange={() => onPeriodChange(value)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            <span>{copy.quality[value]}</span>
-          </label>
-        ))}
-      </div>
+        <option value="last30d">{copy.quality.last30d}</option>
+        <option value="last3mo">{copy.quality.last3mo}</option>
+      </select>
 
       <span className="hidden h-6 w-px shrink-0 bg-border sm:block" aria-hidden />
 

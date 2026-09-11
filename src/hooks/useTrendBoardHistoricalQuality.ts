@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { TrendEngine } from '@/lib/trend-v8/compact-trend-board';
 import {
@@ -42,6 +43,10 @@ type HistoricalQualityRpcRow = {
 
 const HISTORICAL_QUALITY_REFRESH_MS = 60_000;
 const EMPTY_HISTORICAL_QUALITY = new Map<string, TrendBoardHistoricalQualityStat>();
+
+// `proof_stats` is deployed but has not yet been added to the generated client schema.
+// Keep this query isolated from the generated table union until the schema is regenerated.
+const proofStatsClient = supabase as unknown as SupabaseClient;
 
 function finiteNumber(value: unknown): number {
   const parsed = Number(value);
@@ -162,7 +167,7 @@ export function useTrendBoardHistoricalQuality(
     let cancelled = false;
 
     async function loadHistoricalQuality() {
-      const { data, error } = await supabase
+      const { data, error } = await proofStatsClient
         .from('proof_stats')
         .select(
           'symbol,barinterval,trading_category,trend,timeinterval,entries,win_count,loss_count,wins_pnl_pct_sum,losses_pnl_pct_abs_sum'

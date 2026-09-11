@@ -174,7 +174,7 @@ export function ProofStatBar({
       className="sticky z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2 shadow-md backdrop-blur duration-200 animate-in fade-in slide-in-from-top-1 md:-mx-5 md:px-5"
       style={{ top: `calc(var(--header-height) + ${stickyTopOffsetPx}px)` }}
     >
-      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
         <StatColumn
           title={copy.table.recent30}
           rows={rows}
@@ -188,15 +188,6 @@ export function ProofStatBar({
           title={copy.table.recent3mo}
           rows={rows}
           slicePicker={(row) => row.recent3mo}
-          seed={seed}
-          entryRatio={entryRatio}
-          leverage={leverage}
-          copy={copy}
-        />
-        <StatColumn
-          title={copy.table.cumulative}
-          rows={rows}
-          slicePicker={(row) => row.total}
           seed={seed}
           entryRatio={entryRatio}
           leverage={leverage}

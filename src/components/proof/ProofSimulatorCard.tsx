@@ -42,9 +42,9 @@ export function ProofSimulatorCard({
           language={language}
         />
         <ScenarioBasisPanel
-          title={copy.simulator.basisTotal}
-          standardSlice={standard.total}
-          discountedSlice={discounted.total}
+          title={copy.simulator.basisRecent3mo}
+          standardSlice={standard.recent3mo}
+          discountedSlice={discounted.recent3mo}
           seed={seed}
           entryRatio={entryRatio}
           leverage={leverage}

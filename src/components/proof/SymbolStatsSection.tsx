@@ -14,7 +14,6 @@ import { getSymbolsFromEnv } from '@/config/symbols';
 import { AssetSymbolCell, HistoricalMoneyCell, HistoricalPctCell } from './ProofStatCells';
 import { HistoryEntryCountLink } from './HistoryEntryCountLink';
 import { SortableTh, TableHeaderLabel, type SymbolStatsSortKey } from './SortableTh';
-import { SymbolFilterDropdown } from './SymbolFilterDropdown';
 import { formatHoldSec, formatRatio, type ProofLanguage } from './proofFormat';
 import type { ProofCopy } from './proofCopy';
 import {
@@ -99,7 +98,6 @@ export function SymbolStatsSection({
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
   const favoriteSymbols = useMemo(() => getSymbolsFromEnv(), []);
-  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SymbolStatsSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const handleSort = (key: SymbolStatsSortKey) => {
@@ -114,9 +112,6 @@ export function SymbolStatsSection({
     let filtered = showFavoritesOnly
       ? rows.filter((row) => favorites.has(row.symbol.trim().toUpperCase()))
       : rows;
-    if (selectedSymbol) {
-      filtered = filtered.filter((row) => row.symbol.trim().toUpperCase() === selectedSymbol);
-    }
     filtered = filtered.filter((row) => {
       if (
         row.standard.cycleCount === 0 &&
@@ -141,7 +136,6 @@ export function SymbolStatsSection({
     favorites,
     rows,
     showFavoritesOnly,
-    selectedSymbol,
     qualityWinRateThreshold,
     qualityRiskRewardThreshold,
     qualityPeriod,
@@ -155,14 +149,6 @@ export function SymbolStatsSection({
         <h2 className="text-xl font-semibold tracking-tight text-foreground">
           {copy.sections.symbol.title}
         </h2>
-        <SymbolFilterDropdown
-          symbols={favoriteSymbols}
-          value={selectedSymbol}
-          onChange={setSelectedSymbol}
-          allLabel={copy.filters.allSymbols}
-          searchLabel={copy.filters.symbol}
-          emptyLabel={copy.table.empty}
-        />
         <FavoriteScopeControls symbols={favoriteSymbols} className="flex-wrap" />
       </div>
 
@@ -170,12 +156,6 @@ export function SymbolStatsSection({
         <table className="w-full min-w-[1180px] table-fixed border-collapse text-xs xl:min-w-0">
           <colgroup>
             <col className="w-[9%]" />
-            <col className="w-[4.5%]" />
-            <col className="w-[5.5%]" />
-            <col className="w-[6%]" />
-            <col className="w-[4.5%]" />
-            <col className="w-[4.5%]" />
-            <col className="w-[5%]" />
             <col className="w-[4.5%]" />
             <col className="w-[5.5%]" />
             <col className="w-[6%]" />
@@ -199,9 +179,6 @@ export function SymbolStatsSection({
               </th>
               <th colSpan={6} className={`${GROUP_HEADER_CLASS} border-l border-border/60`}>
                 {copy.table.recent3mo}
-              </th>
-              <th colSpan={6} className={`${GROUP_HEADER_CLASS} border-l border-border/60`}>
-                {copy.table.cumulative}
               </th>
             </tr>
             <tr>
@@ -309,66 +286,17 @@ export function SymbolStatsSection({
                 onSort={handleSort}
                 className={METRIC_HEADER_CLASS}
               />
-              <SortableTh
-                label={copy.table.entries}
-                sortKey="total:entries"
-                activeKey={sortKey}
-                direction={sortDirection}
-                onSort={handleSort}
-                className={BORDERED_METRIC_HEADER_CLASS}
-              />
-              <SortableTh
-                label={copy.table.accountReturn}
-                sortKey="total:pnl"
-                activeKey={sortKey}
-                direction={sortDirection}
-                onSort={handleSort}
-                className={METRIC_HEADER_CLASS}
-              />
-              <SortableTh
-                label={copy.table.accountProfit}
-                sortKey="total:pnl"
-                activeKey={sortKey}
-                direction={sortDirection}
-                onSort={handleSort}
-                className={METRIC_HEADER_CLASS}
-              />
-              <SortableTh
-                label={copy.table.avgWinRate}
-                sortKey="total:winRate"
-                activeKey={sortKey}
-                direction={sortDirection}
-                onSort={handleSort}
-                className={METRIC_HEADER_CLASS}
-              />
-              <SortableTh
-                label={copy.table.avgRatio}
-                sortKey="total:avgRatio"
-                activeKey={sortKey}
-                direction={sortDirection}
-                onSort={handleSort}
-                className={METRIC_HEADER_CLASS}
-              />
-              <SortableTh
-                label={copy.table.avgHoldTime}
-                sortKey="total:holdTime"
-                activeKey={sortKey}
-                direction={sortDirection}
-                onSort={handleSort}
-                className={METRIC_HEADER_CLASS}
-              />
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
             {visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={19} className="px-2 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={13} className="px-2 py-8 text-center text-sm text-muted-foreground">
                   {copy.table.empty}
                 </td>
               </tr>
             ) : (
               visibleRows.map((row) => {
-                const standardPresent = row.standard.cycleCount > 0;
                 const recent30Present = row.recent30Total.cycleCount > 0;
                 const recent3moPresent = row.recent3moTotal.cycleCount > 0;
                 return (
@@ -451,44 +379,6 @@ export function SymbolStatsSection({
                     </td>
                     <td className={METRIC_CELL_CLASS}>
                       {formatHoldSec(row.recent3moTotal.avgHoldSec, recent3moPresent, language)}
-                    </td>
-                    <td className={BORDERED_METRIC_CELL_CLASS}>
-                      <HistoryEntryCountLink
-                        symbol={row.symbol}
-                        count={row.standard.cycleCount}
-                        period="all"
-                        asOfIso={row.standard.asOfIso}
-                        streams={streams}
-                        trendModes={trendModes}
-                        tradingCategories={tradingCategories}
-                      />
-                    </td>
-                    <td className={VALUE_CELL_CLASS}>
-                      <HistoricalPctCell
-                        slice={row.standard}
-                        seed={seed}
-                        entryRatio={entryRatio}
-                        leverage={leverage}
-                        tone="standard"
-                      />
-                    </td>
-                    <td className={VALUE_CELL_CLASS}>
-                      <HistoricalMoneyCell
-                        slice={row.standard}
-                        seed={seed}
-                        entryRatio={entryRatio}
-                        leverage={leverage}
-                        tone="standard"
-                      />
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {standardPresent ? formatWinRate(row.standard.winRate) : '—'}
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {formatRatio(row.standard.winLossRatio, standardPresent)}
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {formatHoldSec(row.standard.avgHoldSec, standardPresent, language)}
                     </td>
                   </tr>
                 );

@@ -1,5 +1,5 @@
-import { useState, type Ref } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { useMemo, useState, type Ref } from 'react';
+import { Search, SlidersHorizontal } from 'lucide-react';
 import type { EngineStats, ProofStatsStream, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
 import {
   TRADING_CATEGORY_ORDER,
@@ -13,16 +13,15 @@ import { ProofFilterChip, ProofStreamToggle } from './ProofToolbarControls';
 import { SimulationSettingsPopover } from './SimulationSettingsPopover';
 import { SymbolQualityFilter } from './SymbolQualityFilter';
 import type { ProofQualityPeriod } from './symbolQuality';
+import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
+import { FavoriteScopeControls } from '@/views/signals/pulse/components/FavoriteScopeControls';
+import { getSymbolsFromEnv } from '@/config/symbols';
 
 export function ProofToolbar({
   streams,
-  trendModes,
-  tradingCategories,
   engines,
   copy,
   onToggleStream,
-  onToggleTrendMode,
-  onToggleTradingCategory,
   seed,
   entryRatio,
   leverage,
@@ -34,13 +33,9 @@ export function ProofToolbar({
   containerRef,
 }: {
   streams: ProofStatsStream[];
-  trendModes: ProofStatsTrendMode[];
-  tradingCategories: TradingCategory[];
   engines: readonly [EngineStats, EngineStats];
   copy: ProofCopy;
   onToggleStream: (stream: ProofStatsStream) => void;
-  onToggleTrendMode: (mode: ProofStatsTrendMode) => void;
-  onToggleTradingCategory: (category: TradingCategory) => void;
   seed: number;
   entryRatio: number;
   leverage: number;
@@ -51,16 +46,21 @@ export function ProofToolbar({
   onLeverageChange: (value: number) => void;
   containerRef?: Ref<HTMLDivElement>;
 }) {
+  const searchQuery = usePulseStore((state) => state.searchQuery);
+  const setSearchQuery = usePulseStore((state) => state.setSearchQuery);
+  const favoriteSymbols = useMemo(() => getSymbolsFromEnv(), []);
+  // Legacy mobile sheet remains mounted but hidden; keep its fixed scope data local.
+  const trendModes: ProofStatsTrendMode[] = ['reversal'];
+  const tradingCategories: TradingCategory[] = ['E2X2'];
+  const onToggleTrendMode = (_mode: ProofStatsTrendMode) => undefined;
+  const onToggleTradingCategory = (_category: TradingCategory) => undefined;
   const pulseEngine = engines.find((engine) => engine.engine === 'PULSE');
   const waveEngine = engines.find((engine) => engine.engine === 'WAVE');
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const streamSummary =
     streams.length === 2 ? `${copy.filters.pulse}+${copy.filters.wave}` : streams[0] ?? '-';
-  const categorySummary =
-    tradingCategories.length === TRADING_CATEGORY_ORDER.length
-      ? copy.filters.allSymbols
-      : tradingCategories.join('/') || '-';
+  const categorySummary = 'E2X2';
 
   const streamToggleGroup = (
     <div
@@ -141,7 +141,7 @@ export function ProofToolbar({
     >
       {/* 모바일: 요약 버튼 + 시트. 4개 컨트롤 그룹(스트림/신호 4칩/구분 3칩/종목필터)이
           한 줄 flex-wrap에 그대로 있으면 375px에서 제각각 크기로 줄바꿈되며 쌓인다. */}
-      <div className="flex items-center gap-2 sm:hidden">
+      <div className="hidden">
         <button
           type="button"
           onClick={() => setFilterSheetOpen(true)}
@@ -205,15 +205,20 @@ export function ProofToolbar({
       </Sheet>
 
       {/* 데스크톱: 기존 인라인 툴바 그대로 */}
-      <div className="hidden flex-wrap items-center gap-2 sm:flex sm:gap-3">
+      <div className="flex min-w-max items-center gap-2 overflow-x-auto">
+        <label className="relative block w-52 shrink-0">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={copy.filters.symbol}
+            aria-label={copy.filters.symbol}
+            className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary"
+          />
+        </label>
+        <FavoriteScopeControls symbols={favoriteSymbols} />
         {streamToggleGroup}
-        <span className="hidden h-6 w-px shrink-0 bg-border sm:block" aria-hidden />
-        {categoryChips}
-        {trendModeGroup}
-
-        {/* 승률/손익비 임계값 — Trend Board와 usePulseStore를 공유한다.
-            종목별 통계 섹션 안에 두었더니 페이지 한참 아래(11,000px 지점)에 묻혀
-            보이지 않아, 나머지 필터와 같은 상단 툴바로 올린다. */}
         <SymbolQualityFilter
           copy={copy}
           period={qualityPeriod}
@@ -228,7 +233,7 @@ export function ProofToolbar({
           onEntryRatioChange={onEntryRatioChange}
           onLeverageChange={onLeverageChange}
           copy={copy}
-          className="ml-auto"
+          className=""
         />
       </div>
     </div>

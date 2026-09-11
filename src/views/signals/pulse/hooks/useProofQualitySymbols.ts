@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { SignalStreamId } from '../types/pulse.types';
 import type { HistoryDatePeriod } from '../utils/historyDateRange';
@@ -19,6 +20,10 @@ type QualityAccumulator = {
   winRateSum: number;
   lossRateAbsSum: number;
 };
+
+// `proof_stats` is deployed but has not yet been added to the generated client schema.
+// Keep this query isolated from the generated table union until the schema is regenerated.
+const proofStatsClient = supabase as unknown as SupabaseClient;
 
 function finiteNumber(value: number | string | null): number {
   const parsed = Number(value);
@@ -77,7 +82,7 @@ export function useProofQualitySymbols({
     let cancelled = false;
     setLoading(true);
 
-    void supabase
+    void proofStatsClient
       .from('proof_stats')
       .select(
         'symbol,entries,win_count,loss_count,wins_per_entry_notional_rate_sum,losses_per_entry_notional_rate_abs_sum'
