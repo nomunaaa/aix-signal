@@ -35,7 +35,10 @@ export function ChartWorkspaceShell({
   // 고정 레이아웃이다). 따라서 포지션 테이블은 남은 세로 공간 안에서 "그 영역만" 자체
   // 스크롤되어야 하며, 이 컴포넌트 트리 전체가 min-h-0로 높이를 위임해야 그 계산이 성립한다.
   return (
-    <div className={cn('flex min-h-0 w-full flex-1 bg-background', className)}>
+    // 모바일에서는 세로로 쌓는다. 가로 flex + w-[340px] flex-none 사이드바를 375px에
+    // 그대로 두면 차트가 남은 35px로 짜부라지고, 상위 mx-auto가 넘친 폭을 좌우로
+    // 나눠 보내 차트가 화면 왼쪽 바깥(-233px)으로 밀려 잘려버린다 — 차트가 아예 안 보였던 원인.
+    <div className={cn('flex min-h-0 w-full flex-1 flex-col bg-background lg:flex-row', className)}>
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {toolbar}
 
@@ -59,7 +62,7 @@ export function ChartWorkspaceShell({
       </main>
 
       {!isFullscreen && sidebar ? (
-        <aside className="flex w-[340px] flex-none flex-col gap-3 overflow-y-auto border-l border-border bg-card/40 p-3.5">
+        <aside className="flex w-full flex-none flex-col gap-3 border-t border-border bg-card/40 p-3.5 lg:w-[340px] lg:overflow-y-auto lg:border-l lg:border-t-0">
           {sidebar}
         </aside>
       ) : null}

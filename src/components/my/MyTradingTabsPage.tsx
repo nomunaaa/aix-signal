@@ -76,14 +76,14 @@ export function MyTradingTabsPage() {
     <div className="mx-auto flex min-h-[calc(100dvh-var(--header-height)+1px)] w-full max-w-6xl flex-col px-4 py-6">
       <div className="w-full min-w-0 space-y-4">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full min-w-0">
-          <TabsList className="grid h-11 w-full min-w-0 grid-cols-3 rounded-lg bg-muted/70 p-1">
-            <TabsTrigger value="positions" className="h-9 w-full min-w-0 text-sm">
+          <TabsList className="grid h-auto min-h-11 w-full min-w-0 grid-cols-3 rounded-lg bg-muted/70 p-1">
+            <TabsTrigger value="positions" className="h-auto min-h-9 w-full min-w-0 whitespace-normal px-1 text-[11px] leading-tight sm:px-3 sm:text-sm">
               {tr('활성 포지션', 'Open Positions')}
             </TabsTrigger>
-            <TabsTrigger value="profits" className="h-9 w-full min-w-0 text-sm">
+            <TabsTrigger value="profits" className="h-auto min-h-9 w-full min-w-0 whitespace-normal px-1 text-[11px] leading-tight sm:px-3 sm:text-sm">
               {tr('모의수익통계', 'Demo Profit Statistics')}
             </TabsTrigger>
-            <TabsTrigger value="history" className="h-9 w-full min-w-0 text-sm">
+            <TabsTrigger value="history" className="h-auto min-h-9 w-full min-w-0 whitespace-normal px-1 text-[11px] leading-tight sm:px-3 sm:text-sm">
               {tr('매매 기록', 'History')}
             </TabsTrigger>
           </TabsList>
