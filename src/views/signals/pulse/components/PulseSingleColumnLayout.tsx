@@ -752,7 +752,10 @@ export function PulseSingleColumnLayout({
             paddingRight: 'var(--header-padding-x)',
           }}
         >
-          <div className="flex min-h-[40px] items-center overflow-hidden">
+          {/* overflow-hidden 제거: TableControlBar 내부 그룹들이 375px에서 여러 줄로
+              감싸질 수 있게 했는데, 이 래퍼가 overflow-hidden이면 늘어난 높이가 다시
+              잘려 보이지 않게 된다. */}
+          <div className="flex min-h-[40px] flex-wrap items-center">
             <TableControlBar
               activeTableId={activeTableId}
               columnPresetId={columnPresetId}

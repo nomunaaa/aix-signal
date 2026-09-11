@@ -434,7 +434,9 @@ export function TableControlBar({
         <span>{language === 'ko' ? '더보기' : 'More'}</span>
       </button>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      {/* flex-wrap: 375px에서 즐겨찾기 드롭다운 + Pulse/Wave 토글을 합친 폭이 화면보다
+          넓다 — nowrap이면 상위(overflow-hidden) 밖으로 잘려 사라진다. */}
+      <div className="flex flex-wrap shrink-0 items-center gap-1.5">
         <FavoriteScopeControls symbols={favoriteSymbols} />
         <div className="flex min-w-[10rem] shrink-0 items-stretch gap-0 overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5" role="group" aria-label="Pulse Wave filter">
           {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
@@ -464,7 +466,8 @@ export function TableControlBar({
         </div>
       ) : null}
 
-      <div className="flex flex-nowrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
+      {/* flex-wrap (same reason): 두 슬라이더 폭 합이 375px에서 잘려 화면 밖으로 사라졌다. */}
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
         <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs"><span className="flex items-center justify-between text-muted-foreground"><span>Win Rate</span><b className="font-mono text-foreground">{qualityWinRateThreshold}%</b></span><input className="h-1.5 w-full cursor-pointer accent-primary" type="range" min="35" max="100" step="1" value={qualityWinRateThreshold} onChange={(e) => setQualityWinRateThreshold(Number(e.target.value))} /></label>
         <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs"><span className="flex items-center justify-between text-muted-foreground"><span>Risk/Reward</span><b className="font-mono text-foreground">{qualityRiskRewardThreshold.toFixed(1)}</b></span><input className="h-1.5 w-full cursor-pointer accent-primary" type="range" min="0.6" max="5" step="0.1" value={qualityRiskRewardThreshold} onChange={(e) => setQualityRiskRewardThreshold(Number(e.target.value))} /></label>
       </div>
