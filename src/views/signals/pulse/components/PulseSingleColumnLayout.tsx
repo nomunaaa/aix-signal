@@ -208,6 +208,8 @@ export interface PulseSingleColumnLayoutProps {
   readonly allowedSymbols?: string[];
   readonly favoriteSymbols?: readonly string[];
   readonly qualityQualifiedSymbols?: ReadonlySet<string>;
+  /** Dedicated History page keeps the shared controls/table but omits open-signal sections. */
+  readonly showOpenSections?: boolean;
 }
 
 // --- Component ---
@@ -225,6 +227,7 @@ export function PulseSingleColumnLayout({
   allowedSymbols = [],
   favoriteSymbols = [],
   qualityQualifiedSymbols = new Set<string>(),
+  showOpenSections = true,
 }: PulseSingleColumnLayoutProps) {
   const { language, copy } = usePulseCopy();
   const navigate = useNavigate();
@@ -793,42 +796,44 @@ export function PulseSingleColumnLayout({
       >
         {openSignalsLoading && !isSymbolLocked ? (
           <div className="space-y-5">
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-              <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
-            </div>
+            {showOpenSections ? (
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+                <div className="h-48 animate-pulse rounded-lg border border-border bg-card" />
+              </div>
+            ) : null}
             <div className="h-64 animate-pulse rounded-lg border border-border bg-card" />
           </div>
         ) : (
           <div className="space-y-5">
-            {/* === Monitoring Zone === */}
-
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-              {summarySections.map((section) => (
-                <div key={section.id} ref={registerRef(section.id)} className="h-full">
-                  <PulseSectionTable<OpenRowData>
-                    title={section.title}
-                    subtitle={section.subtitle}
-                    rowData={section.rows}
-                    columnDefs={section.columns}
-                    onRowClick={handleOpenRowClick}
-                    count={section.rows.length}
-                    emptyTitle={emptySummaryTitle}
-                    emptyDescription={emptySummaryDescription}
-                    tableType="summary"
-                    compactColumnWidths
-                    stretchToParentHeight
-                    upgradeRequired={isSymbolLocked}
-                  />
-                </div>
-              ))}
-            </div>
+            {showOpenSections ? (
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                {summarySections.map((section) => (
+                  <div key={section.id} ref={registerRef(section.id)} className="h-full">
+                    <PulseSectionTable<OpenRowData>
+                      title={section.title}
+                      subtitle={section.subtitle}
+                      rowData={section.rows}
+                      columnDefs={section.columns}
+                      onRowClick={handleOpenRowClick}
+                      count={section.rows.length}
+                      emptyTitle={emptySummaryTitle}
+                      emptyDescription={emptySummaryDescription}
+                      tableType="summary"
+                      compactColumnWidths
+                      stretchToParentHeight
+                      upgradeRequired={isSymbolLocked}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
             {/* Table 7: history */}
             <div

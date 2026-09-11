@@ -65,10 +65,18 @@ function PulseDashboardSuspenseFallback() {
 }
 
 export default function PulseStreamPage() {
+  return <PulsePage />;
+}
+
+export function PulseHistoryPage() {
+  return <PulsePage historyOnly />;
+}
+
+function PulsePage({ historyOnly = false }: { historyOnly?: boolean }) {
   return (
     <PulseEntryGate>
       <Suspense fallback={<PulseDashboardSuspenseFallback />}>
-        <PulseDashboard />
+        <PulseDashboard historyOnly={historyOnly} />
       </Suspense>
     </PulseEntryGate>
   );
@@ -76,7 +84,7 @@ export default function PulseStreamPage() {
 
 // ── 대시보드 (항상 마운트, 전략 미선택 시 Drawer 오버레이) ──
 
-function PulseDashboard() {
+function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
   const { subscription } = useAuth();
   const [searchParams] = useSearchParams();
   const syncFromURL = usePulseStore((s) => s.syncFromURL);
@@ -281,6 +289,7 @@ function PulseDashboard() {
         allowedSymbols={allowedSymbols}
         favoriteSymbols={favoriteSymbols}
         qualityQualifiedSymbols={qualifiedSymbols}
+        showOpenSections={!historyOnly}
       />
 
       <KairosPanel open={isKairosOpen} onOpenChange={setKairosOpen} />

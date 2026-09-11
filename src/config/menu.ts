@@ -48,12 +48,9 @@ export const MAIN_MENU: NavItem[] = [
     description: '수익 통계·성과 보드',
   },
   {
-    // 시그널 보드 안에 임베드된 실거래 히스토리 섹션(HistoryTable) — historyFocus=1이면
-    // PulseSingleColumnLayout이 마운트 시 자동으로 그 섹션까지 스크롤한다. 모의매매
-    // 히스토리(/my/history, 아래 별도 항목)와는 다른 화면이라 항목을 분리했다.
     label: '히스토리',
     labelEn: 'History',
-    href: '/signals?historyFocus=1',
+    href: '/history',
     icon: 'fa-clock-rotate-left',
     description: '시그널 히스토리',
   },
