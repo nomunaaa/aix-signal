@@ -1,5 +1,5 @@
 const SKELETON_ROW_COUNT = 8;
-const CELL_COUNT = 11;
+const CELL_COUNT = 10;
 
 /** Trend Board 로딩 중 표시되는 스켈레톤 — 실제 11컬럼 테이블 레이아웃과 맞춘다. */
 export function TrendBoardSkeletonRows() {

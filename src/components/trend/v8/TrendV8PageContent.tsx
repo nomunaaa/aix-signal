@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, Star } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Search, Star } from 'lucide-react';
 import type { SymbolAnalysis } from '@/lib/mock/trend-v8-mock';
 import { trendV8PageMock } from '@/lib/mock/trend-v8-mock-data';
 import { type CompactTrendSort, type TrendEngine } from '@/lib/trend-v8/compact-trend-board';
@@ -23,7 +23,6 @@ import {
   useTrendBoardHistoricalQuality,
   type TrendBoardHistoricalQualityLookup,
   type TrendBoardHistoricalQualityStat,
-  type TrendBoardHistoricalTrendMode,
 } from '@/hooks/useTrendBoardHistoricalQuality';
 import { useThrottledSymbolStoreRevision } from '@/hooks/useThrottledSymbolStoreRevision';
 import { TrendBoardSkeletonRows } from '@/components/trend/v8/TrendBoardSkeletonRows';
@@ -41,7 +40,13 @@ import {
 import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import { FavoriteScopeControls } from '@/views/signals/pulse/components/FavoriteScopeControls';
 import {
-  SIGNAL_TREND_MODES,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   STRATEGY_CONFIGS,
   type SignalTrendMode,
   type SignalTrendModeFilter,
@@ -64,7 +69,7 @@ type TrendV8PageContentProps = {
 type TrendFrontLanguage = 'ko' | 'en';
 type TrendClass = 'trend' | 'counter' | 'nontrend';
 type VolatilityDot = 1 | 2 | 3;
-type TrendQualityPeriod = 'last30d' | 'all';
+type TrendQualityPeriod = 'last30d' | 'last3mo' | 'all';
 type SymbolSortDirection = 'asc' | 'desc' | null;
 
 type SignalQualityMetrics = {
@@ -572,7 +577,16 @@ function resolveOpenSignalCycles(symbol: string, targetEngine: TrendEngine): Sig
   return useSymbolStore
     .getState()
     .getSignalCycles(symbol, streamEngineToBarInterval(targetEngine))
-    .filter((cycle) => cycle.is_open);
+    .filter(
+      (cycle) =>
+        cycle.is_open &&
+        cycle.trading_category === 'E2X2' &&
+        resolveSignalTrendModeFromEntryTrends({
+          direction: cycle.side,
+          shortTrend: cycle.entry_trend_short,
+          longTrend: cycle.entry_trend_long,
+        }) === 'reversal'
+    );
 }
 
 function positiveFinite(value: number | null | undefined): number | null {
@@ -722,6 +736,7 @@ function resolveStreamQuality(
 ): SignalQualitySet {
   return {
     last30d: resolveStreamQualityForPeriod(openCycle, row, engine, tradingCategory, 'last30d'),
+    last3mo: resolveStreamQualityForPeriod(openCycle, row, engine, tradingCategory, 'last3mo'),
     all: resolveStreamQualityForPeriod(openCycle, row, engine, tradingCategory, 'all'),
   };
 }
@@ -1034,16 +1049,20 @@ function trendQualityCopy(language: TrendFrontLanguage) {
         winRate: 'Win Rate',
         riskReward: 'Risk/Reward Ratio',
         periodGroup: 'Stats period',
-        last30d: 'Last 30day',
-        all: 'All',
+        searchSymbol: 'Search symbol',
+        last30d: 'Last 30 days',
+        last3mo: 'Last 3 months',
+        all: 'All time',
       }
     : {
         title: '승률/손익비 필터',
         winRate: '승률',
         riskReward: '손익비',
         periodGroup: '통계 기간',
-        last30d: '30일',
-        all: '전체',
+        searchSymbol: '종목 검색',
+        last30d: '최근 30일',
+        last3mo: '최근 3개월',
+        all: '전체 기간',
       };
 }
 
@@ -1112,38 +1131,58 @@ function TrendBoardFilterPanel({
   riskRewardThreshold,
   period,
   favoriteSymbols,
-  tradingCategoryFilters,
-  trendModeFilter,
+  searchQuery,
   onWinRateChange,
   onRiskRewardChange,
   onPeriodChange,
-  onToggleTradingCategory,
-  onToggleTrendMode,
+  onSearchChange,
 }: {
   language: TrendFrontLanguage;
   winRateThreshold: number;
   riskRewardThreshold: number;
   period: TrendQualityPeriod;
   favoriteSymbols: readonly string[];
-  tradingCategoryFilters: readonly TradingCategory[];
-  trendModeFilter: SignalTrendModeFilter;
+  searchQuery: string;
   onWinRateChange: (value: number) => void;
   onRiskRewardChange: (value: number) => void;
   onPeriodChange: (value: TrendQualityPeriod) => void;
-  onToggleTradingCategory: (category: TradingCategory) => void;
-  onToggleTrendMode: (mode: keyof SignalTrendModeFilter) => void;
+  onSearchChange: (value: string) => void;
 }) {
   const qualityCopy = trendQualityCopy(language);
   const filterCopy = trendBoardFilterCopy(language);
-  const trendLabels = trendFilterLabels(language);
 
   return (
     <section className="trend-front-filter-panel" aria-label={filterCopy.title}>
       <div className="trend-front-filter-row trend-front-filter-row-primary">
+        <label className="relative block min-w-[180px] flex-1">
+          <Search
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden
+          />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => onSearchChange(event.target.value)}
+            placeholder={qualityCopy.searchSymbol}
+            className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary"
+            aria-label={qualityCopy.searchSymbol}
+          />
+        </label>
+        <FavoriteScopeControls symbols={favoriteSymbols} className="trend-front-favorite-control" />
+        <Select value={period} onValueChange={(value) => onPeriodChange(value as TrendQualityPeriod)}>
+          <SelectTrigger className="h-9 w-[148px] border-border bg-background text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="last30d">{qualityCopy.last30d}</SelectItem>
+            <SelectItem value="last3mo">{qualityCopy.last3mo}</SelectItem>
+            <SelectItem value="all">{qualityCopy.all}</SelectItem>
+          </SelectContent>
+        </Select>
         <TrendQualitySlider
           label={qualityCopy.winRate}
           value={winRateThreshold}
-          min={0}
+          min={35}
           max={100}
           step={1}
           valueLabel={formatWinRatePct(winRateThreshold)}
@@ -1152,7 +1191,7 @@ function TrendBoardFilterPanel({
         <TrendQualitySlider
           label={qualityCopy.riskReward}
           value={riskRewardThreshold}
-          min={0}
+          min={0.6}
           max={5}
           step={0.1}
           valueLabel={formatRiskRewardRatio(riskRewardThreshold)}
@@ -1160,101 +1199,16 @@ function TrendBoardFilterPanel({
         />
       </div>
 
-      <div className="trend-front-filter-row trend-front-filter-row-secondary">
-        <div className="trend-front-control-group" role="group" aria-label={filterCopy.favorites}>
-          <span className="trend-front-lab">{filterCopy.favorites}</span>
-          <FavoriteScopeControls
-            symbols={favoriteSymbols}
-            className="trend-front-favorite-control"
-          />
-        </div>
-
-        <div className="trend-front-control-group" role="group" aria-label={filterCopy.strategy}>
-          <span className="trend-front-lab">{filterCopy.strategy}</span>
-          {TRADING_CATEGORY_ORDER.map((category) => {
-            const on = tradingCategoryFilters.includes(category);
-            const config = strategyConfigForCategory(category);
-            return (
-              <button
-                key={category}
-                type="button"
-                role="checkbox"
-                aria-checked={on}
-                onClick={() => onToggleTradingCategory(category)}
-                className={cn('trend-front-filter-chip', on && 'trend-front-filter-chip-on')}
-              >
-                <span className="trend-front-filter-check" aria-hidden>
-                  {on ? <Check className="h-3 w-3 stroke-[3]" /> : null}
-                </span>
-                <span className="font-mono">{category}</span>
-                {config ? (
-                  <span
-                    className="trend-front-strategy-dot"
-                    style={{ backgroundColor: config.color }}
-                    aria-hidden
-                  />
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="trend-front-control-group" role="group" aria-label={filterCopy.mode}>
-          <span className="trend-front-lab">{filterCopy.mode}</span>
-          {SIGNAL_TREND_MODES.map((mode) => {
-            const on = trendModeFilter[mode];
-            return (
-              <button
-                key={mode}
-                type="button"
-                role="checkbox"
-                aria-checked={on}
-                onClick={() => onToggleTrendMode(mode)}
-                className={cn('trend-front-filter-chip', on && 'trend-front-filter-chip-on')}
-              >
-                <span className="trend-front-filter-check" aria-hidden>
-                  {on ? <Check className="h-3 w-3 stroke-[3]" /> : null}
-                </span>
-                <span>{trendLabels[mode]}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div
-          className="trend-front-control-group"
-          role="group"
-          aria-label={qualityCopy.periodGroup}
-        >
-          <span className="trend-front-lab">{filterCopy.day}</span>
-          {(['last30d', 'all'] as const).map((value) => {
-            const checked = period === value;
-            return (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={checked}
-                onClick={() => onPeriodChange(value)}
-                className={cn('trend-front-filter-chip', checked && 'trend-front-filter-chip-on')}
-              >
-                <span className="trend-front-filter-check" aria-hidden>
-                  {checked ? <Check className="h-3 w-3 stroke-[3]" /> : null}
-                </span>
-                <span>{value === 'last30d' ? qualityCopy.last30d : qualityCopy.all}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </section>
   );
 }
 
 type TrendBoardQualityFilterContext = {
-  tradingCategoryFilters: readonly TradingCategory[];
-  trendModeFilter: SignalTrendModeFilter;
   historicalQuality: TrendBoardHistoricalQualityLookup;
 };
+
+const TREND_BOARD_TRADING_CATEGORY: TradingCategory = 'E2X2';
+const TREND_BOARD_TREND_MODE: SignalTrendMode = 'reversal';
 
 type CompleteSignalQuality = SignalQualityMetrics & {
   winRatePct: number;
@@ -1265,19 +1219,6 @@ function isCompleteSignalQuality(
   quality: SignalQualityMetrics | null | undefined
 ): quality is CompleteSignalQuality {
   return quality?.winRatePct != null && quality.riskRewardRatio != null;
-}
-
-function isAllTradingCategoriesSelected(filters: readonly TradingCategory[]): boolean {
-  return filters.length === TRADING_CATEGORY_ORDER.length;
-}
-
-function categoryMatchesTrendBoardFilters(
-  category: TradingCategory | null,
-  filters: readonly TradingCategory[]
-): boolean {
-  if (category == null) return true;
-  if (isAllTradingCategoriesSelected(filters)) return true;
-  return filters.includes(category);
 }
 
 function trendModeForView(view: StreamTrendView): SignalTrendMode | null {
@@ -1299,33 +1240,6 @@ function bestSignalQuality(
       return b.riskRewardRatio - a.riskRewardRatio;
     })[0] ?? null
   );
-}
-
-function filteredHistoricalCategories(
-  row: CombinedTrendViewRow,
-  engine: TrendEngine,
-  filters: readonly TradingCategory[]
-): TradingCategory[] {
-  const category = row.tradingCategory ?? row[engine].tradingCategory;
-  if (category) {
-    return categoryMatchesTrendBoardFilters(category, filters) ? [category] : [];
-  }
-
-  if (isAllTradingCategoriesSelected(filters)) {
-    return TRADING_CATEGORY_ORDER;
-  }
-
-  return TRADING_CATEGORY_ORDER.filter((item) => filters.includes(item));
-}
-
-function filteredHistoricalTrendModes(
-  filter: SignalTrendModeFilter
-): TrendBoardHistoricalTrendMode[] {
-  const modes: TrendBoardHistoricalTrendMode[] = [];
-  if (filter.trend) modes.push('trend');
-  if (filter.nonTrend) modes.push('nonTrend');
-  if (filter.reversal) modes.push('reversal');
-  return modes;
 }
 
 function combineHistoricalQualityStats(
@@ -1357,21 +1271,17 @@ function historicalQualityForView(
   period: TrendQualityPeriod,
   context: TrendBoardQualityFilterContext
 ): SignalQualityMetrics | undefined {
-  const categories = filteredHistoricalCategories(row, engine, context.tradingCategoryFilters);
-  const trendModes = filteredHistoricalTrendModes(context.trendModeFilter);
-  if (categories.length === 0 || trendModes.length === 0) return undefined;
+  const stat = context.historicalQuality.get(
+    trendBoardHistoricalQualityKey(
+      row.symbol,
+      engine,
+      TREND_BOARD_TRADING_CATEGORY,
+      TREND_BOARD_TREND_MODE,
+      period
+    )
+  );
 
-  const stats: TrendBoardHistoricalQualityStat[] = [];
-  for (const category of categories) {
-    for (const trendMode of trendModes) {
-      const stat = context.historicalQuality.get(
-        trendBoardHistoricalQualityKey(row.symbol, engine, category, trendMode, period)
-      );
-      if (stat) stats.push(stat);
-    }
-  }
-
-  return combineHistoricalQualityStats(stats);
+  return stat ? combineHistoricalQualityStats([stat]) : undefined;
 }
 
 function displayQualityForView(
@@ -1381,28 +1291,19 @@ function displayQualityForView(
   context: TrendBoardQualityFilterContext
 ): SignalQualityMetrics | undefined {
   const view = row[engine];
-  if (view.signal === 'none') {
-    return historicalQualityForView(row, engine, period, context) ?? EMPTY_SIGNAL_QUALITY;
-  }
-  return view.quality[period];
+  const historicalQuality = historicalQualityForView(row, engine, period, context);
+  if (historicalQuality) return historicalQuality;
+  return view.signal === 'none' ? EMPTY_SIGNAL_QUALITY : view.quality[period];
 }
 
 function streamMutedByFilters(
   row: CombinedTrendViewRow,
-  engine: TrendEngine,
-  context: TrendBoardQualityFilterContext
+  engine: TrendEngine
 ): boolean {
   const view = row[engine];
-  if (
-    !categoryMatchesTrendBoardFilters(
-      row.tradingCategory ?? view.tradingCategory,
-      context.tradingCategoryFilters
-    )
-  ) {
-    return true;
-  }
   if (view.signal === 'none') return false;
-  return !trendModeMatchesFilter(view, context.trendModeFilter);
+  return view.tradingCategory !== TREND_BOARD_TRADING_CATEGORY ||
+    !trendModeMatchesFilter(view, { trend: false, nonTrend: false, reversal: true });
 }
 
 function qualityMetricsForView(
@@ -1412,16 +1313,17 @@ function qualityMetricsForView(
   context: TrendBoardQualityFilterContext
 ): SignalQualityMetrics[] {
   const view = row[engine];
+  const historicalQuality = historicalQualityForView(row, engine, period, context);
+  if (historicalQuality) return [historicalQuality];
 
   if (view.signal === 'none') {
-    const historicalQuality = historicalQualityForView(row, engine, period, context);
-    return historicalQuality ? [historicalQuality] : [];
-  }
-
-  if (!categoryMatchesTrendBoardFilters(view.tradingCategory, context.tradingCategoryFilters)) {
     return [];
   }
-  if (!trendModeMatchesFilter(view, context.trendModeFilter)) {
+
+  if (
+    view.tradingCategory !== TREND_BOARD_TRADING_CATEGORY ||
+    !trendModeMatchesFilter(view, { trend: false, nonTrend: false, reversal: true })
+  ) {
     return [];
   }
 
@@ -1499,18 +1401,18 @@ function strategyLabelForCategory(
   return language === 'en' ? config.nameEn : config.name;
 }
 
-function strategyCellLabel(category: TradingCategory | null): string {
+function _strategyCellLabel(category: TradingCategory | null): string {
   return category ?? '-';
 }
 
-function strategyCellTitle(category: TradingCategory | null, language: TrendFrontLanguage): string {
+function _strategyCellTitle(category: TradingCategory | null, language: TrendFrontLanguage): string {
   if (!category) {
     return '-';
   }
   return `${category} - ${strategyLabelForCategory(category, language)}`;
 }
 
-function strategyColorForCategory(category: TradingCategory | null): string | undefined {
+function _strategyColorForCategory(category: TradingCategory | null): string | undefined {
   return strategyConfigForCategory(category)?.color;
 }
 
@@ -1528,11 +1430,9 @@ function trendBoardDisplayCategories(
   pulseCycles: readonly SignalCycle[],
   waveCycles: readonly SignalCycle[]
 ): Array<TradingCategory | null> {
-  const hasUncategorizedSignal = [...pulseCycles, ...waveCycles].some(
-    (cycle) => signalCycleCategory(cycle) == null
-  );
-
-  return hasUncategorizedSignal ? [...TRADING_CATEGORY_ORDER, null] : [...TRADING_CATEGORY_ORDER];
+  void pulseCycles;
+  void waveCycles;
+  return [TREND_BOARD_TRADING_CATEGORY];
 }
 
 function signalCycleForCategory(
@@ -1599,7 +1499,7 @@ function groupRankedRowsBySymbol(
     );
 }
 
-function trendFilterLabels(
+function _trendFilterLabels(
   language: TrendFrontLanguage
 ): Record<keyof SignalTrendModeFilter, string> {
   return language === 'en'
@@ -1610,8 +1510,10 @@ function trendFilterLabels(
 export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps) {
   const [renderTick, setRenderTick] = useState(() => Date.now());
   const [symbolSortDirection, setSymbolSortDirection] = useState<SymbolSortDirection>(null);
-  const winRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
-  const riskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
+  const storedWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
+  const storedRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
+  const winRateThreshold = Math.max(35, storedWinRateThreshold);
+  const riskRewardThreshold = Math.max(0.6, storedRiskRewardThreshold);
   const qualityPeriod = usePulseStore((state) => state.qualityPeriod);
   const { i18n } = useTranslation();
   const navigate = useNavigate();
@@ -1644,10 +1546,8 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
   const favorites = usePulseStore((state) => state.favorites);
   const toggleFavorite = usePulseStore((state) => state.toggleFavorite);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
-  const tradingCategoryFilters = usePulseStore((state) => state.tradingCategoryFilters);
-  const toggleTradingCategoryFilter = usePulseStore((state) => state.toggleTradingCategoryFilter);
-  const trendModeFilter = usePulseStore((state) => state.trendModeFilter);
-  const setTrendModeFilter = usePulseStore((state) => state.setTrendModeFilter);
+  const searchQuery = usePulseStore((state) => state.searchQuery);
+  const setSearchQuery = usePulseStore((state) => state.setSearchQuery);
 
   const isSymbolLocked = allowedSymbols.length === 0;
   const historicalQuality = useTrendBoardHistoricalQuality(
@@ -1661,15 +1561,6 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
   const toggleSymbolSort = useCallback(() => {
     setSymbolSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
   }, []);
-
-  const toggleTrendMode = useCallback(
-    (mode: keyof SignalTrendModeFilter) => {
-      const next = { ...trendModeFilter, [mode]: !trendModeFilter[mode] };
-      if (!next.trend && !next.nonTrend && !next.reversal) return;
-      setTrendModeFilter(next);
-    },
-    [setTrendModeFilter, trendModeFilter]
-  );
 
   const pulseSourceRows = useMock ? trendV8PageMock.symbols : livePulseBoard.rows;
   const waveSourceRows = useMock ? trendV8PageMock.symbols : liveWaveBoard.rows;
@@ -1749,13 +1640,23 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
 
         return categorySortIndex(a.tradingCategory) - categorySortIndex(b.tradingCategory);
       })
-      .filter((row) => !showFavoritesOnly || favorites.has(row.symbol.trim().toUpperCase()));
-  }, [allowedSymbols, favorites, pulseRows, showFavoritesOnly, storeRevision, useMock, waveRows]);
+      .filter((row) => !showFavoritesOnly || favorites.has(row.symbol.trim().toUpperCase()))
+      .filter((row) => {
+        const query = searchQuery.trim().toUpperCase();
+        return !query || row.symbol.trim().toUpperCase().includes(query);
+      });
+  }, [
+    allowedSymbols,
+    favorites,
+    pulseRows,
+    searchQuery,
+    showFavoritesOnly,
+    storeRevision,
+    useMock,
+    waveRows,
+  ]);
 
-  const qualityFilterContext = useMemo(
-    () => ({ tradingCategoryFilters, trendModeFilter, historicalQuality }),
-    [historicalQuality, tradingCategoryFilters, trendModeFilter]
-  );
+  const qualityFilterContext = useMemo(() => ({ historicalQuality }), [historicalQuality]);
 
   const rankedDisplayRows = useMemo(
     () =>
@@ -1853,13 +1754,11 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
           riskRewardThreshold={riskRewardThreshold}
           period={qualityPeriod}
           favoriteSymbols={favoriteSymbols}
-          tradingCategoryFilters={tradingCategoryFilters}
-          trendModeFilter={trendModeFilter}
+          searchQuery={searchQuery}
           onWinRateChange={setWinRateThreshold}
           onRiskRewardChange={setRiskRewardThreshold}
           onPeriodChange={setQualityPeriod}
-          onToggleTradingCategory={toggleTradingCategoryFilter}
-          onToggleTrendMode={toggleTrendMode}
+          onSearchChange={setSearchQuery}
         />
 
         {!useMock && boardError ? (
@@ -1872,7 +1771,6 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
           <table className="trend-front-dt" data-render-tick={renderTick}>
             <colgroup>
               <col className="trend-front-col-symbol" />
-              <col className="trend-front-col-strategy" />
               <col className="trend-front-col-signal" />
               <col className="trend-front-col-elapsed" />
               <col className="trend-front-col-signal" />
@@ -1901,7 +1799,6 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                     onClick={toggleSymbolSort}
                   />
                 </th>
-                <th>{trendTableHeader('strategy', activeLanguage)}</th>
                 <th>{trendTableHeader('pulse', activeLanguage)}</th>
                 <th>{trendTableHeader('pulseElapsed', activeLanguage)}</th>
                 <th>{trendTableHeader('wave', activeLanguage)}</th>
@@ -1916,7 +1813,7 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
             <tbody>
               {isSymbolLocked ? (
                 <tr>
-                  <td colSpan={11}>
+                  <td colSpan={10}>
                     <div className="trend-front-empty">
                       <p>{copy.upgradeTitle}</p>
                       <span>{copy.upgradeDescription}</span>
@@ -1927,7 +1824,7 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                 <TrendBoardSkeletonRows />
               ) : rankedDisplayRows.length === 0 ? (
                 <tr>
-                  <td colSpan={11}>
+                  <td colSpan={10}>
                     <div className="trend-front-empty">
                       <p>{copy.emptyRows}</p>
                     </div>
@@ -1943,7 +1840,6 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                     viewRow.pulse.cycleId ?? 'no-pulse',
                     viewRow.wave.cycleId ?? 'no-wave',
                   ].join(':');
-                  const strategyColor = strategyColorForCategory(viewRow.tradingCategory);
                   const pulseQuality = displayQualityForView(
                     viewRow,
                     'pulse',
@@ -1956,8 +1852,8 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                     qualityPeriod,
                     qualityFilterContext
                   );
-                  const pulseMuted = streamMutedByFilters(viewRow, 'pulse', qualityFilterContext);
-                  const waveMuted = streamMutedByFilters(viewRow, 'wave', qualityFilterContext);
+                  const pulseMuted = streamMutedByFilters(viewRow, 'pulse');
+                  const waveMuted = streamMutedByFilters(viewRow, 'wave');
                   const pulseQualityMatched = streamQualityMatchesThreshold(
                     viewRow,
                     'pulse',
@@ -1974,8 +1870,6 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                     riskRewardThreshold,
                     qualityFilterContext
                   );
-                  const strategyQualityMatched = pulseQualityMatched || waveQualityMatched;
-
                   return (
                     <tr
                       key={rowKey}
@@ -2041,32 +1935,6 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                           </div>
                         </td>
                       ) : null}
-                      <td
-                        className={cn(
-                          'trend-front-strategy-cell',
-                          symbolGroupSize > 1 && 'trend-front-strategy-branch-cell',
-                          strategyQualityMatched && 'trend-front-cell-quality-match'
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'trend-front-strategy-pill',
-                            !viewRow.tradingCategory && 'trend-front-strategy-pill-all'
-                          )}
-                          title={strategyCellTitle(viewRow.tradingCategory, activeLanguage)}
-                        >
-                          {strategyColor ? (
-                            <span
-                              className="trend-front-strategy-dot"
-                              style={{ backgroundColor: strategyColor }}
-                              aria-hidden
-                            />
-                          ) : null}
-                          <span className="trend-front-strategy-name">
-                            {strategyCellLabel(viewRow.tradingCategory)}
-                          </span>
-                        </span>
-                      </td>
                       <td className={cn(pulseQualityMatched && 'trend-front-cell-quality-match')}>
                         <div className="trend-front-signal-cell">
                           <StreamSignalBadge
@@ -2222,9 +2090,11 @@ const TREND_FRONT_STYLES = `
   .trend-front *::-webkit-scrollbar-thumb:hover { background: #3a3a3a; background-clip: padding-box; }
   .trend-front-wrap { width: 100%; max-width: 1400px; margin: 0 auto; padding: 30px var(--header-padding-x) 80px; }
   .trend-front-page-h { font-size: 18px; font-weight: 800; margin-top: 1.625rem; margin-bottom: 18px; letter-spacing: 0; color: var(--tf-text); }
-  .trend-front-filter-panel { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; border: 1px solid var(--tf-border); border-radius: 8px; background: var(--tf-panel); padding: 12px; }
-  .trend-front-filter-row { display: flex; width: 100%; min-width: 0; align-items: center; gap: 10px 14px; flex-wrap: wrap; }
-  .trend-front-filter-row-primary { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr); gap: 12px; align-items: end; }
+  .trend-front-filter-panel { overflow-x: auto; margin-bottom: 14px; border: 1px solid var(--tf-border); border-radius: 8px; background: var(--tf-panel); padding: 12px; }
+  .trend-front-filter-row { display: flex; width: max-content; min-width: 100%; align-items: flex-end; gap: 12px; flex-wrap: nowrap; }
+  .trend-front-filter-row-primary { display: flex; align-items: flex-end; }
+  .trend-front-filter-row-primary > label { width: 220px; flex: 0 0 220px; }
+  .trend-front-filter-row-primary > .trend-front-quality-control { width: 185px; flex: 0 0 185px; }
   .trend-front-filter-row-secondary { align-items: flex-start; }
   .trend-front-quality-control { display: flex; min-width: 0; flex-direction: column; gap: 8px; }
   .trend-front-quality-control-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--tf-muted); font-size: 11.5px; font-weight: 700; }
@@ -2376,7 +2246,6 @@ const TREND_FRONT_STYLES = `
   .trend-front-formula b { color: var(--tf-text); }
   @media (max-width: 900px) {
     .trend-front-wrap { padding-top: 24px; padding-bottom: 72px; }
-    .trend-front-filter-row-primary { grid-template-columns: 1fr; }
     table.trend-front-dt { min-width: 1120px; }
     .trend-front-logic-grid { grid-template-columns: 1fr; }
     .trend-front-scorelogic-grid { grid-template-columns: 1fr; }
@@ -2387,15 +2256,6 @@ const TREND_FRONT_STYLES = `
      세로로 쌓고, 그룹 내부는 grid로 바꿔 라벨을 전체 폭 한 줄로 고정한 뒤
      칩들을 균등한 열로 배치한다 — 칩 개수와 무관하게 항상 격자로 보인다. */
   @media (max-width: 640px) {
-    .trend-front-filter-row { flex-direction: column; align-items: stretch; }
-    .trend-front-control-group {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-      gap: 6px;
-      width: 100%;
-    }
-    .trend-front-lab { grid-column: 1 / -1; margin-right: 0; }
-    .trend-front-filter-chip { width: 100%; justify-content: center; }
     .trend-front-sortbar { justify-content: flex-start; }
   }
 `;

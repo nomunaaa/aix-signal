@@ -17,7 +17,7 @@ export type TrendBoardHistoricalQualityStat = {
   engine: TrendEngine;
   tradingCategory: TradingCategory;
   trendMode: TrendBoardHistoricalTrendMode;
-  period: 'last30d' | 'all';
+  period: 'last30d' | 'last3mo' | 'all';
   sampleSize: number;
   winCount: number;
   lossCount: number;
@@ -31,13 +31,13 @@ type HistoricalQualityRpcRow = {
   symbol?: unknown;
   barinterval?: unknown;
   trading_category?: unknown;
-  trend_mode?: unknown;
-  period?: unknown;
-  sample_size?: unknown;
+  trend?: unknown;
+  timeinterval?: unknown;
+  entries?: unknown;
   win_count?: unknown;
   loss_count?: unknown;
-  win_pnl_sum?: unknown;
-  loss_pnl_abs_sum?: unknown;
+  wins_pnl_pct_sum?: unknown;
+  losses_pnl_pct_abs_sum?: unknown;
 };
 
 const HISTORICAL_QUALITY_REFRESH_MS = 60_000;
@@ -62,8 +62,10 @@ function trendModeFromValue(value: unknown): TrendBoardHistoricalTrendMode | nul
   return normalizeSignalTrendMode(value);
 }
 
-function periodFromValue(value: unknown): 'last30d' | 'all' | null {
-  if (value === 'last30d' || value === 'all') return value;
+function periodFromValue(value: unknown): 'last30d' | 'last3mo' | 'all' | null {
+  if (value === 'last_30d') return 'last30d';
+  if (value === 'last_3mo') return 'last3mo';
+  if (value === 'all_time') return 'all';
   return null;
 }
 
@@ -72,7 +74,7 @@ export function trendBoardHistoricalQualityKey(
   engine: TrendEngine,
   tradingCategory: TradingCategory,
   trendMode: TrendBoardHistoricalTrendMode,
-  period: 'last30d' | 'all'
+  period: 'last30d' | 'last3mo' | 'all'
 ): string {
   return [
     symbol.trim().toUpperCase(),
@@ -87,8 +89,8 @@ function mapHistoricalQualityRow(raw: HistoricalQualityRpcRow): TrendBoardHistor
   const symbol = typeof raw.symbol === 'string' ? raw.symbol.trim().toUpperCase() : '';
   const engine = engineFromBarinterval(raw.barinterval);
   const tradingCategory = normalizeTradingCategory(raw.trading_category);
-  const trendMode = trendModeFromValue(raw.trend_mode);
-  const period = periodFromValue(raw.period);
+  const trendMode = trendModeFromValue(raw.trend);
+  const period = periodFromValue(raw.timeinterval);
 
   if (!symbol || !engine || !tradingCategory || !trendMode || !period) return null;
 
@@ -98,11 +100,11 @@ function mapHistoricalQualityRow(raw: HistoricalQualityRpcRow): TrendBoardHistor
     tradingCategory,
     trendMode,
     period,
-    sampleSize: positiveInteger(raw.sample_size),
+    sampleSize: positiveInteger(raw.entries),
     winCount: positiveInteger(raw.win_count),
     lossCount: positiveInteger(raw.loss_count),
-    winPnlSum: finiteNumber(raw.win_pnl_sum),
-    lossPnlAbsSum: finiteNumber(raw.loss_pnl_abs_sum),
+    winPnlSum: finiteNumber(raw.wins_pnl_pct_sum),
+    lossPnlAbsSum: finiteNumber(raw.losses_pnl_pct_abs_sum),
   };
 }
 
@@ -112,15 +114,26 @@ function buildHistoricalQualityLookup(rows: readonly HistoricalQualityRpcRow[]):
   for (const raw of rows) {
     const row = mapHistoricalQualityRow(raw);
     if (!row) continue;
+    const key = trendBoardHistoricalQualityKey(
+      row.symbol,
+      row.engine,
+      row.tradingCategory,
+      row.trendMode,
+      row.period
+    );
+    const existing = lookup.get(key);
     lookup.set(
-      trendBoardHistoricalQualityKey(
-        row.symbol,
-        row.engine,
-        row.tradingCategory,
-        row.trendMode,
-        row.period
-      ),
-      row
+      key,
+      existing
+        ? {
+            ...row,
+            sampleSize: existing.sampleSize + row.sampleSize,
+            winCount: existing.winCount + row.winCount,
+            lossCount: existing.lossCount + row.lossCount,
+            winPnlSum: existing.winPnlSum + row.winPnlSum,
+            lossPnlAbsSum: existing.lossPnlAbsSum + row.lossPnlAbsSum,
+          }
+        : row
     );
   }
 
@@ -149,15 +162,22 @@ export function useTrendBoardHistoricalQuality(
     let cancelled = false;
 
     async function loadHistoricalQuality() {
-      const { data, error } = await (supabase.rpc as any)('get_trend_board_historical_quality', {
-        p_symbols: symbolList,
-        p_min_sample: 1,
-      });
+      const { data, error } = await supabase
+        .from('proof_stats')
+        .select(
+          'symbol,barinterval,trading_category,trend,timeinterval,entries,win_count,loss_count,wins_pnl_pct_sum,losses_pnl_pct_abs_sum'
+        )
+        .eq('scope', 'symbol')
+        .in('category', ['standard', 'discounted'])
+        .eq('trading_category', 'E2X2')
+        .eq('trend', 'reversal')
+        .in('timeinterval', ['last_30d', 'last_3mo', 'all_time'])
+        .in('symbol', symbolList);
 
       if (cancelled) return;
 
       if (error) {
-        console.warn('[useTrendBoardHistoricalQuality] failed to load stats:', error);
+        console.warn('[useTrendBoardHistoricalQuality] failed to load proof_stats:', error);
         setQualityLookup(EMPTY_HISTORICAL_QUALITY);
         return;
       }

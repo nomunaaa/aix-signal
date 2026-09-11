@@ -138,7 +138,7 @@ function readHistoryDatePeriodFromStorage(): HistoryDatePeriod {
   return '30d';
 }
 
-export type QualityPeriod = 'last30d' | 'all';
+export type QualityPeriod = 'last30d' | 'last3mo' | 'all';
 
 function clampQualityNumber(value: unknown, min: number, max: number, fallback: number): number {
   const numeric = Number(value);
@@ -173,7 +173,10 @@ function readQualityFiltersFromStorage(): {
         5,
         DEFAULT_QUALITY_RISK_REWARD_THRESHOLD
       ),
-      qualityPeriod: parsed.qualityPeriod === 'all' ? 'all' : 'last30d',
+      qualityPeriod:
+        parsed.qualityPeriod === 'all' || parsed.qualityPeriod === 'last3mo'
+          ? parsed.qualityPeriod
+          : 'last30d',
     };
   } catch {
     return fallback;
