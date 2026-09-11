@@ -5,9 +5,17 @@
  * /chart1m. The toolbar mirrors chart1m's controls (Pulse/Wave interval,
  * 구분 trend-mode checkboxes, 신호 category, timeframe pills, Bollinger,
  * Trend short/long) but applies them to all 6 tiles at once.
+ *
+ * Mobile (<sm) collapses the whole control cluster behind one summary
+ * button + bottom Sheet — the same pattern PulseActionControlsBar uses —
+ * instead of letting ~10 differently-sized controls wrap into a ragged
+ * pile. Inside the sheet every control is a full-width row or an even
+ * grid, so the sizing stays uniform.
  */
 
 import { useState } from 'react';
+import { SlidersHorizontal } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -38,6 +46,12 @@ const TREND_MODES: { key: ChartTrendMode; label: string }[] = [
   { key: 'reversal', label: '역추세' },
 ];
 
+const INDICATORS = [
+  { key: 'short', label: 'Trend short' },
+  { key: 'long', label: 'Trend long' },
+  { key: 'bollinger', label: 'Bollinger' },
+] as const;
+
 export default function MultiChartGrid() {
   const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS);
   const [barInterval, setBarInterval] = useState<string>('1m');
@@ -51,6 +65,7 @@ export default function MultiChartGrid() {
     'nonTrend',
     'reversal',
   ]);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const setSymbolAt = (index: number, symbol: string) => {
     setSymbols((prev) => prev.map((s, i) => (i === index ? symbol : s)));
@@ -63,28 +78,74 @@ export default function MultiChartGrid() {
     });
   };
 
+  const indicatorValue = (key: (typeof INDICATORS)[number]['key']) =>
+    key === 'short' ? showTrendShort : key === 'long' ? showTrendLong : showBollinger;
+
+  const setIndicator = (key: (typeof INDICATORS)[number]['key'], on: boolean) => {
+    if (key === 'short') setShowTrendShort(on);
+    else if (key === 'long') setShowTrendLong(on);
+    else setShowBollinger(on);
+  };
+
+  const streamLabel = barInterval === '1m' ? 'Pulse' : 'Wave';
+
+  /** 공통 컨트롤 — 데스크톱 인라인과 모바일 시트가 같은 소스를 쓴다. */
+  const streamSelect = (
+    <Select value={barInterval} onValueChange={setBarInterval}>
+      <SelectTrigger className="h-8 w-full text-xs sm:h-7 sm:w-[116px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {STREAMS.map((s) => (
+          <SelectItem key={s.value} value={s.value} className="text-xs">
+            {s.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const categorySelect = (
+    <Select value={category} onValueChange={(v) => setCategory(v as ChartTradingCategoryFilter)}>
+      <SelectTrigger className="h-8 w-full text-xs sm:h-7 sm:w-[84px]">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {CATEGORIES.map((c) => (
+          <SelectItem key={c} value={c} className="text-xs">
+            {c}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div className="flex min-h-[calc(100vh-var(--header-height))] flex-col">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-border px-4 py-2.5">
-        <h1 className="text-sm font-semibold text-foreground">멀티차트</h1>
+      <div className="flex items-center gap-x-4 gap-y-2 border-b border-border px-4 py-2.5 sm:flex-wrap">
+        <h1 className="shrink-0 text-sm font-semibold text-foreground">멀티차트</h1>
 
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        {/* 모바일: 요약 한 줄 + 시트 */}
+        <button
+          type="button"
+          onClick={() => setFilterSheetOpen(true)}
+          className="ml-auto flex h-8 min-w-0 items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/35 sm:hidden"
+          aria-haspopup="dialog"
+          aria-label={`필터: ${streamLabel}, ${category}, ${timeframe}`}
+        >
+          <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="min-w-0 truncate">
+            {streamLabel} · {category} · {timeframe}
+          </span>
+        </button>
+
+        {/* 데스크톱: 인라인 컨트롤 */}
+        <label className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
           차트
-          <Select value={barInterval} onValueChange={setBarInterval}>
-            <SelectTrigger className="h-7 w-[116px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STREAMS.map((s) => (
-                <SelectItem key={s.value} value={s.value} className="text-xs">
-                  {s.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {streamSelect}
         </label>
 
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
           구분
           {TREND_MODES.map((m) => (
             <label key={m.key} className="flex cursor-pointer items-center gap-1 text-foreground">
@@ -99,26 +160,12 @@ export default function MultiChartGrid() {
           ))}
         </div>
 
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <label className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
           신호
-          <Select
-            value={category}
-            onValueChange={(v) => setCategory(v as ChartTradingCategoryFilter)}
-          >
-            <SelectTrigger className="h-7 w-[84px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map((c) => (
-                <SelectItem key={c} value={c} className="text-xs">
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {categorySelect}
         </label>
 
-        <div className="flex items-center gap-1 rounded-md border border-border bg-card/50 p-0.5">
+        <div className="hidden items-center gap-1 rounded-md border border-border bg-card/50 p-0.5 sm:flex">
           {MULTICHART_TF_KEYS.map((tf) => (
             <button
               key={tf}
@@ -135,36 +182,107 @@ export default function MultiChartGrid() {
           ))}
         </div>
 
-        <div className="flex items-center gap-3 text-xs">
-          <label className="flex cursor-pointer items-center gap-1 text-foreground">
-            <input
-              type="checkbox"
-              checked={showTrendShort}
-              onChange={(e) => setShowTrendShort(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            Trend short
-          </label>
-          <label className="flex cursor-pointer items-center gap-1 text-foreground">
-            <input
-              type="checkbox"
-              checked={showTrendLong}
-              onChange={(e) => setShowTrendLong(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            Trend long
-          </label>
-          <label className="flex cursor-pointer items-center gap-1 text-foreground">
-            <input
-              type="checkbox"
-              checked={showBollinger}
-              onChange={(e) => setShowBollinger(e.target.checked)}
-              className="h-3.5 w-3.5 accent-primary"
-            />
-            Bollinger
-          </label>
+        <div className="hidden items-center gap-3 text-xs sm:flex">
+          {INDICATORS.map((ind) => (
+            <label key={ind.key} className="flex cursor-pointer items-center gap-1 text-foreground">
+              <input
+                type="checkbox"
+                checked={indicatorValue(ind.key)}
+                onChange={(e) => setIndicator(ind.key, e.target.checked)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              {ind.label}
+            </label>
+          ))}
         </div>
       </div>
+
+      {/* 모바일 시트 — 모든 행이 전체폭이거나 균등 그리드라 크기가 들쭉날쭉하지 않다. */}
+      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+        <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto sm:hidden">
+          <SheetHeader>
+            <SheetTitle className="text-base font-semibold text-foreground">필터</SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">차트</p>
+              {streamSelect}
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">신호</p>
+              {categorySelect}
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">기간</p>
+              <div className="grid grid-cols-4 gap-2">
+                {MULTICHART_TF_KEYS.map((tf) => (
+                  <button
+                    key={tf}
+                    type="button"
+                    onClick={() => setTimeframe(tf)}
+                    className={`h-10 rounded-md border text-xs font-medium transition-colors ${
+                      timeframe === tf
+                        ? 'border-primary/50 bg-primary/10 text-foreground'
+                        : 'border-border bg-muted/30 text-muted-foreground'
+                    }`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">구분</p>
+              <div className="grid grid-cols-3 gap-2">
+                {TREND_MODES.map((m) => {
+                  const on = trendModes.includes(m.key);
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      onClick={() => toggleTrendMode(m.key)}
+                      className={`h-10 rounded-md border text-xs font-medium transition-colors ${
+                        on
+                          ? 'border-primary/50 bg-primary/10 text-foreground'
+                          : 'border-border bg-muted/30 text-muted-foreground'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">지표</p>
+              <div className="grid grid-cols-3 gap-2">
+                {INDICATORS.map((ind) => {
+                  const on = indicatorValue(ind.key);
+                  return (
+                    <button
+                      key={ind.key}
+                      type="button"
+                      onClick={() => setIndicator(ind.key, !on)}
+                      className={`h-10 rounded-md border px-1 text-[11px] font-medium transition-colors ${
+                        on
+                          ? 'border-primary/50 bg-primary/10 text-foreground'
+                          : 'border-border bg-muted/30 text-muted-foreground'
+                      }`}
+                    >
+                      {ind.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <div className="grid flex-1 grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
         {symbols.map((symbol, index) => (
