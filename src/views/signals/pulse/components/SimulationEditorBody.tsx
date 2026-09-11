@@ -21,14 +21,10 @@ export interface SimulationEditorBodyProps {
 
 export function SimulationEditorBody({ className, historySignals }: SimulationEditorBodyProps) {
   const { copy } = usePulseCopy();
-  const { input, result, setCapital, setCapitalRatio, setLeverage } = useSimulation({ historySignals });
+  const { input, setCapital, setCapitalRatio, setLeverage } = useSimulation({ historySignals });
 
   const clampCapitalRatio = (v: number) =>
     Math.min(CAPITAL_RATIO_MAX, Math.max(CAPITAL_RATIO_MIN, Math.round(v)));
-
-  const entryAmount = Math.round(Math.max(0, input.capital) * (input.capitalRatio / 100));
-  const positionSize = entryAmount * input.leverage;
-  const maxPositions = entryAmount > 0 ? Math.floor(input.capital / entryAmount) : 0;
 
   return (
     <div className={cn('space-y-6', className)}>
@@ -77,37 +73,6 @@ export function SimulationEditorBody({ className, historySignals }: SimulationEd
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 rounded-lg border bg-muted/50 p-4 md:grid-cols-4">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{copy.simulation.entryAmount}</p>
-          <p className="font-mono text-xl font-bold">{formatSimulationUsd(entryAmount)}</p>
-          <p className="text-xs text-muted-foreground">{copy.simulation.totalAsset} × {clampCapitalRatio(input.capitalRatio)}%</p>
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{copy.simulation.positionSize}</p>
-          <p className="font-mono text-xl font-bold text-primary">{formatSimulationUsd(positionSize)}</p>
-          <p className="text-xs text-muted-foreground">{copy.simulation.entryAmountTimes} × {input.leverage}x</p>
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{copy.simulation.maxPositions}</p>
-          <p className="font-mono text-xl font-bold">{maxPositions}{copy.simulation.countSuffix}</p>
-          <p className="text-xs text-muted-foreground">{copy.simulation.maxSignals}</p>
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{copy.simulation.estimatedReturn}</p>
-          <p className="font-mono text-xl font-bold text-green-400">
-            {result ? `${result.estimatedReturn >= 0 ? '+' : ''}${result.estimatedReturn.toFixed(1)}%` : '—'}
-          </p>
-          <p className="text-xs text-muted-foreground">{copy.simulation.estimateOnly}</p>
-        </div>
-      </div>
-
-      <p className="text-[11px] leading-relaxed text-muted-foreground/70">
-        {copy.simulation.disclaimer}
-      </p>
     </div>
   );
 }

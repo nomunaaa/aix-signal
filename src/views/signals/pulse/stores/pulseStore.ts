@@ -35,8 +35,8 @@ const TRADING_CATEGORY_FILTERS_STORAGE_KEY = 'pulse:trading-category-filters';
 // Trend Board가 기존에 쓰던 키를 그대로 재사용 — 이미 저장된 사용자의 threshold 값이
 // 이 store로 이전된 뒤에도 초기화되지 않고 그대로 이어지게 하기 위함.
 const QUALITY_FILTERS_STORAGE_KEY = 'trend-board:v8:quality-filters';
-const DEFAULT_QUALITY_WIN_RATE_THRESHOLD = 50;
-const DEFAULT_QUALITY_RISK_REWARD_THRESHOLD = 2;
+const DEFAULT_QUALITY_WIN_RATE_THRESHOLD = 35;
+const DEFAULT_QUALITY_RISK_REWARD_THRESHOLD = 0.6;
 const HISTORY_DATE_PERIOD_STORAGE_KEY = 'pulse:history-date-period';
 
 function readPulseStorageItem(key: string): string | null {

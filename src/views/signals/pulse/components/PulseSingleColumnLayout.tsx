@@ -17,7 +17,6 @@ import { PulseSectionTable } from './PulseSectionTable';
 import { HistoryTable } from './HistoryTable';
 import { SignalDetailCard } from './SignalDetailCard';
 import { TableControlBar, type SignalDatePeriod } from './TableControlBar';
-import { PulseActionControlsBar } from './PulseActionControlsBar';
 import { useNavigate, useSearchParams } from '@/lib/navigation-compat';
 import { USE_MOCK_SIGNALS } from '@/lib/env/mock';
 import { type FeedSignal, type OpenSignal } from '../utils/section';
@@ -28,7 +27,6 @@ import {
   type ClosedSignal,
   type FilterPresetId,
   type SignalStreamId,
-  SIGNAL_TREND_MODES,
   type SignalTrendMode,
   type SignalTrendModeFilter,
   type HistoryQueryState,
@@ -36,6 +34,7 @@ import {
 import { usePulseStore } from '../stores/pulseStore';
 import { useSimulation } from '../hooks/useSimulation';
 import { useClosedSignalHistoryPage } from '../hooks/useClosedSignalHistoryPage';
+import { useStreamWinRates } from '../hooks/useStreamWinRates';
 import { useActiveSection } from '../hooks/useActiveSection';
 import { PRESET_COLUMN_MAP } from '../config/presetColumns';
 import { DEFAULT_FILTER_PRESET } from '../utils/filterPresets';
@@ -50,7 +49,6 @@ import { chartPathForSignal } from '../utils/chartLink';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
 import {
   normalizeTradingCategory,
-  TRADING_CATEGORY_ORDER,
   type TradingCategory,
 } from '@/lib/trading-category';
 import {
@@ -62,6 +60,12 @@ import { localizePulseColumnDefs, usePulseCopy } from '../utils/pulseTranslation
 
 type StreamFilterState = Record<SignalStreamId, boolean>;
 const DEFAULT_HISTORY_PAGE_SIZE = 10;
+const E2X2_REVERSAL_TREND_FILTER: SignalTrendModeFilter = {
+  trend: false,
+  nonTrend: false,
+  reversal: true,
+};
+const E2X2_ONLY_CATEGORIES: TradingCategory[] = ['E2X2'];
 
 type SummaryBucketKey =
   | 'discountedSimultaneous'
@@ -103,44 +107,6 @@ function parseHistoryPeriodParam(value: string | null): SignalDatePeriod | null 
   return value === '30d' || value === '90d' || value === 'all' ? value : null;
 }
 
-function parseHistoryStreamFilterParam(value: string | null): StreamFilterState | null {
-  if (!value) return null;
-  const streams = new Set(
-    value
-      .split(',')
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
-  );
-  const next = {
-    pulse: streams.has('pulse'),
-    wave: streams.has('wave'),
-  };
-  return next.pulse || next.wave ? next : null;
-}
-
-function parseHistoryTrendModeParam(value: string | null): SignalTrendModeFilter | null {
-  if (!value) return null;
-  const modes = new Set(value.split(',').map((mode) => mode.trim()));
-  const next: SignalTrendModeFilter = {
-    trend: modes.has('trend'),
-    nonTrend: modes.has('nonTrend'),
-    reversal: modes.has('reversal'),
-  };
-  return SIGNAL_TREND_MODES.some((mode) => next[mode]) ? next : null;
-}
-
-function parseHistoryCategoriesParam(value: string | null): TradingCategory[] | null {
-  if (!value) return null;
-  const parsed = value
-    .split(',')
-    .map((item) => normalizeTradingCategory(item))
-    .filter((item): item is TradingCategory => Boolean(item));
-  if (parsed.length === 0) return null;
-
-  const parsedSet = new Set(parsed);
-  const ordered = TRADING_CATEGORY_ORDER.filter((item) => parsedSet.has(item));
-  return ordered.length > 0 ? ordered : null;
-}
 
 function streamFromBarinterval(barinterval?: '1m' | '10m'): SignalStreamId {
   return barinterval === '10m' ? 'wave' : 'pulse';
@@ -211,10 +177,6 @@ function favoriteSymbolKey(symbol: string): string {
   return symbol.trim().toUpperCase();
 }
 
-function allTradingCategoriesSelected(categories: readonly string[]): boolean {
-  return categories.length === TRADING_CATEGORY_ORDER.length;
-}
-
 function rowHasAdditionalEntry(row: OpenRowData): boolean {
   return (
     row.additionalSignal === true ||
@@ -265,9 +227,6 @@ export function PulseSingleColumnLayout({
   const { language, copy } = usePulseCopy();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const historyStreamsParam = searchParams.get('historyStreams');
-  const historyTrendModeParam = searchParams.get('historyTrendMode');
-  const historyCategoriesParam = searchParams.get('historyCategories');
   // 사용자가 히스토리 종목 스코프를 '전체'로 직접 되돌리면 true — URL의 historySymbol/search가
   // (index.tsx의 재동기화 effect 등으로) 뒤늦게 되살아나더라도 이번 마운트 동안은 무시한다.
   const historySymbolFilterClearedRef = useRef(false);
@@ -292,41 +251,11 @@ export function PulseSingleColumnLayout({
         : undefined,
     [historyFromIso, historyToIso]
   );
-  const historyStreamFilterFromUrl = useMemo(
-    () => parseHistoryStreamFilterParam(historyStreamsParam),
-    [historyStreamsParam]
-  );
-  const historyTrendModeFilterFromUrl = useMemo(
-    () => parseHistoryTrendModeParam(historyTrendModeParam),
-    [historyTrendModeParam]
-  );
-  const historyTradingCategoriesFromUrl = useMemo(
-    () => parseHistoryCategoriesParam(historyCategoriesParam),
-    [historyCategoriesParam]
-  );
   const forceRecentlyClosedSort = searchParams.get('historySort') === 'recent_closed';
   const shouldFocusHistory = searchParams.get('historyFocus') === '1';
   const [historyPage, setHistoryPage] = useState(1);
   const [historyQueryState, setHistoryQueryState] = useState<HistoryQueryState | null>(null);
   const historySectionRef = useRef<HTMLDivElement | null>(null);
-  const actionBarRef = useRef<HTMLDivElement | null>(null);
-  const [actionBarHeight, setActionBarHeight] = useState(0);
-  useEffect(() => {
-    const el = actionBarRef.current;
-    if (!el) return;
-    const syncHeight = () => {
-      const next = Math.ceil(el.getBoundingClientRect().height);
-      setActionBarHeight((current) => (current === next ? current : next));
-    };
-    syncHeight();
-    if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', syncHeight);
-      return () => window.removeEventListener('resize', syncHeight);
-    }
-    const observer = new ResizeObserver(syncHeight);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
   const [columnPresetId, setColumnPresetId] = useState<FilterPresetId>(DEFAULT_FILTER_PRESET);
   // 기간 필터는 usePulseStore가 소스 오브 트루스 — usePulseSignals가 같은 값을 읽어
   // exit_time 하한을 SQL에 밀어넣기 때문에 로컬 state로 들고 있으면 전체 히스토리를
@@ -347,26 +276,13 @@ export function PulseSingleColumnLayout({
   const sortBy = usePulseStore((s) => s.sortBy);
   const sortDir = usePulseStore((s) => s.sortDir);
   const favorites = usePulseStore((s) => s.favorites);
-  const trendModeFilter = usePulseStore((s) => s.trendModeFilter);
-  const tradingCategoryFilters = usePulseStore((s) => s.tradingCategoryFilters);
+  const showFavoritesOnly = usePulseStore((s) => s.showFavoritesOnly);
   const streamFilter = usePulseStore((s) => s.streamFilter);
-  const toggleStreamFilter = usePulseStore((s) => s.toggleStreamFilter);
   const isSymbolLocked = allowedSymbols.length === 0;
-  const historyStreamFilter = historyStreamFilterFromUrl ?? streamFilter;
-  const historyTrendModeFilter = historyTrendModeFilterFromUrl ?? trendModeFilter;
-  const historyTradingCategories = historyTradingCategoriesFromUrl ?? tradingCategoryFilters;
+  const historyStreamFilter = streamFilter;
+  const historyTrendModeFilter = E2X2_REVERSAL_TREND_FILTER;
+  const historyTradingCategories = E2X2_ONLY_CATEGORIES;
   const effectiveHistoryDatePeriod = historyPeriodFromUrl ?? datePeriod;
-  const historyTradingCategoryFilterSet = useMemo(
-    () => new Set(historyTradingCategories),
-    [historyTradingCategories]
-  );
-
-  const handleStreamFilterChange = useCallback(
-    (stream: SignalStreamId, checked: boolean) => {
-      if (streamFilter[stream] !== checked) toggleStreamFilter(stream);
-    },
-    [streamFilter, toggleStreamFilter]
-  );
 
   const handleDatePeriodChange = useCallback(
     (period: SignalDatePeriod) => {
@@ -425,20 +341,20 @@ export function PulseSingleColumnLayout({
     [closedSignals, historyStreamFilter]
   );
 
-  const closedForActiveTradingCategories = useMemo(() => {
-    if (allTradingCategoriesSelected(historyTradingCategories)) return closedForActiveStreams;
-    return closedForActiveStreams.filter((signal) => {
-      const category = normalizeTradingCategory(signal.tradingCategory);
-      return category ? historyTradingCategoryFilterSet.has(category) : false;
-    });
-  }, [closedForActiveStreams, historyTradingCategories, historyTradingCategoryFilterSet]);
+  const closedForActiveTradingCategories = useMemo(
+    () =>
+      closedForActiveStreams.filter(
+        (signal) => normalizeTradingCategory(signal.tradingCategory) === 'E2X2'
+      ),
+    [closedForActiveStreams]
+  );
 
   const closedForActiveTrendModes = useMemo(() => {
     return closedForActiveTradingCategories.filter((signal) => {
       const mode = trendModeFromClosedSignal(signal);
-      return mode == null ? false : historyTrendModeFilter[mode];
+      return mode === 'reversal';
     });
-  }, [closedForActiveTradingCategories, historyTrendModeFilter]);
+  }, [closedForActiveTradingCategories]);
 
   const closedForActivePeriod = useMemo(
     () =>
@@ -447,6 +363,34 @@ export function PulseSingleColumnLayout({
       ),
     [closedForActiveTrendModes, effectiveHistoryDatePeriod, exactHistoryDateRange]
   );
+  const fallbackStreamWinRates = useMemo(() => {
+    const totals: Record<SignalStreamId, { wins: number; count: number }> = {
+      pulse: { wins: 0, count: 0 },
+      wave: { wins: 0, count: 0 },
+    };
+    // Reuse the exact period-filtered history data shown below, so the badge and
+    // History total always respond to the same 30d / 3M / all-time selection.
+    for (const signal of closedForActivePeriod) {
+      if (showFavoritesOnly && !favorites.has(favoriteSymbolKey(signal.symbol))) continue;
+      const stream = streamFromClosedSignal(signal);
+      const pnl = Number(signal.pnlPercent);
+      if (!Number.isFinite(pnl)) continue;
+      totals[stream].count += 1;
+      if (pnl > 0) totals[stream].wins += 1;
+    }
+    return {
+      pulse: totals.pulse.count ? (totals.pulse.wins / totals.pulse.count) * 100 : undefined,
+      wave: totals.wave.count ? (totals.wave.wins / totals.wave.count) * 100 : undefined,
+    };
+  }, [closedForActivePeriod, favorites, showFavoritesOnly]);
+  const serverStreamWinRates = useStreamWinRates({
+    enabled: !USE_MOCK_SIGNALS && !isSymbolLocked,
+    symbols: allowedSymbols,
+    favorites,
+    favoritesOnly: showFavoritesOnly,
+    period: effectiveHistoryDatePeriod,
+  });
+  const streamWinRates = USE_MOCK_SIGNALS ? fallbackStreamWinRates : serverStreamWinRates;
 
   const filteredClosed = useMemo(() => {
     if (!debouncedSearchQuery.trim()) return closedForActivePeriod;
@@ -468,8 +412,7 @@ export function PulseSingleColumnLayout({
     !debouncedSearchQuery.trim() &&
     historyStreamFilter.pulse &&
     historyStreamFilter.wave &&
-    SIGNAL_TREND_MODES.every((mode) => historyTrendModeFilter[mode]) &&
-    allTradingCategoriesSelected(historyTradingCategories);
+    historyTrendModeFilter.reversal;
   const historyDisplayTotalCount = canUseHistoryServerTotal
     ? Math.max(closedSignalsTotalCount, sortedClosed.length)
     : sortedClosed.length;
@@ -601,10 +544,10 @@ export function PulseSingleColumnLayout({
       const trendMode = trendModeFromOpenSignal(row._raw);
       if (trendMode == null) continue;
 
-      if (trendMode === 'reversal') {
-        buckets[discounted ? 'discountedReversal' : 'standardReversal'].push(row);
-      } else if (simultaneous) {
+      if (simultaneous) {
         buckets[discounted ? 'discountedSimultaneous' : 'standardSimultaneous'].push(row);
+      } else if (trendMode === 'reversal') {
+        buckets[discounted ? 'discountedReversal' : 'standardReversal'].push(row);
       } else if (trendMode === 'trend') {
         buckets[discounted ? 'discountedTrend' : 'standardTrend'].push(row);
       } else {
@@ -641,20 +584,6 @@ export function PulseSingleColumnLayout({
   const discountedTrendHasPartialExit = summaryBuckets.discountedTrend.some(rowHasPartialExit);
   const standardTrendHasAdditionalEntry = summaryBuckets.standardTrend.some(rowHasAdditionalEntry);
   const standardTrendHasPartialExit = summaryBuckets.standardTrend.some(rowHasPartialExit);
-  const discountedReversalHasAdditionalEntry =
-    summaryBuckets.discountedReversal.some(rowHasAdditionalEntry);
-  const discountedReversalHasPartialExit =
-    summaryBuckets.discountedReversal.some(rowHasPartialExit);
-  const standardReversalHasAdditionalEntry =
-    summaryBuckets.standardReversal.some(rowHasAdditionalEntry);
-  const standardReversalHasPartialExit = summaryBuckets.standardReversal.some(rowHasPartialExit);
-  const discountedNoTrendHasAdditionalEntry =
-    summaryBuckets.discountedNoTrend.some(rowHasAdditionalEntry);
-  const discountedNoTrendHasPartialExit = summaryBuckets.discountedNoTrend.some(rowHasPartialExit);
-  const standardNoTrendHasAdditionalEntry =
-    summaryBuckets.standardNoTrend.some(rowHasAdditionalEntry);
-  const standardNoTrendHasPartialExit = summaryBuckets.standardNoTrend.some(rowHasPartialExit);
-
   const discountedSimultaneousCols = useMemo(
     () =>
       buildSummaryCols(
@@ -684,29 +613,6 @@ export function PulseSingleColumnLayout({
   const standardTrendCols = useMemo(
     () => buildSummaryCols(false, standardTrendHasAdditionalEntry, standardTrendHasPartialExit),
     [buildSummaryCols, standardTrendHasAdditionalEntry, standardTrendHasPartialExit]
-  );
-  const discountedReversalCols = useMemo(
-    () =>
-      buildSummaryCols(
-        true,
-        discountedReversalHasAdditionalEntry,
-        discountedReversalHasPartialExit
-      ),
-    [buildSummaryCols, discountedReversalHasAdditionalEntry, discountedReversalHasPartialExit]
-  );
-  const standardReversalCols = useMemo(
-    () =>
-      buildSummaryCols(false, standardReversalHasAdditionalEntry, standardReversalHasPartialExit),
-    [buildSummaryCols, standardReversalHasAdditionalEntry, standardReversalHasPartialExit]
-  );
-  const discountedNoTrendCols = useMemo(
-    () =>
-      buildSummaryCols(true, discountedNoTrendHasAdditionalEntry, discountedNoTrendHasPartialExit),
-    [buildSummaryCols, discountedNoTrendHasAdditionalEntry, discountedNoTrendHasPartialExit]
-  );
-  const standardNoTrendCols = useMemo(
-    () => buildSummaryCols(false, standardNoTrendHasAdditionalEntry, standardNoTrendHasPartialExit),
-    [buildSummaryCols, standardNoTrendHasAdditionalEntry, standardNoTrendHasPartialExit]
   );
 
   const simultaneousCount =
@@ -797,64 +703,18 @@ export function PulseSingleColumnLayout({
       columns: standardSimultaneousCols,
     },
     {
-      id: 'discounted-trend',
-      title: language === 'ko' ? '할인 추세 시그널' : 'Discounted trend signal',
-      subtitle:
-        language === 'ko'
-          ? '할인 상태이며 방향과 단기·장기 추세가 일치하는 오픈 시그널'
-          : 'Discounted open signals aligned with short and long trend.',
-      rows: summaryBuckets.discountedTrend,
+      id: 'discounted-active',
+      title: language === 'ko' ? '할인 활성 시그널' : 'Discounted Active Signals',
+      subtitle: language === 'ko' ? '동시발생을 제외한 할인 오픈 시그널' : 'Discounted open signals excluding simultaneous signals.',
+      rows: [...summaryBuckets.discountedTrend, ...summaryBuckets.discountedReversal, ...summaryBuckets.discountedNoTrend],
       columns: discountedTrendCols,
     },
     {
-      id: 'standard-trend',
-      title: language === 'ko' ? '추세 시그널' : 'Trend signal',
-      subtitle:
-        language === 'ko'
-          ? '할인 상태가 아니며 방향과 단기·장기 추세가 일치하는 오픈 시그널'
-          : 'Non-discounted open signals aligned with short and long trend.',
-      rows: summaryBuckets.standardTrend,
+      id: 'active',
+      title: language === 'ko' ? '활성 시그널' : 'Active Signals',
+      subtitle: language === 'ko' ? '동시발생을 제외한 일반 오픈 시그널' : 'Open signals excluding simultaneous signals.',
+      rows: [...summaryBuckets.standardTrend, ...summaryBuckets.standardReversal, ...summaryBuckets.standardNoTrend],
       columns: standardTrendCols,
-    },
-    {
-      id: 'discounted-reversal',
-      title: language === 'ko' ? '할인 역추세 시그널' : 'Discounted reversal signal',
-      subtitle:
-        language === 'ko'
-          ? '할인 상태이며 장기 추세가 하락으로 잡힌 역추세 오픈 시그널'
-          : 'Discounted open signals classified as reversal from entry trend snapshots.',
-      rows: summaryBuckets.discountedReversal,
-      columns: discountedReversalCols,
-    },
-    {
-      id: 'standard-reversal',
-      title: language === 'ko' ? '역추세 시그널' : 'Reversal signal',
-      subtitle:
-        language === 'ko'
-          ? '할인 상태가 아니며 장기 추세가 하락으로 잡힌 역추세 오픈 시그널'
-          : 'Non-discounted open signals classified as reversal from entry trend snapshots.',
-      rows: summaryBuckets.standardReversal,
-      columns: standardReversalCols,
-    },
-    {
-      id: 'discounted-no-trend',
-      title: language === 'ko' ? '할인 비추세 시그널' : 'Discounted no-trend signal',
-      subtitle:
-        language === 'ko'
-          ? '할인 상태이며 추세가 일치하지 않는 오픈 시그널'
-          : 'Discounted open signals without trend alignment.',
-      rows: summaryBuckets.discountedNoTrend,
-      columns: discountedNoTrendCols,
-    },
-    {
-      id: 'standard-no-trend',
-      title: language === 'ko' ? '비추세 시그널' : 'No-trend signal',
-      subtitle:
-        language === 'ko'
-          ? '할인 상태가 아니며 추세가 일치하지 않는 오픈 시그널'
-          : 'Non-discounted open signals without trend alignment.',
-      rows: summaryBuckets.standardNoTrend,
-      columns: standardNoTrendCols,
     },
   ];
 
@@ -878,23 +738,11 @@ export function PulseSingleColumnLayout({
         </div>
       )}
 
-      {/* 1. Action controls — 스트림/전략/시뮬 */}
-      <PulseActionControlsBar
-        containerRef={actionBarRef}
-        isReconnecting={isReconnecting}
-        streamFilter={streamFilter}
-        onStreamFilterChange={handleStreamFilterChange}
-        simulationHistorySignals={historySimulationSignals ?? sortedClosed}
-      />
-
-      {/* 1.1 Table Control Bar — 검색/필터/정렬/밀도 (sticky)
-          위 ActionControlsBar도 sticky(top: header-height)라, 이 바가 같은 top 값을
-          쓰면 둘 다 같은 지점에서 들러붙어 서로 겹친다 — ActionControlsBar의 실제
-          렌더 높이만큼 이 바의 top을 더 내려서 아래로 이어붙게 한다. */}
+      {/* 1. Table Control Bar — filters and simulation (sticky) */}
       <div
         className="sticky z-20 w-full border-b border-border bg-background"
         style={{
-          top: `calc(var(--header-height) + ${isReconnecting ? 36 : 0}px + ${actionBarHeight}px)`,
+          top: isReconnecting ? 'calc(var(--header-height) + 36px)' : 'var(--header-height)',
         }}
       >
         <div
@@ -920,6 +768,8 @@ export function PulseSingleColumnLayout({
               onDatePeriodChange={handleDatePeriodChange}
               showSignalStateFilter={false}
               favoriteSymbols={favoriteSymbols}
+              streamWinRates={streamWinRates}
+              simulationHistorySignals={historySimulationSignals ?? sortedClosed}
             />
           </div>
         </div>

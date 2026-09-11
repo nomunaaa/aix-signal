@@ -85,7 +85,7 @@ export function SymbolQualityFilter({
       <QualitySlider
         label={copy.quality.winRate}
         value={winRateThreshold}
-        min={0}
+        min={35}
         max={100}
         step={1}
         valueLabel={`${winRateThreshold}%`}
@@ -94,7 +94,7 @@ export function SymbolQualityFilter({
       <QualitySlider
         label={copy.quality.riskReward}
         value={riskRewardThreshold}
-        min={0}
+        min={0.6}
         max={5}
         step={0.1}
         valueLabel={riskRewardThreshold.toFixed(1)}

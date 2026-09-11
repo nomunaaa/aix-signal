@@ -68,7 +68,6 @@ export function FavoriteScopeControls({ symbols, className, onSelectAll }: Favor
           </SelectItem>
         </SelectContent>
       </Select>
-
       <FavoriteSymbolsCombobox symbols={symbols} />
     </div>
   );

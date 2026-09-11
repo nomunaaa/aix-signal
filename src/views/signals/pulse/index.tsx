@@ -7,7 +7,7 @@ import { PulseEntryGate } from './components/PulseEntryGate';
 import { PulseSingleColumnLayout } from './components/PulseSingleColumnLayout';
 import { KairosPanel } from './components/KairosPanel';
 import { usePulseSignals } from './hooks/usePulseSignals';
-import { isPulseApiEnabled, usePulseApiAllCategories } from './hooks/usePulseApi';
+import { isPulseApiEnabled, usePulseApi } from './hooks/usePulseApi';
 import { usePulseRealtime } from './hooks/usePulseRealtime';
 import { useSignalFilter } from './hooks/useSignalFilter';
 import { usePulseStore } from './stores/pulseStore';
@@ -133,11 +133,13 @@ function PulseDashboard() {
     tradingCategoryFilters,
   ]);
 
-  const pulseApi = usePulseApiAllCategories({
+  const pulseApi = usePulseApi({
+    strategyId: 'full',
     stream: 'pulse',
     enabled: pulseApiEnabled && allowedSymbols.length > 0,
   });
-  const waveApi = usePulseApiAllCategories({
+  const waveApi = usePulseApi({
+    strategyId: 'full',
     stream: 'wave',
     enabled: pulseApiEnabled && allowedSymbols.length > 0,
   });
@@ -159,8 +161,8 @@ function PulseDashboard() {
     enabled:
       pulseApiEnabled && allowedSymbols.length > 0 && (!!pulseApi.refetch || !!waveApi.refetch),
   });
-  const legacyPulse = usePulseSignals(allowedSymbols, 'pulse', null);
-  const legacyWave = usePulseSignals(allowedSymbols, 'wave', null);
+  const legacyPulse = usePulseSignals(allowedSymbols, 'pulse', 'full');
+  const legacyWave = usePulseSignals(allowedSymbols, 'wave', 'full');
 
   const usePulseApiData = pulseApi.isEnabled && !pulseApi.isLoading && !pulseApi.isError;
   const useWaveApiData = waveApi.isEnabled && !waveApi.isLoading && !waveApi.isError;

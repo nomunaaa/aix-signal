@@ -226,7 +226,7 @@ export function PulseActionControlsBar({
     if (panel === 'strategy') return <StrategySelectorPanel />;
     if (panel === 'sim') {
       return (
-        <div className="space-y-4 rounded-lg border border-border bg-card/80 p-4">
+        <div className="w-[min(100%,24rem)] space-y-4 rounded-lg border border-border bg-card/80 p-4">
           <p className="text-sm font-medium text-foreground">{copy.actionBar.simulationSettings}</p>
           <SimulationEditorBody historySignals={simulationHistorySignals} />
         </div>
@@ -259,123 +259,6 @@ export function PulseActionControlsBar({
             'sm:gap-2.5'
           )}
         >
-          <div
-            className="flex min-w-[min(100%,280px)] shrink-0 items-stretch gap-0 overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5 sm:min-w-0 sm:max-w-md"
-            role="group"
-            aria-label={copy.actionBar.streamGroup}
-          >
-            {streamSegment('pulse')}
-            <div className="w-px shrink-0 self-stretch bg-border/90" aria-hidden />
-            {streamSegment('wave')}
-          </div>
-
-          <span className="hidden h-6 w-px shrink-0 bg-border sm:block" aria-hidden />
-
-          <button
-            type="button"
-            onClick={() => setFilterSheetOpen(true)}
-            className="flex h-9 min-w-0 shrink-0 items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/35 active:bg-muted/45 sm:hidden"
-            aria-haspopup="dialog"
-            aria-label={`${language === 'ko' ? '필터' : 'Filters'}: ${categorySummary} · ${trendSummary}`}
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            <span className="min-w-0 truncate">
-              {categorySummary}
-              <span className="text-muted-foreground"> · </span>
-              {trendSummary}
-            </span>
-          </button>
-
-          <div
-            className="hidden shrink-0 flex-nowrap items-center gap-1.5 sm:flex"
-            role="group"
-            aria-label={copy.actionBar.strategyPanel}
-          >
-            {TRADING_CATEGORY_ORDER.map((category) => {
-              const on = tradingCategoryFilters.includes(category);
-              const strategy = STRATEGY_CONFIGS.find(
-                (item) => item.id === TRADING_CATEGORY_TO_STRATEGY[category]
-              );
-              return (
-                <button
-                  key={category}
-                  type="button"
-                  role="checkbox"
-                  aria-checked={on}
-                  onClick={() => toggleTradingCategoryFilter(category)}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
-                    on
-                      ? 'border-primary/50 bg-primary/10 text-foreground'
-                      : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors',
-                      on
-                        ? 'border-foreground bg-foreground text-background shadow-sm'
-                        : 'border-muted-foreground/55 bg-background text-transparent'
-                    )}
-                    aria-hidden
-                  >
-                    <Check className="h-3 w-3 stroke-[3]" />
-                  </span>
-                  <span className="font-mono">{category}</span>
-                  {strategy ? (
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: strategy.color }}
-                    />
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-
-          <div
-            className="hidden h-10 shrink-0 items-center gap-1 rounded-lg border border-border bg-card/50 p-1 sm:flex"
-            role="group"
-            aria-label="Trend filter"
-          >
-            {SIGNAL_TREND_MODES.map((mode) => {
-              const selected = trendModeFilter[mode];
-              return (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => toggleTrendMode(mode)}
-                  className={cn(
-                    'flex h-8 items-center gap-1.5 rounded-md px-2.5 text-xs font-semibold leading-none tracking-wide transition-colors',
-                    'hover:bg-muted/35 active:bg-muted/50'
-                  )}
-                  role="checkbox"
-                  aria-checked={selected}
-                >
-                  <span
-                    className={cn(
-                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors',
-                      selected
-                        ? 'border-foreground bg-foreground text-background shadow-sm'
-                        : 'border-muted-foreground/55 bg-background text-transparent'
-                    )}
-                    aria-hidden
-                  >
-                    <Check className="h-3 w-3 stroke-[3]" />
-                  </span>
-                  <span
-                    className={cn(
-                      'whitespace-nowrap',
-                      selected ? 'text-foreground' : 'text-muted-foreground'
-                    )}
-                  >
-                    {trendLabels[mode]}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
           {hideSimulation ? null : (
             <div className="flex shrink-0 items-center gap-2">
               <span

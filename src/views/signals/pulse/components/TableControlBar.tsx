@@ -26,12 +26,17 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { ColumnPicker, type ColumnConfig } from './ColumnPicker';
 import { FavoriteScopeControls } from './FavoriteScopeControls';
+import { SimulationEditorBody } from './SimulationEditorBody';
+import { useSimulation } from '../hooks/useSimulation';
+import { formatSimulationUsd } from '../utils/formatSimulationSummary';
 import { COLUMN_LABELS } from '../config/columnLabels';
 import { PRESET_COLUMN_MAP, PRESET_COLUMNS } from '../config/presetColumns';
 import type {
   FilterPresetId,
   PulseSortBy,
   SignalStateFilter,
+  SignalStreamId,
+  ClosedSignal,
   TableFilterPreset,
 } from '../types/pulse.types';
 import {
@@ -92,6 +97,8 @@ interface TableControlBarProps {
   onDatePeriodChange?: (period: SignalDatePeriod) => void;
   showSignalStateFilter?: boolean;
   favoriteSymbols?: readonly string[];
+  streamWinRates?: Partial<Record<SignalStreamId, number>>;
+  simulationHistorySignals?: ClosedSignal[];
 }
 
 function parseCombinedFilterValue(v: string): {
@@ -126,6 +133,8 @@ export function TableControlBar({
   onDatePeriodChange,
   showSignalStateFilter = true,
   favoriteSymbols = [],
+  streamWinRates = {},
+  simulationHistorySignals,
 }: TableControlBarProps) {
   const { language, copy } = usePulseCopy();
   const searchQuery = usePulseStore((s) => s.searchQuery);
@@ -144,6 +153,14 @@ export function TableControlBar({
   const toggleSectionColumn = usePulseStore((s) => s.toggleSectionColumn);
   const signalStateFilter = usePulseStore((s) => s.signalStateFilter);
   const setSignalStateFilter = usePulseStore((s) => s.setSignalStateFilter);
+  const streamFilter = usePulseStore((s) => s.streamFilter);
+  const toggleStreamFilter = usePulseStore((s) => s.toggleStreamFilter);
+  const qualityWinRateThreshold = usePulseStore((s) => s.qualityWinRateThreshold);
+  const qualityRiskRewardThreshold = usePulseStore((s) => s.qualityRiskRewardThreshold);
+  const setQualityWinRateThreshold = usePulseStore((s) => s.setQualityWinRateThreshold);
+  const setQualityRiskRewardThreshold = usePulseStore((s) => s.setQualityRiskRewardThreshold);
+  const { input: simulationInput } = useSimulation({ historySignals: simulationHistorySignals });
+  const [simulationOpen, setSimulationOpen] = useState(false);
 
   const sectionId = activeTableId ?? 'default';
   const sectionOverrides = sectionColumnVisibility[sectionId] ?? {};
@@ -287,6 +304,7 @@ export function TableControlBar({
       </div>
 
       {/* 열 구성 + 시간·방향 — 단일 Popover (프리셋 UI 통합) */}
+      <div className="hidden">
       {onColumnPresetChange ? (
         <Popover open={presetOpen} onOpenChange={setPresetOpen}>
           <PopoverTrigger asChild>
@@ -399,15 +417,16 @@ export function TableControlBar({
           </SelectContent>
         </Select>
       )}
+      </div>
 
-      <div className="hidden sm:block">
+      <div className="hidden">
         <ColumnPicker columns={columnConfigs} onToggle={handleColumnToggle} className="shrink-0" />
       </div>
 
       <button
         type="button"
         onClick={() => setMoreSheetOpen(true)}
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 sm:hidden"
+        className="hidden"
         aria-haspopup="dialog"
         aria-label={language === 'ko' ? '더 보기' : 'More options'}
       >
@@ -415,36 +434,52 @@ export function TableControlBar({
         <span>{language === 'ko' ? '더보기' : 'More'}</span>
       </button>
 
+      <div className="flex shrink-0 items-center gap-1.5">
+        <FavoriteScopeControls symbols={favoriteSymbols} />
+        <div className="flex min-w-[10rem] shrink-0 items-stretch gap-0 overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5" role="group" aria-label="Pulse Wave filter">
+          {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
+            <button key={stream} type="button" onClick={() => toggleStreamFilter(stream)} role="checkbox" aria-checked={streamFilter[stream]} className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold leading-none tracking-wide transition-colors hover:bg-muted/35 active:bg-muted/50">
+              <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors', streamFilter[stream] ? 'border-foreground bg-foreground text-background shadow-sm' : 'border-muted-foreground/55 bg-background text-transparent')}>✓</span>
+              <span className={cn('whitespace-nowrap', streamFilter[stream] ? 'text-foreground' : 'text-muted-foreground')}>{stream === 'pulse' ? 'PULSE' : 'WAVE'}</span>
+              <span className="ml-1 whitespace-nowrap font-mono text-[11px] font-semibold text-muted-foreground">{typeof streamWinRates[stream] === 'number' ? `${streamWinRates[stream]!.toFixed(0)}%` : '—'}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {datePeriod && onDatePeriodChange ? (
-        <div className="hidden shrink-0 items-center gap-1.5 border-l border-border pl-2 sm:flex">
-          <span className="hidden text-[10px] font-medium uppercase tracking-wide text-muted-foreground sm:inline">
-            {language === 'ko' ? '기간' : 'Date'}
-          </span>
-          <RadioGroup
-            value={datePeriod}
-            onValueChange={(value) => {
+        <div className="shrink-0">
+          <Select value={datePeriod} onValueChange={(value) => {
               if (value === '30d' || value === '90d' || value === 'all') {
                 onDatePeriodChange(value);
               }
-            }}
-            className="flex h-9 items-center gap-1 rounded-md border border-border bg-background px-2"
-            aria-label={language === 'ko' ? '히스토리 기간' : 'History date range'}
-          >
-            <label className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[11px] text-foreground">
-              <RadioGroupItem value="30d" className="h-3.5 w-3.5" />
-              <span>{language === 'ko' ? '최근 30일' : '30D'}</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[11px] text-foreground">
-              <RadioGroupItem value="90d" className="h-3.5 w-3.5" />
-              <span>{language === 'ko' ? '최근 3개월' : '3M'}</span>
-            </label>
-            <label className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-[11px] text-foreground">
-              <RadioGroupItem value="all" className="h-3.5 w-3.5" />
-              <span>{language === 'ko' ? '누적' : 'All'}</span>
-            </label>
-          </RadioGroup>
+            }}>
+            <SelectTrigger className="h-9 w-[132px] text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30d">{language === 'ko' ? '최근 30일' : 'Last 30 days'}</SelectItem>
+              <SelectItem value="90d">{language === 'ko' ? '최근 3개월' : 'Last 3 months'}</SelectItem>
+              <SelectItem value="all">{language === 'ko' ? '누적' : 'All time'}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       ) : null}
+
+      <div className="flex flex-nowrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
+        <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs"><span className="flex items-center justify-between text-muted-foreground"><span>Win Rate</span><b className="font-mono text-foreground">{qualityWinRateThreshold}%</b></span><input className="h-1.5 w-full cursor-pointer accent-primary" type="range" min="35" max="100" step="1" value={qualityWinRateThreshold} onChange={(e) => setQualityWinRateThreshold(Number(e.target.value))} /></label>
+        <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs"><span className="flex items-center justify-between text-muted-foreground"><span>Risk/Reward</span><b className="font-mono text-foreground">{qualityRiskRewardThreshold.toFixed(1)}</b></span><input className="h-1.5 w-full cursor-pointer accent-primary" type="range" min="0.6" max="5" step="0.1" value={qualityRiskRewardThreshold} onChange={(e) => setQualityRiskRewardThreshold(Number(e.target.value))} /></label>
+      </div>
+      <Popover open={simulationOpen} onOpenChange={setSimulationOpen}>
+        <PopoverTrigger asChild>
+          <Button type="button" variant="outline" className="h-10 min-w-[240px] justify-between gap-2 text-left text-xs">
+            <span className="font-medium text-muted-foreground">{copy.actionBar.simulationTitle}</span>
+            <span className="font-mono tabular-nums">{formatSimulationUsd(simulationInput.capital)} · {simulationInput.capitalRatio}% · {simulationInput.leverage}x</span>
+            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-4">
+          <SimulationEditorBody historySignals={simulationHistorySignals} />
+        </PopoverContent>
+      </Popover>
 
       {showSignalStateFilter ? (
         <div className="hidden shrink-0 items-center gap-1.5 border-l border-border pl-2 sm:flex">
@@ -476,11 +511,11 @@ export function TableControlBar({
         </div>
       ) : null}
 
-      <div className="hidden sm:block">
+      <div className="hidden">
         <FavoriteScopeControls symbols={favoriteSymbols} />
       </div>
 
-      <div className="hidden sm:block">
+      <div className="hidden">
         <Select value={sortBy} onValueChange={(v) => setSortBy(v as PulseSortBy)}>
           <SelectTrigger
             className={cn(
@@ -515,7 +550,7 @@ export function TableControlBar({
         </Select>
       </div>
 
-      <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-1.5 sm:gap-x-3">
+      <div className="hidden">
         <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
           <span
             className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-semantic-bull"

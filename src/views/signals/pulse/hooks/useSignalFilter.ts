@@ -64,7 +64,17 @@ export function useSignalFilter<T extends Signal>(signals: T[]): UseSignalFilter
   );
 
   const filtered = useMemo(() => {
-    let result = signals;
+    // Signal Board is intentionally scoped to the E2X2 reversal strategy only.
+    let result = signals.filter((signal) => {
+      if (normalizeTradingCategory(signal.tradingCategory) !== 'E2X2') return false;
+      return (
+        resolveSignalTrendModeFromEntryTrends({
+          direction: signal.direction,
+          shortTrend: signal.entryTrendShort,
+          longTrend: signal.entryTrendLong,
+        }) === 'reversal'
+      );
+    });
 
     if (!isAllTradingCategoriesSelected(tradingCategoryFilters)) {
       const selectedCategories = new Set(tradingCategoryFilters);

@@ -56,14 +56,11 @@ import {
   Download,
   History,
   QrCode,
-  Search,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { CoinIcon } from './CoinIcon';
-import { FavoriteScopeControls } from './FavoriteScopeControls';
-import { getSymbolsFromEnv } from '@/config/symbols';
 import {
   type ClosedSignal,
   type HistoryQueryState,
@@ -435,32 +432,25 @@ function HistoryQrCell(params: ICellRendererParams<ClosedSignal>) {
 function SymbolRenderer(params: ICellRendererParams<ClosedSignal>) {
   if (!params.data) return null;
   const label = formatSymbolPair(params.data.symbol);
-  const categoryColor = tradingCategoryColor(params.data.tradingCategory);
-  const isWave = params.data.barinterval === '10m';
   return (
     <div className="flex w-full min-w-0 items-center justify-start gap-1.5">
       <CoinIcon symbol={params.data.symbol} size={18} className="shrink-0" />
       <span className="min-w-0 truncate text-left font-mono font-medium" title={label}>
         {label}
       </span>
-      <span
-        className={cn(
-          'inline-flex h-4 shrink-0 items-center justify-center rounded px-1 text-[10px] font-semibold leading-none',
-          isWave ? 'bg-purple-500/15 text-purple-400' : 'bg-cyan-500/15 text-cyan-400'
-        )}
-        title={isWave ? 'Wave' : 'Pulse'}
-      >
-        {isWave ? 'W' : 'P'}
-      </span>
-      {categoryColor ? (
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: categoryColor }}
-          title={params.data.tradingCategory}
-          aria-label={params.data.tradingCategory}
-        />
-      ) : null}
     </div>
+  );
+}
+
+function StreamBadgeRenderer(params: ICellRendererParams<ClosedSignal>) {
+  if (!params.data) return null;
+  const isWave = params.data.barinterval === '10m';
+  const categoryColor = tradingCategoryColor(params.data.tradingCategory);
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={cn('inline-flex h-4 items-center justify-center rounded px-1 text-[10px] font-semibold leading-none', isWave ? 'bg-purple-500/15 text-purple-400' : 'bg-cyan-500/15 text-cyan-400')} title={isWave ? 'Wave' : 'Pulse'}>{isWave ? 'W' : 'P'}</span>
+      {categoryColor ? <span className="h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor }} title={params.data.tradingCategory} aria-label={params.data.tradingCategory} /> : null}
+    </span>
   );
 }
 
@@ -663,6 +653,16 @@ const HISTORY_COLUMN_DEFS: ColDef<ClosedSignal>[] = [
   },
   {
     field: 'direction',
+    headerName: 'Stream',
+    colId: 'histStream',
+    width: 76,
+    minWidth: 76,
+    cellRenderer: StreamBadgeRenderer,
+    suppressAutoSize: true,
+    suppressSizeToFit: true,
+  },
+  {
+    field: 'direction',
     headerName: '방향',
     minWidth: PULSE_GRID_COL.directionMin,
     width: 78,
@@ -806,7 +806,7 @@ export function HistoryTable({
   onPageChange,
   serverPaginated = false,
   externalSymbolFilter,
-  onClearExternalSymbolFilter,
+  onClearExternalSymbolFilter: _onClearExternalSymbolFilter,
   externalDatePeriod = '30d',
   externalDateRange,
   onClearExternalDateRange,
@@ -825,7 +825,6 @@ export function HistoryTable({
   const favorites = usePulseStore((s) => s.favorites);
   const showFavoritesOnly = usePulseStore((s) => s.showFavoritesOnly);
   const setShowFavoritesOnly = usePulseStore((s) => s.setShowFavoritesOnly);
-  const favoriteScopeSymbols = useMemo(() => getSymbolsFromEnv(), []);
   const [historySectionOpen, setHistorySectionOpen] = useState(() => !signalFilterActive);
   // 청산일시 기준 실제 시간순 정렬(전략 성과 그룹핑과 무관) — 기본은 내림차순(최신순).
   const [historySort, setHistorySort] = useState<HistorySortState>({ by: 'time', dir: 'desc' });
@@ -1166,29 +1165,6 @@ export function HistoryTable({
             </div>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            onClick={() => {
-              setHistorySort((current) => ({
-                by: 'time',
-                dir: current.by === 'time' && current.dir === 'desc' ? 'asc' : 'desc',
-              }));
-              onPageChange(1);
-            }}
-          >
-            <ArrowDownUp className="h-4 w-4" />
-            {historySort.by !== 'time' || historySort.dir === 'desc'
-              ? copy.history.sortNewestFirst
-              : copy.history.sortOldestFirst}
-          </Button>
-          <Button variant="outline" size="sm" className="gap-2" onClick={handleExportCsv}>
-            <Download className="h-4 w-4" />
-            {copy.history.exportCsv}
-          </Button>
-        </div>
       </div>
       {!signalFilterActive ? (
         <p className="text-[11px] leading-relaxed text-muted-foreground">
@@ -1202,23 +1178,7 @@ export function HistoryTable({
       {/* 독립 필터 바 (pulseStore와 무관) */}
       {showHistoryBody ? (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative min-w-[140px] max-w-[200px] flex-1">
-              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder={copy.history.searchPlaceholder}
-                value={filter.symbol}
-                onChange={(e) => updateFilter('symbol', e.target.value)}
-                className="h-8 pl-8 text-sm"
-              />
-            </div>
-            <FavoriteScopeControls
-              symbols={favoriteScopeSymbols}
-              onSelectAll={() => {
-                updateFilter('symbol', '');
-                onClearExternalSymbolFilter?.();
-              }}
-            />
+          <div className="flex flex-nowrap items-center justify-end gap-2 overflow-x-auto">
             <Select
               value={filter.direction || 'all'}
               onValueChange={(v) =>
@@ -1234,20 +1194,6 @@ export function HistoryTable({
                 <SelectItem value="short">Short</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              type="number"
-              placeholder={copy.history.minReturn}
-              value={filter.minReturn}
-              onChange={(e) => updateFilter('minReturn', e.target.value)}
-              className="h-8 w-[110px] text-sm"
-            />
-            <Input
-              type="number"
-              placeholder={copy.history.maxReturn}
-              value={filter.maxReturn}
-              onChange={(e) => updateFilter('maxReturn', e.target.value)}
-              className="h-8 w-[110px] text-sm"
-            />
             <div className="flex items-center gap-1">
               <Input
                 type="date"
@@ -1267,26 +1213,29 @@ export function HistoryTable({
                 aria-label={copy.history.endDate}
               />
             </div>
-            {(filter.symbol ||
-              showFavoritesOnly ||
-              filter.direction ||
-              filter.minReturn ||
-              filter.maxReturn ||
-              filter.dateFrom ||
-              filter.dateTo) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
-                onClick={() => {
-                  setFilter(defaultHistoryFilter('', externalDatePeriod, externalDateRange));
-                  setShowFavoritesOnly(false);
-                  onPageChange(1);
-                }}
-              >
-                {copy.history.reset}
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 shrink-0 text-xs"
+              onClick={() => {
+                setFilter(defaultHistoryFilter('', externalDatePeriod, externalDateRange));
+                setShowFavoritesOnly(false);
+                onPageChange(1);
+              }}
+            >
+              {copy.history.reset}
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 shrink-0 gap-2" onClick={() => {
+              setHistorySort((current) => ({ by: 'time', dir: current.by === 'time' && current.dir === 'desc' ? 'asc' : 'desc' }));
+              onPageChange(1);
+            }}>
+              <ArrowDownUp className="h-4 w-4" />
+              {historySort.by !== 'time' || historySort.dir === 'desc' ? copy.history.sortNewestFirst : copy.history.sortOldestFirst}
+            </Button>
+            <Button variant="outline" size="sm" className="h-8 shrink-0 gap-2" onClick={handleExportCsv}>
+              <Download className="h-4 w-4" />
+              {copy.history.exportCsv}
+            </Button>
           </div>
 
           {/* AG Grid Table — 종목 pinned, 나머지 열은 내용 기준 너비 + 가로 스크롤 */}
