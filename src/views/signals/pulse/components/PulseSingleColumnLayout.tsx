@@ -879,14 +879,13 @@ export function PulseSingleColumnLayout({
       )}
 
       {/* 1. Action controls — 스트림/전략/시뮬 */}
-      <div ref={actionBarRef}>
-        <PulseActionControlsBar
-          isReconnecting={isReconnecting}
-          streamFilter={streamFilter}
-          onStreamFilterChange={handleStreamFilterChange}
-          simulationHistorySignals={historySimulationSignals ?? sortedClosed}
-        />
-      </div>
+      <PulseActionControlsBar
+        containerRef={actionBarRef}
+        isReconnecting={isReconnecting}
+        streamFilter={streamFilter}
+        onStreamFilterChange={handleStreamFilterChange}
+        simulationHistorySignals={historySimulationSignals ?? sortedClosed}
+      />
 
       {/* 1.1 Table Control Bar — 검색/필터/정렬/밀도 (sticky)
           위 ActionControlsBar도 sticky(top: header-height)라, 이 바가 같은 top 값을

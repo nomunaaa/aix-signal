@@ -5,6 +5,7 @@
 
 import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { Check, ChevronDown, ChevronUp, SlidersHorizontal } from 'lucide-react';
+import type { Ref } from 'react';
 import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -45,10 +46,15 @@ interface PulseActionControlsBarProps {
   onTrendModeFilterChange?: (filter: SignalTrendModeFilter) => void;
   /** 수익 시뮬레이션(=) 버튼을 숨긴다 — 시뮬레이션 설정이 필요 없는 화면(Trend Board 등)용. */
   hideSimulation?: boolean;
+  /** 이 바의 실제 렌더 높이를 재는 등, 루트 sticky 엘리먼트 자체에 직접 붙여야 하는 ref.
+      바깥에서 별도 wrapper div로 감싸면 그 div가 sticky의 containing block을 바꿔
+      버려 완전히 고정되지 않는 값(-1936px 등)으로 어긋난다 — 반드시 이 prop을 통해서만 잡는다. */
+  containerRef?: Ref<HTMLDivElement>;
 }
 
 export function PulseActionControlsBar({
   className,
+  containerRef,
   isReconnecting = false,
   streamFilter,
   onStreamFilterChange,
@@ -231,6 +237,7 @@ export function PulseActionControlsBar({
 
   return (
     <div
+      ref={containerRef}
       className={cn(
         'w-full border-b border-border bg-background/95',
         'sticky z-30 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/90',
