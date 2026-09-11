@@ -2381,4 +2381,21 @@ const TREND_FRONT_STYLES = `
     .trend-front-logic-grid { grid-template-columns: 1fr; }
     .trend-front-scorelogic-grid { grid-template-columns: 1fr; }
   }
+  /* 375px에서 라벨+칩 그룹이 한 flex-wrap 줄에 있으면 칩마다 제각각 너비로
+     줄바꿈되고, 라벨이 자기 그룹의 칩들과 떨어져 혼자 남는 경우가 생긴다
+     (예: "구분" 라벨 뒤에 칩 2개만 남고 나머지 1개가 다음 줄로). 그룹별로
+     세로로 쌓고, 그룹 내부는 grid로 바꿔 라벨을 전체 폭 한 줄로 고정한 뒤
+     칩들을 균등한 열로 배치한다 — 칩 개수와 무관하게 항상 격자로 보인다. */
+  @media (max-width: 640px) {
+    .trend-front-filter-row { flex-direction: column; align-items: stretch; }
+    .trend-front-control-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+      gap: 6px;
+      width: 100%;
+    }
+    .trend-front-lab { grid-column: 1 / -1; margin-right: 0; }
+    .trend-front-filter-chip { width: 100%; justify-content: center; }
+    .trend-front-sortbar { justify-content: flex-start; }
+  }
 `;

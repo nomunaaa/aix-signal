@@ -309,6 +309,24 @@ export function PulseSingleColumnLayout({
   const [historyPage, setHistoryPage] = useState(1);
   const [historyQueryState, setHistoryQueryState] = useState<HistoryQueryState | null>(null);
   const historySectionRef = useRef<HTMLDivElement | null>(null);
+  const actionBarRef = useRef<HTMLDivElement | null>(null);
+  const [actionBarHeight, setActionBarHeight] = useState(0);
+  useEffect(() => {
+    const el = actionBarRef.current;
+    if (!el) return;
+    const syncHeight = () => {
+      const next = Math.ceil(el.getBoundingClientRect().height);
+      setActionBarHeight((current) => (current === next ? current : next));
+    };
+    syncHeight();
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', syncHeight);
+      return () => window.removeEventListener('resize', syncHeight);
+    }
+    const observer = new ResizeObserver(syncHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const [columnPresetId, setColumnPresetId] = useState<FilterPresetId>(DEFAULT_FILTER_PRESET);
   // 기간 필터는 usePulseStore가 소스 오브 트루스 — usePulseSignals가 같은 값을 읽어
   // exit_time 하한을 SQL에 밀어넣기 때문에 로컬 state로 들고 있으면 전체 히스토리를
@@ -861,19 +879,24 @@ export function PulseSingleColumnLayout({
       )}
 
       {/* 1. Action controls — 스트림/전략/시뮬 */}
-      <PulseActionControlsBar
-        isReconnecting={isReconnecting}
-        streamFilter={streamFilter}
-        onStreamFilterChange={handleStreamFilterChange}
-        simulationHistorySignals={historySimulationSignals ?? sortedClosed}
-      />
+      <div ref={actionBarRef}>
+        <PulseActionControlsBar
+          isReconnecting={isReconnecting}
+          streamFilter={streamFilter}
+          onStreamFilterChange={handleStreamFilterChange}
+          simulationHistorySignals={historySimulationSignals ?? sortedClosed}
+        />
+      </div>
 
-      {/* 1.1 Table Control Bar — 검색/필터/정렬/밀도 (sticky) */}
+      {/* 1.1 Table Control Bar — 검색/필터/정렬/밀도 (sticky)
+          위 ActionControlsBar도 sticky(top: header-height)라, 이 바가 같은 top 값을
+          쓰면 둘 다 같은 지점에서 들러붙어 서로 겹친다 — ActionControlsBar의 실제
+          렌더 높이만큼 이 바의 top을 더 내려서 아래로 이어붙게 한다. */}
       <div
-        className={cn(
-          'sticky z-20 w-full border-b border-border bg-background',
-          isReconnecting ? 'top-[calc(var(--header-height)+36px)]' : 'top-[var(--header-height)]'
-        )}
+        className="sticky z-20 w-full border-b border-border bg-background"
+        style={{
+          top: `calc(var(--header-height) + ${isReconnecting ? 36 : 0}px + ${actionBarHeight}px)`,
+        }}
       >
         <div
           className="container mx-auto"

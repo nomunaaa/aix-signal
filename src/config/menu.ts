@@ -41,6 +41,23 @@ export const MAIN_MENU: NavItem[] = [
     description: '시장 추세 보드',
   },
   {
+    label: 'AIX 수익통계',
+    labelEn: 'Proof',
+    href: '/proof',
+    icon: 'fa-trophy',
+    description: '수익 통계·성과 보드',
+  },
+  {
+    // 시그널 보드 안에 임베드된 실거래 히스토리 섹션(HistoryTable) — historyFocus=1이면
+    // PulseSingleColumnLayout이 마운트 시 자동으로 그 섹션까지 스크롤한다. 모의매매
+    // 히스토리(/my/history, 아래 별도 항목)와는 다른 화면이라 항목을 분리했다.
+    label: '히스토리',
+    labelEn: 'History',
+    href: '/signals?historyFocus=1',
+    icon: 'fa-clock-rotate-left',
+    description: '시그널 히스토리',
+  },
+  {
     label: '차트',
     labelEn: 'Chart',
     href: '/chart',
@@ -49,26 +66,18 @@ export const MAIN_MENU: NavItem[] = [
     description: '차트 · 모의매매 포함',
   },
   {
-    label: 'AIX 수익통계',
-    labelEn: 'AIX Profit Stats',
-    href: '/proof',
-    icon: 'fa-trophy',
-    description: '수익 통계·성과 보드',
+    label: '멀티차트',
+    labelEn: 'Multichart',
+    href: '/multichart',
+    icon: 'fa-table-cells',
+    description: '6종목 동시 차트',
   },
   {
-    label: '인사이트',
-    labelEn: 'Insights',
-    href: '/insights',
-    activeHrefs: ['/insights', '/insight'],
-    icon: 'fa-lightbulb',
-    description: '인사이트 허브',
-  },
-  {
-    label: '모의 히스토리',
-    labelEn: 'History',
+    label: '모의매매 기록',
+    labelEn: 'Mock Trade History',
     href: '/my/history',
-    icon: 'fa-clock-rotate-left',
-    description: '매매 기록 히스토리',
+    icon: 'fa-wallet',
+    description: '모의매매 기록 히스토리',
   },
 ];
 
@@ -78,6 +87,7 @@ export const MAIN_MENU: NavItem[] = [
 
 export const MORE_MENU: NavItem[] = [
   { label: '나의매매', labelEn: 'My Trades', href: '/my', icon: 'fa-wallet' },
+  { label: '인사이트', labelEn: 'Insights', href: '/insights', icon: 'fa-lightbulb' },
   { label: '설정', labelEn: 'Settings', href: '/settings', icon: 'fa-gear' },
   { label: '플랜별 요금안내', labelEn: 'Plans', href: '/pricing', icon: 'fa-tags' },
   { label: '처음이신가요?', labelEn: 'Guide', href: '/support', icon: 'fa-book-open' },
