@@ -10,6 +10,7 @@ import type { ProofCopy } from './proofCopy';
 import { ProofFilterChip, ProofStreamToggle } from './ProofToolbarControls';
 import { SimulationSettingsPopover } from './SimulationSettingsPopover';
 import { SymbolQualityFilter } from './SymbolQualityFilter';
+import type { ProofQualityPeriod } from './symbolQuality';
 
 export function ProofToolbar({
   streams,
@@ -23,6 +24,8 @@ export function ProofToolbar({
   seed,
   entryRatio,
   leverage,
+  qualityPeriod,
+  onQualityPeriodChange,
   onSeedChange,
   onEntryRatioChange,
   onLeverageChange,
@@ -39,6 +42,8 @@ export function ProofToolbar({
   seed: number;
   entryRatio: number;
   leverage: number;
+  qualityPeriod: ProofQualityPeriod;
+  onQualityPeriodChange: (period: ProofQualityPeriod) => void;
   onSeedChange: (value: number) => void;
   onEntryRatioChange: (value: number) => void;
   onLeverageChange: (value: number) => void;
@@ -120,9 +125,11 @@ export function ProofToolbar({
         {/* 승률/손익비 임계값 — Trend Board와 usePulseStore를 공유한다.
             종목별 통계 섹션 안에 두었더니 페이지 한참 아래(11,000px 지점)에 묻혀
             보이지 않아, 나머지 필터와 같은 상단 툴바로 올린다. */}
-        <SymbolQualityFilter copy={copy} />
-
-        <span className="hidden text-sm font-semibold text-muted-foreground sm:inline">=</span>
+        <SymbolQualityFilter
+          copy={copy}
+          period={qualityPeriod}
+          onPeriodChange={onQualityPeriodChange}
+        />
 
         <SimulationSettingsPopover
           seed={seed}

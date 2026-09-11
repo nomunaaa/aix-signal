@@ -173,7 +173,7 @@ const INITIAL_FILTER: HistoryFilter = {
 // CSV 내보내기(전체 페이지) 양쪽에서 같은 기준으로 재사용한다.
 const FALLBACK_SIMULATION_INPUT = FALLBACK_HISTORY_SIMULATION_INPUT;
 const HISTORY_PAGE_SIZE = 10;
-const HISTORY_PNL_FRACTION_DIGITS = 1;
+const HISTORY_PNL_FRACTION_DIGITS = 2;
 
 function formatDateInputValue(date: Date): string {
   const year = date.getFullYear();

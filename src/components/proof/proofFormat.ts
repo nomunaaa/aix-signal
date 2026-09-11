@@ -30,7 +30,7 @@ export function formatSignedUsd(value: number, hasData: boolean): string {
   return `${sign}$${Math.round(Math.abs(value)).toLocaleString('en-US')}`;
 }
 
-export function formatPct(value: number, hasData: boolean, fractionDigits = 1): string {
+export function formatPct(value: number, hasData: boolean, fractionDigits = 2): string {
   if (!hasData || !Number.isFinite(value)) return '—';
   const sign = value > 0 ? '+' : '';
   return `${sign}${value.toFixed(fractionDigits)}%`;
@@ -38,7 +38,7 @@ export function formatPct(value: number, hasData: boolean, fractionDigits = 1): 
 
 export function formatRatio(value: number | null, hasData: boolean): string {
   if (!hasData || value == null || !Number.isFinite(value)) return '—';
-  return value.toFixed(1);
+  return value.toFixed(2);
 }
 
 function singleEntryNotional(seed: number, entryRatio: number, leverage: number): number {

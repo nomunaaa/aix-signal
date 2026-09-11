@@ -1440,6 +1440,19 @@ function qualityMatchesThreshold(
   );
 }
 
+function streamQualityMatchesThreshold(
+  row: CombinedTrendViewRow,
+  engine: TrendEngine,
+  period: TrendQualityPeriod,
+  winRateThreshold: number,
+  riskRewardThreshold: number,
+  context: TrendBoardQualityFilterContext
+): boolean {
+  return qualityMetricsForView(row, engine, period, context).some((quality) =>
+    qualityMatchesThreshold(quality, winRateThreshold, riskRewardThreshold)
+  );
+}
+
 function bestRowQuality(
   row: CombinedTrendViewRow,
   period: TrendQualityPeriod,
@@ -1921,211 +1934,234 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                   </td>
                 </tr>
               ) : (
-                rankedDisplayRows.map(
-                  ({ row: viewRow, qualityMatched, isFirstInSymbolGroup, symbolGroupSize }) => {
-                    const row = viewRow.analysis;
-                    const isFavorite = favorites.has(row.symbol.trim().toUpperCase());
-                    const rowKey = [
-                      row.symbol,
-                      viewRow.tradingCategory ?? 'all',
-                      viewRow.pulse.cycleId ?? 'no-pulse',
-                      viewRow.wave.cycleId ?? 'no-wave',
-                    ].join(':');
-                    const strategyColor = strategyColorForCategory(viewRow.tradingCategory);
-                    const pulseQuality = displayQualityForView(
-                      viewRow,
-                      'pulse',
-                      qualityPeriod,
-                      qualityFilterContext
-                    );
-                    const waveQuality = displayQualityForView(
-                      viewRow,
-                      'wave',
-                      qualityPeriod,
-                      qualityFilterContext
-                    );
-                    const pulseMuted = streamMutedByFilters(viewRow, 'pulse', qualityFilterContext);
-                    const waveMuted = streamMutedByFilters(viewRow, 'wave', qualityFilterContext);
+                rankedDisplayRows.map(({ row: viewRow, isFirstInSymbolGroup, symbolGroupSize }) => {
+                  const row = viewRow.analysis;
+                  const isFavorite = favorites.has(row.symbol.trim().toUpperCase());
+                  const rowKey = [
+                    row.symbol,
+                    viewRow.tradingCategory ?? 'all',
+                    viewRow.pulse.cycleId ?? 'no-pulse',
+                    viewRow.wave.cycleId ?? 'no-wave',
+                  ].join(':');
+                  const strategyColor = strategyColorForCategory(viewRow.tradingCategory);
+                  const pulseQuality = displayQualityForView(
+                    viewRow,
+                    'pulse',
+                    qualityPeriod,
+                    qualityFilterContext
+                  );
+                  const waveQuality = displayQualityForView(
+                    viewRow,
+                    'wave',
+                    qualityPeriod,
+                    qualityFilterContext
+                  );
+                  const pulseMuted = streamMutedByFilters(viewRow, 'pulse', qualityFilterContext);
+                  const waveMuted = streamMutedByFilters(viewRow, 'wave', qualityFilterContext);
+                  const pulseQualityMatched = streamQualityMatchesThreshold(
+                    viewRow,
+                    'pulse',
+                    qualityPeriod,
+                    winRateThreshold,
+                    riskRewardThreshold,
+                    qualityFilterContext
+                  );
+                  const waveQualityMatched = streamQualityMatchesThreshold(
+                    viewRow,
+                    'wave',
+                    qualityPeriod,
+                    winRateThreshold,
+                    riskRewardThreshold,
+                    qualityFilterContext
+                  );
+                  const strategyQualityMatched = pulseQualityMatched || waveQualityMatched;
 
-                    return (
-                      <tr
-                        key={rowKey}
-                        className={cn(
-                          qualityMatched && 'trend-front-row-quality-match',
-                          !isFirstInSymbolGroup && 'trend-front-sub-row',
-                          isFirstInSymbolGroup &&
-                            symbolGroupSize > 1 &&
-                            'trend-front-group-row-start'
-                        )}
-                      >
-                        {isFirstInSymbolGroup ? (
-                          <td
-                            rowSpan={symbolGroupSize}
-                            className="trend-front-symbol-cell trend-front-grouped-cell"
-                          >
-                            <div
-                              className="trend-front-symbol"
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => handleSymbolClick(viewRow)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  handleSymbolClick(viewRow);
-                                }
-                              }}
-                            >
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  toggleFavorite(row.symbol.trim().toUpperCase());
-                                }}
-                                className={cn(
-                                  'flex h-3.5 w-3.5 shrink-0 items-center justify-center transition-colors',
-                                  isFavorite
-                                    ? 'text-yellow-400'
-                                    : 'text-muted-foreground/40 hover:text-yellow-400/50'
-                                )}
-                                aria-label={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
-                              >
-                                <Star
-                                  className={cn('h-3.5 w-3.5', isFavorite && 'fill-current')}
-                                  aria-hidden
-                                />
-                              </button>
-                              <CoinIcon
-                                symbol={row.symbol}
-                                size={22}
-                                className="trend-front-symbol-icon"
-                              />
-                              <span className="trend-front-symbol-text">
-                                <span className="trend-front-symbol-main">
-                                  <span
-                                    className="trend-front-symbol-code"
-                                    title={symbolPairLabel(row.symbol)}
-                                  >
-                                    {baseSymbol(row.symbol)}
-                                  </span>
-                                  <em className="trend-front-symbol-price">
-                                    {formatPrice(row.price)}
-                                  </em>
-                                </span>
-                              </span>
-                            </div>
-                          </td>
-                        ) : null}
+                  return (
+                    <tr
+                      key={rowKey}
+                      className={cn(
+                        !isFirstInSymbolGroup && 'trend-front-sub-row',
+                        isFirstInSymbolGroup && symbolGroupSize > 1 && 'trend-front-group-row-start'
+                      )}
+                    >
+                      {isFirstInSymbolGroup ? (
                         <td
-                          className={cn(
-                            'trend-front-strategy-cell',
-                            symbolGroupSize > 1 && 'trend-front-strategy-branch-cell'
-                          )}
+                          rowSpan={symbolGroupSize}
+                          className="trend-front-symbol-cell trend-front-grouped-cell"
                         >
-                          <span
-                            className={cn(
-                              'trend-front-strategy-pill',
-                              !viewRow.tradingCategory && 'trend-front-strategy-pill-all'
-                            )}
-                            title={strategyCellTitle(viewRow.tradingCategory, activeLanguage)}
+                          <div
+                            className="trend-front-symbol"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleSymbolClick(viewRow)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                handleSymbolClick(viewRow);
+                              }
+                            }}
                           >
-                            {strategyColor ? (
-                              <span
-                                className="trend-front-strategy-dot"
-                                style={{ backgroundColor: strategyColor }}
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                toggleFavorite(row.symbol.trim().toUpperCase());
+                              }}
+                              className={cn(
+                                'flex h-3.5 w-3.5 shrink-0 items-center justify-center transition-colors',
+                                isFavorite
+                                  ? 'text-yellow-400'
+                                  : 'text-muted-foreground/40 hover:text-yellow-400/50'
+                              )}
+                              aria-label={isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                            >
+                              <Star
+                                className={cn('h-3.5 w-3.5', isFavorite && 'fill-current')}
                                 aria-hidden
                               />
-                            ) : null}
-                            <span className="trend-front-strategy-name">
-                              {strategyCellLabel(viewRow.tradingCategory)}
+                            </button>
+                            <CoinIcon
+                              symbol={row.symbol}
+                              size={22}
+                              className="trend-front-symbol-icon"
+                            />
+                            <span className="trend-front-symbol-text">
+                              <span className="trend-front-symbol-main">
+                                <span
+                                  className="trend-front-symbol-code"
+                                  title={symbolPairLabel(row.symbol)}
+                                >
+                                  {baseSymbol(row.symbol)}
+                                </span>
+                                <em className="trend-front-symbol-price">
+                                  {formatPrice(row.price)}
+                                </em>
+                              </span>
                             </span>
+                          </div>
+                        </td>
+                      ) : null}
+                      <td
+                        className={cn(
+                          'trend-front-strategy-cell',
+                          symbolGroupSize > 1 && 'trend-front-strategy-branch-cell',
+                          strategyQualityMatched && 'trend-front-cell-quality-match'
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            'trend-front-strategy-pill',
+                            !viewRow.tradingCategory && 'trend-front-strategy-pill-all'
+                          )}
+                          title={strategyCellTitle(viewRow.tradingCategory, activeLanguage)}
+                        >
+                          {strategyColor ? (
+                            <span
+                              className="trend-front-strategy-dot"
+                              style={{ backgroundColor: strategyColor }}
+                              aria-hidden
+                            />
+                          ) : null}
+                          <span className="trend-front-strategy-name">
+                            {strategyCellLabel(viewRow.tradingCategory)}
+                          </span>
+                        </span>
+                      </td>
+                      <td className={cn(pulseQualityMatched && 'trend-front-cell-quality-match')}>
+                        <div className="trend-front-signal-cell">
+                          <StreamSignalBadge
+                            view={viewRow.pulse}
+                            language={activeLanguage}
+                            quality={pulseQuality}
+                            muted={pulseMuted}
+                            onClick={() =>
+                              handleNavigateSignalBoard('pulse', viewRow.pulse.tradingCategory)
+                            }
+                          />
+                        </div>
+                      </td>
+                      <td
+                        className={cn(
+                          'trend-front-muted',
+                          pulseQualityMatched && 'trend-front-cell-quality-match'
+                        )}
+                      >
+                        {formatElapsed(viewRow.pulse.elapsedSec, activeLanguage)}
+                      </td>
+                      <td className={cn(waveQualityMatched && 'trend-front-cell-quality-match')}>
+                        <div className="trend-front-signal-cell">
+                          <StreamSignalBadge
+                            view={viewRow.wave}
+                            language={activeLanguage}
+                            quality={waveQuality}
+                            muted={waveMuted}
+                            onClick={() =>
+                              handleNavigateSignalBoard('wave', viewRow.wave.tradingCategory)
+                            }
+                          />
+                        </div>
+                      </td>
+                      <td
+                        className={cn(
+                          'trend-front-muted',
+                          waveQualityMatched && 'trend-front-cell-quality-match'
+                        )}
+                      >
+                        {formatElapsed(viewRow.wave.elapsedSec, activeLanguage)}
+                      </td>
+                      {isFirstInSymbolGroup ? (
+                        <>
+                          <td
+                            rowSpan={symbolGroupSize}
+                            className={cn(
+                              `trend-front-${viewRow.pulse.shortTrend}`,
+                              'trend-front-grouped-cell'
+                            )}
+                          >
+                            {trendValueLabel(viewRow.pulse.shortTrend, activeLanguage)}
+                          </td>
+                          <td
+                            rowSpan={symbolGroupSize}
+                            className={cn(
+                              `trend-front-${viewRow.pulse.longTrend}`,
+                              'trend-front-grouped-cell'
+                            )}
+                          >
+                            {trendValueLabel(viewRow.pulse.longTrend, activeLanguage)}
+                          </td>
+                          <td
+                            rowSpan={symbolGroupSize}
+                            className={cn(
+                              `trend-front-${viewRow.wave.shortTrend}`,
+                              'trend-front-grouped-cell'
+                            )}
+                          >
+                            {trendValueLabel(viewRow.wave.shortTrend, activeLanguage)}
+                          </td>
+                          <td
+                            rowSpan={symbolGroupSize}
+                            className={cn(
+                              `trend-front-${viewRow.wave.longTrend}`,
+                              'trend-front-grouped-cell'
+                            )}
+                          >
+                            {trendValueLabel(viewRow.wave.longTrend, activeLanguage)}
+                          </td>
+                        </>
+                      ) : null}
+                      {isFirstInSymbolGroup ? (
+                        <td rowSpan={symbolGroupSize} className="trend-front-grouped-cell">
+                          <span
+                            className={cn('trend-front-score', scoreClass(viewRow.sortPoint))}
+                            title={`Trend ${(viewRow.pulse.point ?? 0) + (viewRow.wave.point ?? 0)} + Signal ${viewRow.signalPoint} + Adj ${viewRow.trendAdjustmentPoint}`}
+                          >
+                            {formatScore(viewRow.sortPoint, copy)}
                           </span>
                         </td>
-                        <td>
-                          <div className="trend-front-signal-cell">
-                            <StreamSignalBadge
-                              view={viewRow.pulse}
-                              language={activeLanguage}
-                              quality={pulseQuality}
-                              muted={pulseMuted}
-                              onClick={() =>
-                                handleNavigateSignalBoard('pulse', viewRow.pulse.tradingCategory)
-                              }
-                            />
-                          </div>
-                        </td>
-                        <td className="trend-front-muted">
-                          {formatElapsed(viewRow.pulse.elapsedSec, activeLanguage)}
-                        </td>
-                        <td>
-                          <div className="trend-front-signal-cell">
-                            <StreamSignalBadge
-                              view={viewRow.wave}
-                              language={activeLanguage}
-                              quality={waveQuality}
-                              muted={waveMuted}
-                              onClick={() =>
-                                handleNavigateSignalBoard('wave', viewRow.wave.tradingCategory)
-                              }
-                            />
-                          </div>
-                        </td>
-                        <td className="trend-front-muted">
-                          {formatElapsed(viewRow.wave.elapsedSec, activeLanguage)}
-                        </td>
-                        {isFirstInSymbolGroup ? (
-                          <>
-                            <td
-                              rowSpan={symbolGroupSize}
-                              className={cn(
-                                `trend-front-${viewRow.pulse.shortTrend}`,
-                                'trend-front-grouped-cell'
-                              )}
-                            >
-                              {trendValueLabel(viewRow.pulse.shortTrend, activeLanguage)}
-                            </td>
-                            <td
-                              rowSpan={symbolGroupSize}
-                              className={cn(
-                                `trend-front-${viewRow.pulse.longTrend}`,
-                                'trend-front-grouped-cell'
-                              )}
-                            >
-                              {trendValueLabel(viewRow.pulse.longTrend, activeLanguage)}
-                            </td>
-                            <td
-                              rowSpan={symbolGroupSize}
-                              className={cn(
-                                `trend-front-${viewRow.wave.shortTrend}`,
-                                'trend-front-grouped-cell'
-                              )}
-                            >
-                              {trendValueLabel(viewRow.wave.shortTrend, activeLanguage)}
-                            </td>
-                            <td
-                              rowSpan={symbolGroupSize}
-                              className={cn(
-                                `trend-front-${viewRow.wave.longTrend}`,
-                                'trend-front-grouped-cell'
-                              )}
-                            >
-                              {trendValueLabel(viewRow.wave.longTrend, activeLanguage)}
-                            </td>
-                          </>
-                        ) : null}
-                        {isFirstInSymbolGroup ? (
-                          <td rowSpan={symbolGroupSize} className="trend-front-grouped-cell">
-                            <span
-                              className={cn('trend-front-score', scoreClass(viewRow.sortPoint))}
-                              title={`Trend ${(viewRow.pulse.point ?? 0) + (viewRow.wave.point ?? 0)} + Signal ${viewRow.signalPoint} + Adj ${viewRow.trendAdjustmentPoint}`}
-                            >
-                              {formatScore(viewRow.sortPoint, copy)}
-                            </span>
-                          </td>
-                        ) : null}
-                      </tr>
-                    );
-                  }
-                )
+                      ) : null}
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
@@ -2246,10 +2282,10 @@ const TREND_FRONT_STYLES = `
   .trend-front-grouped-cell { vertical-align: middle; }
   .trend-front-group-row-start td { border-top: 1px solid var(--tf-border-2); }
   .trend-front-highlight td { background: rgba(14, 203, 129, .035); }
-  .trend-front-dt tbody tr.trend-front-row-quality-match td { background: rgba(240, 185, 11, .16); }
-  .trend-front-dt tbody tr.trend-front-row-quality-match:hover td { background: rgba(240, 185, 11, .22); }
-  :root:not(.dark) .trend-front-dt tbody tr.trend-front-row-quality-match td { background: rgba(254, 240, 138, .72); }
-  :root:not(.dark) .trend-front-dt tbody tr.trend-front-row-quality-match:hover td { background: rgba(254, 240, 138, .88); }
+  .trend-front-dt tbody td.trend-front-cell-quality-match { background: rgba(240, 185, 11, .16); }
+  .trend-front-dt tbody tr:hover td.trend-front-cell-quality-match { background: rgba(240, 185, 11, .22); }
+  :root:not(.dark) .trend-front-dt tbody td.trend-front-cell-quality-match { background: rgba(254, 240, 138, .72); }
+  :root:not(.dark) .trend-front-dt tbody tr:hover td.trend-front-cell-quality-match { background: rgba(254, 240, 138, .88); }
   .trend-front-symbol { display: inline-flex; width: 100%; min-width: 0; align-items: center; gap: 8px; background: transparent; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .trend-front-symbol:hover .trend-front-symbol-code { color: var(--tf-blue); }
   .trend-front-symbol-icon { box-shadow: 0 0 0 1px rgba(255,255,255,.08); }

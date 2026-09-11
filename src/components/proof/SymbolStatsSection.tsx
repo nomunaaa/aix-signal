@@ -17,6 +17,10 @@ import { SortableTh, TableHeaderLabel, type SymbolStatsSortKey } from './Sortabl
 import { SymbolFilterDropdown } from './SymbolFilterDropdown';
 import { formatHoldSec, formatRatio, type ProofLanguage } from './proofFormat';
 import type { ProofCopy } from './proofCopy';
+import {
+  meetsQualityThresholdsForPeriod,
+  type ProofQualityPeriod,
+} from './symbolQuality';
 
 function symbolStatsSortValue(row: ProofSymbolStatsRow, key: SymbolStatsSortKey): number {
   if (key === 'symbol') return 0;
@@ -77,6 +81,7 @@ export function SymbolStatsSection({
   tradingCategories,
   copy,
   language,
+  qualityPeriod,
 }: {
   rows: ProofSymbolStatsRow[];
   seed: number;
@@ -87,12 +92,12 @@ export function SymbolStatsSection({
   tradingCategories: readonly TradingCategory[];
   copy: ProofCopy;
   language: ProofLanguage;
+  qualityPeriod: ProofQualityPeriod;
 }) {
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
-  const qualityPeriod = usePulseStore((state) => state.qualityPeriod);
   const favoriteSymbols = useMemo(() => getSymbolsFromEnv(), []);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SymbolStatsSortKey | null>(null);
@@ -121,10 +126,11 @@ export function SymbolStatsSection({
         return false;
       }
 
-      const slice = qualityPeriod === 'all' ? row.standard : row.recent30Total;
-      return (
-        slice.winRate * 100 >= qualityWinRateThreshold &&
-        (slice.winLossRatio ?? 0) >= qualityRiskRewardThreshold
+      return meetsQualityThresholdsForPeriod(
+        row,
+        qualityWinRateThreshold,
+        qualityRiskRewardThreshold,
+        qualityPeriod
       );
     });
     if (!sortKey) return filtered;
@@ -136,9 +142,9 @@ export function SymbolStatsSection({
     rows,
     showFavoritesOnly,
     selectedSymbol,
-    qualityPeriod,
     qualityWinRateThreshold,
     qualityRiskRewardThreshold,
+    qualityPeriod,
     sortKey,
     sortDirection,
   ]);

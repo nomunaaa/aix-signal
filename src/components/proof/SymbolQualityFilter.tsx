@@ -2,6 +2,7 @@
 
 import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import type { ProofCopy } from './proofCopy';
+import type { ProofQualityPeriod } from './symbolQuality';
 
 function QualitySlider({
   label,
@@ -21,7 +22,7 @@ function QualitySlider({
   onChange: (value: number) => void;
 }) {
   return (
-    <label className="flex min-w-[9rem] flex-1 flex-col gap-1 text-xs">
+    <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs">
       <span className="flex items-center justify-between text-muted-foreground">
         <span>{label}</span>
         <b className="font-mono text-foreground">{valueLabel}</b>
@@ -40,14 +41,47 @@ function QualitySlider({
 }
 
 /** Trend Board와 usePulseStore를 공유하는 승률/손익비 threshold 필터 — 종목별 통계 행을 걸러낸다. */
-export function SymbolQualityFilter({ copy }: { copy: ProofCopy }) {
+export function SymbolQualityFilter({
+  copy,
+  period,
+  onPeriodChange,
+}: {
+  copy: ProofCopy;
+  period: ProofQualityPeriod;
+  onPeriodChange: (period: ProofQualityPeriod) => void;
+}) {
   const winRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const riskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
   const setWinRateThreshold = usePulseStore((state) => state.setQualityWinRateThreshold);
   const setRiskRewardThreshold = usePulseStore((state) => state.setQualityRiskRewardThreshold);
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card/50 p-2.5">
+    <div className="flex flex-nowrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
+      <div
+        className="flex shrink-0 items-center gap-1.5"
+        role="radiogroup"
+        aria-label="Quality period"
+      >
+        {(['last30d', 'last3mo', 'all'] as const).map((value) => (
+          <label
+            key={value}
+            className="flex cursor-pointer items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
+          >
+            <input
+              type="radio"
+              name="proof-quality-period"
+              value={value}
+              checked={period === value}
+              onChange={() => onPeriodChange(value)}
+              className="h-3.5 w-3.5 accent-primary"
+            />
+            <span>{copy.quality[value]}</span>
+          </label>
+        ))}
+      </div>
+
+      <span className="hidden h-6 w-px shrink-0 bg-border sm:block" aria-hidden />
+
       <QualitySlider
         label={copy.quality.winRate}
         value={winRateThreshold}

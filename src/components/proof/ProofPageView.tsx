@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import type { ProofPageMock, ProofStatsStream, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
 import {
   reconstructSymbolStats,
-  reconstructTotalStats,
   reconstructTotalStatsForSymbols,
 } from '@/lib/proof/proof-buckets';
 import {
@@ -24,6 +23,10 @@ import { ProofToolbar } from './ProofToolbar';
 import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
+import {
+  symbolsMeetingQualityThresholds,
+  type ProofQualityPeriod,
+} from './symbolQuality';
 
 const MIN_SEED = SIMULATION_LIMITS.capital.min;
 const MAX_SEED = SIMULATION_LIMITS.capital.max;
@@ -51,6 +54,8 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
   const toggleTradingCategory = usePulseStore((state) => state.toggleTradingCategoryFilter);
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
+  const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
+  const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
 
   const streams = useMemo(
     () => ALL_STREAMS.filter((stream) => streamFilter[PROOF_STREAM_TO_HISTORY_STREAM[stream]]),
@@ -65,6 +70,7 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
   const [entryRatio, setEntryRatio] = useState(DEFAULT_ENTRY_RATIO);
   const [leverage, setLeverage] = useState(DEFAULT_LEVERAGE);
   const [toolbarHeight, setToolbarHeight] = useState(0);
+  const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
 
   // data.buckets는 서버가 한 번의 스캔으로 만들어 둔 작은 합산 큐브다(stream x
   // trendMode x category x window) — 필터가 바뀔 때마다 해당 버킷만 합산해 즉시
@@ -73,20 +79,43 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
     if (Object.keys(data.buckets.total).length === 0) {
       return { totalStats: data.totalStats, symbolStats: data.symbolStats };
     }
-    const totalStats = showFavoritesOnly
-      ? reconstructTotalStatsForSymbols(
-          data.buckets,
-          Array.from(favorites),
-          streams,
-          trendModes,
-          tradingCategories
-        )
-      : reconstructTotalStats(data.buckets, streams, trendModes, tradingCategories);
+    const symbolStats = reconstructSymbolStats(
+      data.buckets,
+      streams,
+      trendModes,
+      tradingCategories
+    );
+    let aggregateSymbols = symbolsMeetingQualityThresholds(
+      symbolStats,
+      qualityWinRateThreshold,
+      qualityRiskRewardThreshold,
+      qualityPeriod
+    );
+    if (showFavoritesOnly) {
+      aggregateSymbols = aggregateSymbols.filter((symbol) => favorites.has(symbol));
+    }
+    const totalStats = reconstructTotalStatsForSymbols(
+      data.buckets,
+      aggregateSymbols,
+      streams,
+      trendModes,
+      tradingCategories
+    );
     return {
       totalStats,
-      symbolStats: reconstructSymbolStats(data.buckets, streams, trendModes, tradingCategories),
+      symbolStats,
     };
-  }, [data, streams, trendModes, tradingCategories, showFavoritesOnly, favorites]);
+  }, [
+    data,
+    streams,
+    trendModes,
+    tradingCategories,
+    showFavoritesOnly,
+    favorites,
+    qualityWinRateThreshold,
+    qualityRiskRewardThreshold,
+    qualityPeriod,
+  ]);
 
   useEffect(() => {
     const applySharedSimulation = (input: ReturnType<typeof readSharedSimulationInput>) => {
@@ -178,6 +207,8 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
         seed={seed}
         entryRatio={entryRatio}
         leverage={leverage}
+        qualityPeriod={qualityPeriod}
+        onQualityPeriodChange={setQualityPeriod}
         onSeedChange={handleSeedChange}
         onEntryRatioChange={handleEntryRatioChange}
         onLeverageChange={handleLeverageChange}
@@ -217,6 +248,7 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
         trendModes={trendModes}
         tradingCategories={tradingCategories}
         language={language}
+        qualityPeriod={qualityPeriod}
         copy={copy}
       />
 
