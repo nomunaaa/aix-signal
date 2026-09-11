@@ -207,6 +207,7 @@ export interface PulseSingleColumnLayoutProps {
   readonly total24hSignals?: number;
   readonly allowedSymbols?: string[];
   readonly favoriteSymbols?: readonly string[];
+  readonly qualityQualifiedSymbols?: ReadonlySet<string>;
 }
 
 // --- Component ---
@@ -223,6 +224,7 @@ export function PulseSingleColumnLayout({
   total24hSignals: _total24hSignals = 0,
   allowedSymbols = [],
   favoriteSymbols = [],
+  qualityQualifiedSymbols = new Set<string>(),
 }: PulseSingleColumnLayoutProps) {
   const { language, copy } = usePulseCopy();
   const navigate = useNavigate();
@@ -283,6 +285,13 @@ export function PulseSingleColumnLayout({
   const historyTrendModeFilter = E2X2_REVERSAL_TREND_FILTER;
   const historyTradingCategories = E2X2_ONLY_CATEGORIES;
   const effectiveHistoryDatePeriod = historyPeriodFromUrl ?? datePeriod;
+  const qualityScopedSymbols = useMemo(
+    () =>
+      allowedSymbols.filter((symbol) =>
+        qualityQualifiedSymbols.has(symbol.trim().toUpperCase())
+      ),
+    [allowedSymbols, qualityQualifiedSymbols]
+  );
 
   const handleDatePeriodChange = useCallback(
     (period: SignalDatePeriod) => {
@@ -336,9 +345,10 @@ export function PulseSingleColumnLayout({
   const closedForActiveStreams = useMemo(
     () =>
       closedSignals.filter((signal) =>
-        matchesStreamFilter(streamFromClosedSignal(signal), historyStreamFilter)
+        matchesStreamFilter(streamFromClosedSignal(signal), historyStreamFilter) &&
+        qualityQualifiedSymbols.has(favoriteSymbolKey(signal.symbol))
       ),
-    [closedSignals, historyStreamFilter]
+    [closedSignals, historyStreamFilter, qualityQualifiedSymbols]
   );
 
   const closedForActiveTradingCategories = useMemo(
@@ -407,12 +417,7 @@ export function PulseSingleColumnLayout({
     }
     return sortClosedSignals([...filteredClosed], sortBy, sortDir);
   }, [filteredClosed, forceRecentlyClosedSort, sortBy, sortDir]);
-  const canUseHistoryServerTotal =
-    !historySymbolFilter &&
-    !debouncedSearchQuery.trim() &&
-    historyStreamFilter.pulse &&
-    historyStreamFilter.wave &&
-    historyTrendModeFilter.reversal;
+  const canUseHistoryServerTotal = false;
   const historyDisplayTotalCount = canUseHistoryServerTotal
     ? Math.max(closedSignalsTotalCount, sortedClosed.length)
     : sortedClosed.length;
@@ -427,10 +432,10 @@ export function PulseSingleColumnLayout({
     !isSymbolLocked &&
     historyQueryState !== null &&
     !hasUnsupportedHistoryServerFilter &&
-    allowedSymbols.length > 0;
+    qualityScopedSymbols.length > 0;
   const serverHistoryPage = useClosedSignalHistoryPage({
     enabled: canUseHistoryServerPagination,
-    symbols: allowedSymbols,
+    symbols: qualityScopedSymbols,
     streamFilter: historyStreamFilter,
     trendModeFilter: historyTrendModeFilter,
     tradingCategories: historyTradingCategories,

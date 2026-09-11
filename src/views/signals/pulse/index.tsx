@@ -10,6 +10,7 @@ import { usePulseSignals } from './hooks/usePulseSignals';
 import { isPulseApiEnabled, usePulseApi } from './hooks/usePulseApi';
 import { usePulseRealtime } from './hooks/usePulseRealtime';
 import { useSignalFilter } from './hooks/useSignalFilter';
+import { useProofQualitySymbols } from './hooks/useProofQualitySymbols';
 import { usePulseStore } from './stores/pulseStore';
 import { useSignalPolling } from '@/hooks/useSignalPolling';
 import { buildClosedSignalsHistoryMock } from '@/lib/mock/history-cycles-mock';
@@ -90,6 +91,10 @@ function PulseDashboard() {
   const signalStateFilter = usePulseStore((s) => s.signalStateFilter);
   const trendModeFilter = usePulseStore((s) => s.trendModeFilter);
   const tradingCategoryFilters = usePulseStore((s) => s.tradingCategoryFilters);
+  const historyDatePeriod = usePulseStore((s) => s.historyDatePeriod);
+  const streamFilter = usePulseStore((s) => s.streamFilter);
+  const qualityWinRateThreshold = usePulseStore((s) => s.qualityWinRateThreshold);
+  const qualityRiskRewardThreshold = usePulseStore((s) => s.qualityRiskRewardThreshold);
   const isKairosOpen = usePulseStore((s) => s.isKairosOpen);
   const setKairosOpen = usePulseStore((s) => s.setKairosOpen);
   const allowedSymbols = useMemo(() => getAllowedSymbols(subscription.plan), [subscription.plan]);
@@ -243,7 +248,23 @@ function PulseDashboard() {
     });
   }, [legacyPriceMap, openSignalsForPanel]);
 
-  const { filtered: filteredOpen, showDiscount, showLocked } = useSignalFilter(openWithLivePrices);
+  const { qualifiedSymbols, loading: qualitySymbolsLoading } = useProofQualitySymbols({
+    enabled: !USE_MOCK_SIGNALS && allowedSymbols.length > 0,
+    symbols: allowedSymbols,
+    streamFilter,
+    period: historyDatePeriod,
+    minWinRate: qualityWinRateThreshold,
+    minRiskReward: qualityRiskRewardThreshold,
+  });
+  const { filtered: filteredOpenBeforeQuality, showDiscount, showLocked } =
+    useSignalFilter(openWithLivePrices);
+  const filteredOpen = useMemo(
+    () =>
+      filteredOpenBeforeQuality.filter((signal) =>
+        qualifiedSymbols.has(signal.symbol.trim().toUpperCase())
+      ),
+    [filteredOpenBeforeQuality, qualifiedSymbols]
+  );
 
   return (
     <>
@@ -254,11 +275,12 @@ function PulseDashboard() {
         showDiscount={showDiscount}
         showLocked={showLocked}
         lastUpdate={lastUpdateForPanel}
-        openSignalsLoading={panelLoading}
+        openSignalsLoading={panelLoading || qualitySymbolsLoading}
         isReconnecting={isReconnecting}
         total24hSignals={total24hSignals}
         allowedSymbols={allowedSymbols}
         favoriteSymbols={favoriteSymbols}
+        qualityQualifiedSymbols={qualifiedSymbols}
       />
 
       <KairosPanel open={isKairosOpen} onOpenChange={setKairosOpen} />
