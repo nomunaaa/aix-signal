@@ -145,7 +145,7 @@ export function ProofToolbar({
         <button
           type="button"
           onClick={() => setFilterSheetOpen(true)}
-          className="flex h-9 min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/35 active:bg-muted/45"
+          className="flex h-9 min-w-[7rem] flex-1 items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/35 active:bg-muted/45"
           aria-haspopup="dialog"
           aria-label={`${copy.filters.signal}: ${streamSummary} · ${categorySummary}`}
         >

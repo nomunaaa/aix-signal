@@ -77,10 +77,15 @@ export function SimulationSettingsPopover({
             className
           )}
         >
-          {copy.simulator.settingsButton}
+          {/* 375px에서 이 버튼이 옆 필터 버튼과 한 줄을 나눠 쓰면 라벨+4개 세그먼트가
+              너무 넓어 옆 버튼을 거의 0px로 밀어낸다 — 좁은 화면에서는 라벨과 진입비율
+              세그먼트를 생략하고 핵심($금액 · 레버리지)만 남긴다. */}
+          <span className="hidden sm:inline">{copy.simulator.settingsButton}</span>
           <span className="font-mono font-semibold text-foreground">${formatSeed(seed)}</span>
-          <span className="text-border">·</span>
-          <span className="font-mono font-semibold text-primary">{entryRatio}%</span>
+          <span className="hidden text-border sm:inline">·</span>
+          <span className="hidden font-mono font-semibold text-primary sm:inline">
+            {entryRatio}%
+          </span>
           <span className="text-border">·</span>
           <span className="font-mono font-semibold text-foreground">{leverage}x</span>
           <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
