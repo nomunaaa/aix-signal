@@ -4,8 +4,19 @@
  * Provides: search, combined temporal + direction filter, sort presets, favorites-only, density, column picker.
  */
 
-import { useMemo, useCallback, useState, useRef } from 'react';
-import { Search, ArrowUpDown, Rows3, Rows4, Filter, Wifi, ChevronDown, Star, Settings2, Lock } from 'lucide-react';
+import { useMemo, useCallback, useEffect, useState, useRef } from 'react';
+import {
+  Search,
+  ArrowUpDown,
+  Rows3,
+  Rows4,
+  Filter,
+  Wifi,
+  ChevronDown,
+  Star,
+  Settings2,
+  Lock,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -93,6 +104,8 @@ interface TableControlBarProps {
   waitingCount?: number;
   secondaryCount?: number;
   secondaryCountLabel?: string;
+  /** Live open-cycle summary is shown on Signal Board, not on aggregate views such as Proof. */
+  showStatusSummary?: boolean;
   datePeriod?: SignalDatePeriod;
   onDatePeriodChange?: (period: SignalDatePeriod) => void;
   showSignalStateFilter?: boolean;
@@ -110,9 +123,7 @@ function parseCombinedFilterValue(v: string): {
     ['all', 'latest', 'changing', 'fixed'].includes(table) ? table : 'all'
   ) as TableFilterPreset;
   const d = (['all', 'long', 'short'].includes(direction) ? direction : 'all') as
-    | 'all'
-    | 'long'
-    | 'short';
+    'all' | 'long' | 'short';
   return { table: t, direction: d };
 }
 
@@ -129,6 +140,7 @@ export function TableControlBar({
   waitingCount = 0,
   secondaryCount,
   secondaryCountLabel,
+  showStatusSummary = true,
   datePeriod,
   onDatePeriodChange,
   showSignalStateFilter = true,
@@ -161,6 +173,15 @@ export function TableControlBar({
   const setQualityRiskRewardThreshold = usePulseStore((s) => s.setQualityRiskRewardThreshold);
   const { input: simulationInput } = useSimulation({ historySignals: simulationHistorySignals });
   const [simulationOpen, setSimulationOpen] = useState(false);
+  const [, setClockTick] = useState(0);
+
+  // The status timestamp represents the newest currently-open signal. Re-render it so
+  // "updated Ns ago" advances even between data polling responses.
+  useEffect(() => {
+    if (lastUpdate == null) return;
+    const timer = window.setInterval(() => setClockTick((tick) => tick + 1), 1_000);
+    return () => window.clearInterval(timer);
+  }, [lastUpdate]);
 
   const sectionId = activeTableId ?? 'default';
   const sectionOverrides = sectionColumnVisibility[sectionId] ?? {};
@@ -233,16 +254,11 @@ export function TableControlBar({
   }, [queryTrimmed, searchExpanded, searchPanelOpen]);
 
   return (
-    <div
-      className={cn(
-        'flex min-h-[40px] flex-wrap items-center gap-2 px-4 py-2',
-        className
-      )}
-    >
+    <div className={cn('flex min-h-[40px] flex-wrap items-center gap-2 px-4 py-2', className)}>
       <div
         className={cn(
-          'flex shrink-0 items-center gap-1.5 overflow-hidden transition-[max-width] duration-200 ease-out',
-          searchExpanded ? 'max-w-xs flex-1 sm:max-w-md' : 'max-w-9'
+          'flex shrink-0 items-center gap-1.5 overflow-hidden transition-[width] duration-200 ease-out',
+          searchExpanded ? 'w-[min(16rem,calc(100vw-2rem))] sm:w-64' : 'w-9'
         )}
       >
         <button
@@ -268,13 +284,17 @@ export function TableControlBar({
             placeholder={copy.tableControls.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchPanelOpen(true)}
+            onBlur={() => {
+              if (!searchQuery.trim()) setSearchPanelOpen(false);
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Escape' && !searchQuery.trim()) {
                 setSearchPanelOpen(false);
                 (e.target as HTMLInputElement).blur();
               }
             }}
-            className="h-9 min-w-[100px] flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary sm:min-w-[140px]"
+            className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary"
             aria-label={copy.tableControls.search}
           />
         )}
@@ -305,118 +325,118 @@ export function TableControlBar({
 
       {/* 열 구성 + 시간·방향 — 단일 Popover (프리셋 UI 통합) */}
       <div className="hidden">
-      {onColumnPresetChange ? (
-        <Popover open={presetOpen} onOpenChange={setPresetOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              className="h-9 min-w-0 max-w-[min(100%,20rem)] shrink gap-1.5 border-border px-2.5 text-xs font-normal"
-              aria-label={copy.tableControls.viewPreset}
-            >
-              <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="min-w-0 truncate text-left">
-                <span className="font-medium text-foreground">{columnPresetLabel}</span>
-                <span className="text-muted-foreground"> · </span>
-                <span className="text-muted-foreground">{combinedFilterLabel}</span>
-              </span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[min(100vw-2rem,22rem)] p-0" align="start">
-            <div className="max-h-[min(70vh,420px)] overflow-y-auto p-2">
-              <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">
-                {copy.tableControls.columnConfig}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {PRESET_COLUMNS.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      onColumnPresetChange(preset.id);
-                      setPresetOpen(false);
-                    }}
-                    className={cn(
-                      'rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
-                      columnPresetId === preset.id
-                        ? 'border-primary bg-primary/15 text-primary'
-                        : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
-                    )}
-                  >
-                    {localizePulsePresetLabel(preset.id, preset.label, language)}
-                  </button>
-                ))}
+        {onColumnPresetChange ? (
+          <Popover open={presetOpen} onOpenChange={setPresetOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 min-w-0 max-w-[min(100%,20rem)] shrink gap-1.5 border-border px-2.5 text-xs font-normal"
+                aria-label={copy.tableControls.viewPreset}
+              >
+                <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <span className="min-w-0 truncate text-left">
+                  <span className="font-medium text-foreground">{columnPresetLabel}</span>
+                  <span className="text-muted-foreground"> · </span>
+                  <span className="text-muted-foreground">{combinedFilterLabel}</span>
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[min(100vw-2rem,22rem)] p-0" align="start">
+              <div className="max-h-[min(70vh,420px)] overflow-y-auto p-2">
+                <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">
+                  {copy.tableControls.columnConfig}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {PRESET_COLUMNS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => {
+                        onColumnPresetChange(preset.id);
+                        setPresetOpen(false);
+                      }}
+                      className={cn(
+                        'rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors',
+                        columnPresetId === preset.id
+                          ? 'border-primary bg-primary/15 text-primary'
+                          : 'border-border text-muted-foreground hover:bg-muted hover:text-foreground'
+                      )}
+                    >
+                      {localizePulsePresetLabel(preset.id, preset.label, language)}
+                    </button>
+                  ))}
+                </div>
+                <div className="my-2 h-px bg-border" />
+                <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">
+                  {copy.tableControls.timeDirection}
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  {COMBINED_TABLE_FILTER_VALUES.map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => {
+                        handleCombinedFilterChange(value);
+                        setPresetOpen(false);
+                      }}
+                      className={cn(
+                        'rounded-md px-2.5 py-1.5 text-left text-xs transition-colors',
+                        combinedFilterValue === value
+                          ? 'bg-primary/15 font-medium text-primary'
+                          : 'text-foreground hover:bg-muted'
+                      )}
+                    >
+                      {copy.tableControls.filterOptions[value]}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="my-2 h-px bg-border" />
-              <p className="px-1 pb-1.5 text-[11px] font-medium text-muted-foreground">
-                {copy.tableControls.timeDirection}
-              </p>
-              <div className="flex flex-col gap-0.5">
-                {COMBINED_TABLE_FILTER_VALUES.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => {
-                      handleCombinedFilterChange(value);
-                      setPresetOpen(false);
-                    }}
-                    className={cn(
-                      'rounded-md px-2.5 py-1.5 text-left text-xs transition-colors',
-                      combinedFilterValue === value
-                        ? 'bg-primary/15 font-medium text-primary'
-                        : 'text-foreground hover:bg-muted'
-                    )}
-                  >
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <Select value={combinedFilterValue} onValueChange={handleCombinedFilterChange}>
+            <SelectTrigger className="h-9 w-auto min-w-[100px] max-w-[200px] gap-1 border-border bg-background text-xs">
+              <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <SelectValue placeholder={copy.tableControls.filter} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel className="text-[11px] text-muted-foreground">
+                  {copy.tableControls.timeDirection}
+                </SelectLabel>
+                {COMBINED_TABLE_FILTER_VALUES.slice(0, 4).map((value) => (
+                  <SelectItem key={value} value={value} className="text-xs">
                     {copy.tableControls.filterOptions[value]}
-                  </button>
+                  </SelectItem>
                 ))}
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-      ) : (
-        <Select value={combinedFilterValue} onValueChange={handleCombinedFilterChange}>
-          <SelectTrigger className="h-9 w-auto min-w-[100px] max-w-[200px] gap-1 border-border bg-background text-xs">
-            <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            <SelectValue placeholder={copy.tableControls.filter} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel className="text-[11px] text-muted-foreground">
-                {copy.tableControls.timeDirection}
-              </SelectLabel>
-              {COMBINED_TABLE_FILTER_VALUES.slice(0, 4).map((value) => (
-                <SelectItem key={value} value={value} className="text-xs">
-                  {copy.tableControls.filterOptions[value]}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel className="text-[11px] text-muted-foreground">
-                {copy.tableControls.direction}
-              </SelectLabel>
-              {COMBINED_TABLE_FILTER_VALUES.slice(4, 6).map((value) => (
-                <SelectItem key={value} value={value} className="text-xs">
-                  {copy.tableControls.filterOptions[value]}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-            <SelectSeparator />
-            <SelectGroup>
-              <SelectLabel className="text-[11px] text-muted-foreground">
-                {copy.tableControls.directionTime}
-              </SelectLabel>
-              {COMBINED_TABLE_FILTER_VALUES.slice(6).map((value) => (
-                <SelectItem key={value} value={value} className="text-xs">
-                  {copy.tableControls.filterOptions[value]}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      )}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel className="text-[11px] text-muted-foreground">
+                  {copy.tableControls.direction}
+                </SelectLabel>
+                {COMBINED_TABLE_FILTER_VALUES.slice(4, 6).map((value) => (
+                  <SelectItem key={value} value={value} className="text-xs">
+                    {copy.tableControls.filterOptions[value]}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+              <SelectSeparator />
+              <SelectGroup>
+                <SelectLabel className="text-[11px] text-muted-foreground">
+                  {copy.tableControls.directionTime}
+                </SelectLabel>
+                {COMBINED_TABLE_FILTER_VALUES.slice(6).map((value) => (
+                  <SelectItem key={value} value={value} className="text-xs">
+                    {copy.tableControls.filterOptions[value]}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       <div className="hidden">
@@ -436,14 +456,45 @@ export function TableControlBar({
 
       {/* flex-wrap: 375px에서 즐겨찾기 드롭다운 + Pulse/Wave 토글을 합친 폭이 화면보다
           넓다 — nowrap이면 상위(overflow-hidden) 밖으로 잘려 사라진다. */}
-      <div className="flex flex-wrap shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
         <FavoriteScopeControls symbols={favoriteSymbols} />
-        <div className="flex min-w-[10rem] shrink-0 items-stretch gap-0 overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5" role="group" aria-label="Pulse Wave filter">
+        <div
+          className="flex min-w-[10rem] shrink-0 items-stretch gap-0 overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5"
+          role="group"
+          aria-label="Pulse Wave filter"
+        >
           {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
-            <button key={stream} type="button" onClick={() => toggleStreamFilter(stream)} role="checkbox" aria-checked={streamFilter[stream]} className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold leading-none tracking-wide transition-colors hover:bg-muted/35 active:bg-muted/50">
-              <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors', streamFilter[stream] ? 'border-foreground bg-foreground text-background shadow-sm' : 'border-muted-foreground/55 bg-background text-transparent')}>✓</span>
-              <span className={cn('whitespace-nowrap', streamFilter[stream] ? 'text-foreground' : 'text-muted-foreground')}>{stream === 'pulse' ? 'PULSE' : 'WAVE'}</span>
-              <span className="ml-1 whitespace-nowrap font-mono text-[11px] font-semibold text-muted-foreground">{typeof streamWinRates[stream] === 'number' ? `${streamWinRates[stream]!.toFixed(0)}%` : '—'}</span>
+            <button
+              key={stream}
+              type="button"
+              onClick={() => toggleStreamFilter(stream)}
+              role="checkbox"
+              aria-checked={streamFilter[stream]}
+              className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold leading-none tracking-wide transition-colors hover:bg-muted/35 active:bg-muted/50"
+            >
+              <span
+                className={cn(
+                  'flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors',
+                  streamFilter[stream]
+                    ? 'border-foreground bg-foreground text-background shadow-sm'
+                    : 'border-muted-foreground/55 bg-background text-transparent'
+                )}
+              >
+                ✓
+              </span>
+              <span
+                className={cn(
+                  'whitespace-nowrap',
+                  streamFilter[stream] ? 'text-foreground' : 'text-muted-foreground'
+                )}
+              >
+                {stream === 'pulse' ? 'PULSE' : 'WAVE'}
+              </span>
+              <span className="ml-1 whitespace-nowrap font-mono text-[11px] font-semibold text-muted-foreground">
+                {typeof streamWinRates[stream] === 'number'
+                  ? `${streamWinRates[stream]!.toFixed(0)}%`
+                  : '—'}
+              </span>
             </button>
           ))}
         </div>
@@ -451,15 +502,24 @@ export function TableControlBar({
 
       {datePeriod && onDatePeriodChange ? (
         <div className="shrink-0">
-          <Select value={datePeriod} onValueChange={(value) => {
+          <Select
+            value={datePeriod}
+            onValueChange={(value) => {
               if (value === '30d' || value === '90d' || value === 'all') {
                 onDatePeriodChange(value);
               }
-            }}>
-            <SelectTrigger className="h-9 w-[132px] text-xs"><SelectValue /></SelectTrigger>
+            }}
+          >
+            <SelectTrigger className="h-9 w-[132px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="30d">{language === 'ko' ? '최근 30일' : 'Last 30 days'}</SelectItem>
-              <SelectItem value="90d">{language === 'ko' ? '최근 3개월' : 'Last 3 months'}</SelectItem>
+              <SelectItem value="30d">
+                {language === 'ko' ? '최근 30일' : 'Last 30 days'}
+              </SelectItem>
+              <SelectItem value="90d">
+                {language === 'ko' ? '최근 3개월' : 'Last 3 months'}
+              </SelectItem>
               <SelectItem value="all">{language === 'ko' ? '누적' : 'All time'}</SelectItem>
             </SelectContent>
           </Select>
@@ -468,14 +528,51 @@ export function TableControlBar({
 
       {/* flex-wrap (same reason): 두 슬라이더 폭 합이 375px에서 잘려 화면 밖으로 사라졌다. */}
       <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
-        <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs"><span className="flex items-center justify-between text-muted-foreground"><span>Win Rate</span><b className="font-mono text-foreground">{qualityWinRateThreshold}%</b></span><input className="h-1.5 w-full cursor-pointer accent-primary" type="range" min="35" max="100" step="1" value={qualityWinRateThreshold} onChange={(e) => setQualityWinRateThreshold(Number(e.target.value))} /></label>
-        <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs"><span className="flex items-center justify-between text-muted-foreground"><span>Risk/Reward</span><b className="font-mono text-foreground">{qualityRiskRewardThreshold.toFixed(1)}</b></span><input className="h-1.5 w-full cursor-pointer accent-primary" type="range" min="0.6" max="5" step="0.1" value={qualityRiskRewardThreshold} onChange={(e) => setQualityRiskRewardThreshold(Number(e.target.value))} /></label>
+        <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs">
+          <span className="flex items-center justify-between text-muted-foreground">
+            <span>Win Rate</span>
+            <b className="font-mono text-foreground">{qualityWinRateThreshold}%</b>
+          </span>
+          <input
+            className="h-1.5 w-full cursor-pointer accent-primary"
+            type="range"
+            min="35"
+            max="100"
+            step="1"
+            value={qualityWinRateThreshold}
+            onChange={(e) => setQualityWinRateThreshold(Number(e.target.value))}
+          />
+        </label>
+        <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs">
+          <span className="flex items-center justify-between text-muted-foreground">
+            <span>Risk/Reward</span>
+            <b className="font-mono text-foreground">{qualityRiskRewardThreshold.toFixed(1)}</b>
+          </span>
+          <input
+            className="h-1.5 w-full cursor-pointer accent-primary"
+            type="range"
+            min="0.6"
+            max="5"
+            step="0.1"
+            value={qualityRiskRewardThreshold}
+            onChange={(e) => setQualityRiskRewardThreshold(Number(e.target.value))}
+          />
+        </label>
       </div>
       <Popover open={simulationOpen} onOpenChange={setSimulationOpen}>
         <PopoverTrigger asChild>
-          <Button type="button" variant="outline" className="h-10 min-w-[240px] justify-between gap-2 text-left text-xs">
-            <span className="font-medium text-muted-foreground">{copy.actionBar.simulationTitle}</span>
-            <span className="font-mono tabular-nums">{formatSimulationUsd(simulationInput.capital)} · {simulationInput.capitalRatio}% · {simulationInput.leverage}x</span>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 min-w-[240px] justify-between gap-2 text-left text-xs"
+          >
+            <span className="font-medium text-muted-foreground">
+              {copy.actionBar.simulationTitle}
+            </span>
+            <span className="font-mono tabular-nums">
+              {formatSimulationUsd(simulationInput.capital)} · {simulationInput.capitalRatio}% ·{' '}
+              {simulationInput.leverage}x
+            </span>
             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           </Button>
         </PopoverTrigger>
@@ -553,67 +650,69 @@ export function TableControlBar({
         </Select>
       </div>
 
-      <div className="hidden">
-        <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
-          <span
-            className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-semantic-bull"
-            aria-hidden
-          />
-          <span className="font-medium text-semantic-bull">
-            {copy.tableControls.open} {totalOpenPositions}
-          </span>
-        </span>
-        <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
-          <span
-            className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400"
-            aria-hidden
-          />
-          <span className="font-medium text-amber-400">
-            {resolvedSecondaryLabel} {resolvedSecondaryCount}
-          </span>
-        </span>
-        {lastUpdate != null ? (
-          <>
-            <span className="hidden h-3 w-px shrink-0 bg-border sm:block" aria-hidden />
+      {showStatusSummary ? (
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
             <span
-              className="flex min-w-0 shrink items-center gap-1 text-[11px] tabular-nums text-muted-foreground"
-              title={copy.tableControls.updateTitle}
-            >
-              <Wifi
-                className={cn(
-                  'h-3.5 w-3.5 shrink-0',
-                  isReconnecting ? 'animate-pulse text-amber-500' : 'text-emerald-500/85'
-                )}
-                aria-hidden
-              />
-              <span className="max-w-[10rem] truncate whitespace-nowrap">
-                {isReconnecting
-                  ? copy.tableControls.reconnecting
-                  : formatPulseLastUpdated(lastUpdate, language)}
-              </span>
+              className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-semantic-bull"
+              aria-hidden
+            />
+            <span className="font-medium text-semantic-bull">
+              {copy.tableControls.open} {totalOpenPositions}
             </span>
-          </>
-        ) : null}
-        <button
-          type="button"
-          onClick={handleDensityToggle}
-          className={cn(
-            'hidden min-h-[36px] items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs transition-colors sm:flex',
-            'hover:bg-muted/50'
-          )}
-          title={
-            columnDensity === 'compact'
-              ? copy.tableControls.normalDensity
-              : copy.tableControls.compactDensity
-          }
-        >
-          {columnDensity === 'compact' ? (
-            <Rows4 className="h-3.5 w-3.5 text-muted-foreground" />
-          ) : (
-            <Rows3 className="h-3.5 w-3.5 text-muted-foreground" />
-          )}
-        </button>
-      </div>
+          </span>
+          <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
+            <span
+              className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400"
+              aria-hidden
+            />
+            <span className="font-medium text-amber-400">
+              {resolvedSecondaryLabel} {resolvedSecondaryCount}
+            </span>
+          </span>
+          {lastUpdate != null ? (
+            <>
+              <span className="hidden h-3 w-px shrink-0 bg-border sm:block" aria-hidden />
+              <span
+                className="flex min-w-0 shrink items-center gap-1 text-[11px] tabular-nums text-muted-foreground"
+                title={copy.tableControls.updateTitle}
+              >
+                <Wifi
+                  className={cn(
+                    'h-3.5 w-3.5 shrink-0',
+                    isReconnecting ? 'animate-pulse text-amber-500' : 'text-emerald-500/85'
+                  )}
+                  aria-hidden
+                />
+                <span className="max-w-[10rem] truncate whitespace-nowrap">
+                  {isReconnecting
+                    ? copy.tableControls.reconnecting
+                    : formatPulseLastUpdated(lastUpdate, language)}
+                </span>
+              </span>
+            </>
+          ) : null}
+          <button
+            type="button"
+            onClick={handleDensityToggle}
+            className={cn(
+              'hidden min-h-[36px] items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs transition-colors sm:flex',
+              'hover:bg-muted/50'
+            )}
+            title={
+              columnDensity === 'compact'
+                ? copy.tableControls.normalDensity
+                : copy.tableControls.compactDensity
+            }
+          >
+            {columnDensity === 'compact' ? (
+              <Rows4 className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <Rows3 className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </button>
+        </div>
+      ) : null}
 
       <Sheet open={moreSheetOpen} onOpenChange={setMoreSheetOpen}>
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto sm:hidden">
@@ -655,7 +754,10 @@ export function TableControlBar({
                       key={col.id}
                       className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-muted/50"
                     >
-                      <Checkbox checked={col.visible} onCheckedChange={() => handleColumnToggle(col.id)} />
+                      <Checkbox
+                        checked={col.visible}
+                        onCheckedChange={() => handleColumnToggle(col.id)}
+                      />
                       <span className="text-xs text-foreground">{col.label}</span>
                       {col.isEmpty ? (
                         <span className="ml-auto rounded bg-muted px-1 text-[10px] text-muted-foreground">

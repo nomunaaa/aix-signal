@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ArrowUpDown, Search, Star } from 'lucide-react';
 import type { SymbolAnalysis } from '@/lib/mock/trend-v8-mock';
@@ -1047,7 +1047,7 @@ function trendQualityCopy(language: TrendFrontLanguage) {
     ? {
         title: 'Signal Quality Filter',
         winRate: 'Win Rate',
-        riskReward: 'Risk/Reward Ratio',
+        riskReward: 'Risk/Reward',
         periodGroup: 'Stats period',
         searchSymbol: 'Search symbol',
         last30d: 'Last 30 days',
@@ -1101,13 +1101,11 @@ function TrendQualitySlider({
   valueLabel: string;
   onChange: (value: number) => void;
 }) {
-  const progress = max === min ? 0 : ((value - min) / (max - min)) * 100;
-
   return (
-    <label className="trend-front-quality-control">
-      <span className="trend-front-quality-control-head">
+    <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs">
+      <span className="flex items-center justify-between text-muted-foreground">
         <span>{label}</span>
-        <b>{valueLabel}</b>
+        <b className="font-mono text-foreground">{valueLabel}</b>
       </span>
       <input
         type="range"
@@ -1116,10 +1114,7 @@ function TrendQualitySlider({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="trend-front-quality-range"
-        style={{
-          background: `linear-gradient(90deg, var(--tf-gold) ${progress}%, var(--tf-field) ${progress}%)`,
-        }}
+        className="h-1.5 w-full cursor-pointer accent-primary"
       />
     </label>
   );
@@ -1150,27 +1145,60 @@ function TrendBoardFilterPanel({
 }) {
   const qualityCopy = trendQualityCopy(language);
   const filterCopy = trendBoardFilterCopy(language);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const searchExpanded = searchFocused || searchQuery.trim().length > 0;
+
+  const openSearch = () => {
+    setSearchFocused(true);
+    queueMicrotask(() => searchInputRef.current?.focus());
+  };
 
   return (
     <section className="trend-front-filter-panel" aria-label={filterCopy.title}>
       <div className="trend-front-filter-row trend-front-filter-row-primary">
-        <label className="relative block min-w-[180px] flex-1">
-          <Search
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={qualityCopy.searchSymbol}
-            className="h-9 w-full rounded-md border border-border bg-background pl-9 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary"
+        <div
+          className="flex shrink-0 items-center gap-1.5 overflow-hidden transition-[width] duration-200 ease-out"
+          style={{ width: searchExpanded ? '16rem' : '2.25rem' }}
+        >
+          <button
+            type="button"
+            onClick={openSearch}
+            className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors',
+              'hover:bg-muted/50 hover:text-foreground',
+              searchExpanded && 'border-primary/40 text-primary'
+            )}
+            aria-expanded={searchExpanded}
+            aria-controls="trend-board-search"
             aria-label={qualityCopy.searchSymbol}
-          />
-        </label>
+            title={qualityCopy.searchSymbol}
+          >
+            <Search className="h-4 w-4" aria-hidden />
+          </button>
+          {searchExpanded ? (
+            <input
+              ref={searchInputRef}
+              id="trend-board-search"
+              type="search"
+              value={searchQuery}
+              onChange={(event) => onSearchChange(event.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => {
+                if (!searchQuery.trim()) setSearchFocused(false);
+              }}
+              placeholder={qualityCopy.searchSymbol}
+              className="h-9 min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-primary"
+              aria-label={qualityCopy.searchSymbol}
+            />
+          ) : null}
+        </div>
         <FavoriteScopeControls symbols={favoriteSymbols} className="trend-front-favorite-control" />
-        <Select value={period} onValueChange={(value) => onPeriodChange(value as TrendQualityPeriod)}>
-          <SelectTrigger className="h-9 w-[148px] border-border bg-background text-xs">
+        <Select
+          value={period}
+          onValueChange={(value) => onPeriodChange(value as TrendQualityPeriod)}
+        >
+          <SelectTrigger className="h-9 w-[132px] border-border bg-background text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1179,26 +1207,27 @@ function TrendBoardFilterPanel({
             <SelectItem value="all">{qualityCopy.all}</SelectItem>
           </SelectContent>
         </Select>
-        <TrendQualitySlider
-          label={qualityCopy.winRate}
-          value={winRateThreshold}
-          min={35}
-          max={100}
-          step={1}
-          valueLabel={formatWinRatePct(winRateThreshold)}
-          onChange={onWinRateChange}
-        />
-        <TrendQualitySlider
-          label={qualityCopy.riskReward}
-          value={riskRewardThreshold}
-          min={0.6}
-          max={5}
-          step={0.1}
-          valueLabel={formatRiskRewardRatio(riskRewardThreshold)}
-          onChange={onRiskRewardChange}
-        />
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
+          <TrendQualitySlider
+            label={qualityCopy.winRate}
+            value={winRateThreshold}
+            min={35}
+            max={100}
+            step={1}
+            valueLabel={formatWinRatePct(winRateThreshold)}
+            onChange={onWinRateChange}
+          />
+          <TrendQualitySlider
+            label={qualityCopy.riskReward}
+            value={riskRewardThreshold}
+            min={0.6}
+            max={5}
+            step={0.1}
+            valueLabel={formatRiskRewardRatio(riskRewardThreshold)}
+            onChange={onRiskRewardChange}
+          />
+        </div>
       </div>
-
     </section>
   );
 }
@@ -1296,14 +1325,13 @@ function displayQualityForView(
   return view.signal === 'none' ? EMPTY_SIGNAL_QUALITY : view.quality[period];
 }
 
-function streamMutedByFilters(
-  row: CombinedTrendViewRow,
-  engine: TrendEngine
-): boolean {
+function streamMutedByFilters(row: CombinedTrendViewRow, engine: TrendEngine): boolean {
   const view = row[engine];
   if (view.signal === 'none') return false;
-  return view.tradingCategory !== TREND_BOARD_TRADING_CATEGORY ||
-    !trendModeMatchesFilter(view, { trend: false, nonTrend: false, reversal: true });
+  return (
+    view.tradingCategory !== TREND_BOARD_TRADING_CATEGORY ||
+    !trendModeMatchesFilter(view, { trend: false, nonTrend: false, reversal: true })
+  );
 }
 
 function qualityMetricsForView(
@@ -1405,7 +1433,10 @@ function _strategyCellLabel(category: TradingCategory | null): string {
   return category ?? '-';
 }
 
-function _strategyCellTitle(category: TradingCategory | null, language: TrendFrontLanguage): string {
+function _strategyCellTitle(
+  category: TradingCategory | null,
+  language: TrendFrontLanguage
+): string {
   if (!category) {
     return '-';
   }
@@ -1661,18 +1692,16 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
   const rankedDisplayRows = useMemo(
     () =>
       groupRankedRowsBySymbol(
-        displayRows.map(
-          (row): RankedTrendViewRow => ({
+        displayRows.map((row): RankedTrendViewRow => ({
+          row,
+          ...bestRowQuality(
             row,
-            ...bestRowQuality(
-              row,
-              qualityPeriod,
-              winRateThreshold,
-              riskRewardThreshold,
-              qualityFilterContext
-            ),
-          })
-        ),
+            qualityPeriod,
+            winRateThreshold,
+            riskRewardThreshold,
+            qualityFilterContext
+          ),
+        })),
         symbolSortDirection
       ),
     [
@@ -2090,11 +2119,9 @@ const TREND_FRONT_STYLES = `
   .trend-front *::-webkit-scrollbar-thumb:hover { background: #3a3a3a; background-clip: padding-box; }
   .trend-front-wrap { width: 100%; max-width: 1400px; margin: 0 auto; padding: 30px var(--header-padding-x) 80px; }
   .trend-front-page-h { font-size: 18px; font-weight: 800; margin-top: 1.625rem; margin-bottom: 18px; letter-spacing: 0; color: var(--tf-text); }
-  .trend-front-filter-panel { overflow-x: auto; margin-bottom: 14px; border: 1px solid var(--tf-border); border-radius: 8px; background: var(--tf-panel); padding: 12px; }
-  .trend-front-filter-row { display: flex; width: max-content; min-width: 100%; align-items: flex-end; gap: 12px; flex-wrap: nowrap; }
-  .trend-front-filter-row-primary { display: flex; align-items: flex-end; }
-  .trend-front-filter-row-primary > label { width: 220px; flex: 0 0 220px; }
-  .trend-front-filter-row-primary > .trend-front-quality-control { width: 185px; flex: 0 0 185px; }
+  .trend-front-filter-panel { margin-bottom: 14px; border-bottom: 1px solid var(--tf-border); background: var(--tf-bg); }
+  .trend-front-filter-row { display: flex; min-height: 40px; width: 100%; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 16px; }
+  .trend-front-filter-row-primary { display: flex; align-items: center; }
   .trend-front-filter-row-secondary { align-items: flex-start; }
   .trend-front-quality-control { display: flex; min-width: 0; flex-direction: column; gap: 8px; }
   .trend-front-quality-control-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--tf-muted); font-size: 11.5px; font-weight: 700; }

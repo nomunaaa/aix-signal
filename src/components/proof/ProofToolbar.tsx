@@ -49,6 +49,7 @@ export function ProofToolbar({
         datePeriod={proofPeriodToSignalPeriod(qualityPeriod)}
         onDatePeriodChange={(period) => onQualityPeriodChange(signalPeriodToProofPeriod(period))}
         showSignalStateFilter={false}
+        showStatusSummary={false}
         favoriteSymbols={favoriteSymbols}
         streamWinRates={streamWinRates}
       />

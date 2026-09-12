@@ -47,10 +47,7 @@ import {
 } from '../utils/historyDateRange';
 import { chartPathForSignal } from '../utils/chartLink';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
-import {
-  normalizeTradingCategory,
-  type TradingCategory,
-} from '@/lib/trading-category';
+import { normalizeTradingCategory, type TradingCategory } from '@/lib/trading-category';
 import {
   getOpenSummaryColumns,
   buildOpenRowData,
@@ -106,7 +103,6 @@ function parseHistoryLimitParam(value: string | null): number | null {
 function parseHistoryPeriodParam(value: string | null): SignalDatePeriod | null {
   return value === '30d' || value === '90d' || value === 'all' ? value : null;
 }
-
 
 function streamFromBarinterval(barinterval?: '1m' | '10m'): SignalStreamId {
   return barinterval === '10m' ? 'wave' : 'pulse';
@@ -201,7 +197,6 @@ export interface PulseSingleColumnLayoutProps {
   readonly closedSignalsTotalCount?: number;
   readonly showDiscount: boolean;
   readonly showLocked: boolean;
-  readonly lastUpdate: Date;
   readonly openSignalsLoading?: boolean;
   readonly isReconnecting?: boolean;
   readonly total24hSignals?: number;
@@ -220,7 +215,6 @@ export function PulseSingleColumnLayout({
   closedSignalsTotalCount = 0,
   showDiscount: _showDiscount,
   showLocked: _showLocked,
-  lastUpdate,
   openSignalsLoading = false,
   isReconnecting = false,
   total24hSignals: _total24hSignals = 0,
@@ -290,9 +284,7 @@ export function PulseSingleColumnLayout({
   const effectiveHistoryDatePeriod = historyPeriodFromUrl ?? datePeriod;
   const qualityScopedSymbols = useMemo(
     () =>
-      allowedSymbols.filter((symbol) =>
-        qualityQualifiedSymbols.has(symbol.trim().toUpperCase())
-      ),
+      allowedSymbols.filter((symbol) => qualityQualifiedSymbols.has(symbol.trim().toUpperCase())),
     [allowedSymbols, qualityQualifiedSymbols]
   );
 
@@ -347,9 +339,10 @@ export function PulseSingleColumnLayout({
   // closedSignals 검색어로 추가 필터링
   const closedForActiveStreams = useMemo(
     () =>
-      closedSignals.filter((signal) =>
-        matchesStreamFilter(streamFromClosedSignal(signal), historyStreamFilter) &&
-        qualityQualifiedSymbols.has(favoriteSymbolKey(signal.symbol))
+      closedSignals.filter(
+        (signal) =>
+          matchesStreamFilter(streamFromClosedSignal(signal), historyStreamFilter) &&
+          qualityQualifiedSymbols.has(favoriteSymbolKey(signal.symbol))
       ),
     [closedSignals, historyStreamFilter, qualityQualifiedSymbols]
   );
@@ -623,12 +616,21 @@ export function PulseSingleColumnLayout({
     [buildSummaryCols, standardTrendHasAdditionalEntry, standardTrendHasPartialExit]
   );
 
-  const simultaneousCount =
-    summaryBuckets.discountedSimultaneous.length + summaryBuckets.standardSimultaneous.length;
-  const openTableRowCount = Object.values(summaryBuckets).reduce(
-    (count, rows) => count + rows.length,
-    0
+  const openCycleCount = openSignals.length;
+  const simultaneousCycleCount = useMemo(
+    () =>
+      (openSignals as OpenSignal[]).filter((signal) =>
+        simultaneousSymbolSet.has(signal.symbol.toUpperCase())
+      ).length,
+    [openSignals, simultaneousSymbolSet]
   );
+  const newestOpenSignalAt = useMemo(() => {
+    const newestMs = openSignals.reduce((latest, signal) => {
+      const enteredAtMs = new Date(signal.enteredAt).getTime();
+      return Number.isFinite(enteredAtMs) ? Math.max(latest, enteredAtMs) : latest;
+    }, Number.NEGATIVE_INFINITY);
+    return Number.isFinite(newestMs) ? new Date(newestMs) : undefined;
+  }, [openSignals]);
 
   const navigateToSignalChart = useCallback(
     (signal: FeedSignal) => {
@@ -713,15 +715,29 @@ export function PulseSingleColumnLayout({
     {
       id: 'discounted-active',
       title: language === 'ko' ? '할인 활성 시그널' : 'Discounted Active Signals',
-      subtitle: language === 'ko' ? '동시발생을 제외한 할인 오픈 시그널' : 'Discounted open signals excluding simultaneous signals.',
-      rows: [...summaryBuckets.discountedTrend, ...summaryBuckets.discountedReversal, ...summaryBuckets.discountedNoTrend],
+      subtitle:
+        language === 'ko'
+          ? '동시발생을 제외한 할인 오픈 시그널'
+          : 'Discounted open signals excluding simultaneous signals.',
+      rows: [
+        ...summaryBuckets.discountedTrend,
+        ...summaryBuckets.discountedReversal,
+        ...summaryBuckets.discountedNoTrend,
+      ],
       columns: discountedTrendCols,
     },
     {
       id: 'active',
       title: language === 'ko' ? '활성 시그널' : 'Active Signals',
-      subtitle: language === 'ko' ? '동시발생을 제외한 일반 오픈 시그널' : 'Open signals excluding simultaneous signals.',
-      rows: [...summaryBuckets.standardTrend, ...summaryBuckets.standardReversal, ...summaryBuckets.standardNoTrend],
+      subtitle:
+        language === 'ko'
+          ? '동시발생을 제외한 일반 오픈 시그널'
+          : 'Open signals excluding simultaneous signals.',
+      rows: [
+        ...summaryBuckets.standardTrend,
+        ...summaryBuckets.standardReversal,
+        ...summaryBuckets.standardNoTrend,
+      ],
       columns: standardTrendCols,
     },
   ];
@@ -770,10 +786,10 @@ export function PulseSingleColumnLayout({
               onColumnPresetChange={setColumnPresetId}
               availableColumns={PRESET_COLUMN_MAP[columnPresetId]?.columns}
               className="flex-1"
-              lastUpdate={lastUpdate}
+              lastUpdate={newestOpenSignalAt}
               isReconnecting={isReconnecting}
-              totalOpenPositions={openTableRowCount}
-              secondaryCount={simultaneousCount}
+              totalOpenPositions={openCycleCount}
+              secondaryCount={simultaneousCycleCount}
               secondaryCountLabel={language === 'ko' ? '동시' : 'Simul'}
               datePeriod={effectiveHistoryDatePeriod}
               onDatePeriodChange={handleDatePeriodChange}

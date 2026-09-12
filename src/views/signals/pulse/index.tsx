@@ -46,11 +46,6 @@ function calculateDiscountRate(signal: Signal): number {
   return 0;
 }
 
-function latestDate(dates: Date[]): Date {
-  const latestMs = Math.max(...dates.map((date) => date.getTime()).filter(Number.isFinite));
-  return Number.isFinite(latestMs) ? new Date(latestMs) : new Date();
-}
-
 function PulseDashboardSuspenseFallback() {
   const { language } = usePulseCopy();
   return (
@@ -214,10 +209,6 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
     }
     return closedSignalsRaw;
   }, [allowedSymbolSet, allowedSymbols.length, closedSignalsRaw]);
-  const lastUpdateForPanel = latestDate([
-    usePulseApiData ? pulseApi.asOf : legacyPulse.lastUpdate,
-    useWaveApiData ? waveApi.asOf : legacyWave.lastUpdate,
-  ]);
   // 실제로 화면에 보여줄 오픈 시그널이 아직 하나도 없고, 관련 소스가 여전히
   // 불러오는 중일 때만 스켈레톤을 보여준다 — 이미 데이터가 있으면 리페치 중에도
   // 깜빡이지 않는다.
@@ -264,8 +255,11 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
     minWinRate: qualityWinRateThreshold,
     minRiskReward: qualityRiskRewardThreshold,
   });
-  const { filtered: filteredOpenBeforeQuality, showDiscount, showLocked } =
-    useSignalFilter(openWithLivePrices);
+  const {
+    filtered: filteredOpenBeforeQuality,
+    showDiscount,
+    showLocked,
+  } = useSignalFilter(openWithLivePrices);
   const filteredOpen = useMemo(
     () =>
       filteredOpenBeforeQuality.filter((signal) =>
@@ -282,7 +276,6 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
         closedSignalsTotalCount={closedSignalsTotalCount}
         showDiscount={showDiscount}
         showLocked={showLocked}
-        lastUpdate={lastUpdateForPanel}
         openSignalsLoading={panelLoading || qualitySymbolsLoading}
         isReconnecting={isReconnecting}
         total24hSignals={total24hSignals}
