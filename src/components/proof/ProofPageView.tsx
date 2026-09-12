@@ -58,7 +58,7 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
   // 재구성한다. 버킷이 비어있는 경우(mock/empty state)는 서버 기본값을 그대로 쓴다.
   const activeStats = useMemo(() => {
     if (Object.keys(data.buckets.total).length === 0) {
-      return { totalStats: data.totalStats, symbolStats: data.symbolStats };
+      return { totalStats: data.totalStats, symbolStats: data.symbolStats, streamWinRates: {} };
     }
     const symbolStats = reconstructSymbolStats(
       data.buckets,
@@ -86,9 +86,36 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
       trendModes,
       tradingCategories
     );
+    const qualifiedSymbolSet = new Set(aggregateSymbols);
+    const streamWinRates = (['PULSE', 'WAVE'] as const).reduce<
+      Partial<Record<'pulse' | 'wave', number>>
+    >((rates, stream) => {
+      const streamRows = reconstructSymbolStats(
+        data.buckets,
+        [stream],
+        trendModes,
+        tradingCategories
+      );
+      const values = streamRows
+        .filter((row) => qualifiedSymbolSet.has(row.symbol))
+        .map((row) => {
+          const slice =
+            qualityPeriod === 'last30d'
+              ? row.recent30Combined
+              : qualityPeriod === 'last3mo'
+                ? row.recent3moCombined
+                : row.combined;
+          return slice.cycleCount > 0 ? slice.winRate * 100 : null;
+        })
+        .filter((value): value is number => value !== null);
+      const key = stream === 'PULSE' ? 'pulse' : 'wave';
+      if (values.length) rates[key] = values.reduce((sum, value) => sum + value, 0) / values.length;
+      return rates;
+    }, {});
     return {
       totalStats,
       symbolStats,
+      streamWinRates,
     };
   }, [
     data,
@@ -143,7 +170,7 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
     <div className="mx-auto min-h-screen w-full max-w-[1400px] bg-background px-4 py-8 pb-20 text-foreground md:px-5">
       <ProofToolbar
         containerRef={toolbarRef}
-        engines={data.engines}
+        streamWinRates={activeStats.streamWinRates}
         qualityPeriod={qualityPeriod}
         onQualityPeriodChange={setQualityPeriod}
       />

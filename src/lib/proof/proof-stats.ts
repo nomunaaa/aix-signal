@@ -320,8 +320,13 @@ export function buildSymbolStats(rows: PlatformCycleRow[]): ProofSymbolStatsRow[
       shortName: symbolShortName(symbol),
       recent30Total: cycleStats(recent30Rows(symbolRows, nowMs), nowMs),
       recent3moTotal: cycleStats(recent3moRows(symbolRows, nowMs), nowMs),
+      recent30Discounted: discountedCycleStats(recent30Rows(symbolRows, nowMs), nowMs),
+      recent3moDiscounted: discountedCycleStats(recent3moRows(symbolRows, nowMs), nowMs),
+      recent30Combined: cycleStats(recent30Rows(symbolRows, nowMs), nowMs),
+      recent3moCombined: cycleStats(recent3moRows(symbolRows, nowMs), nowMs),
       standard: cycleStats(symbolRows, nowMs),
       discounted: discountedCycleStats(symbolRows, nowMs),
+      combined: cycleStats(symbolRows, nowMs),
     }))
     .sort((a, b) => b.standard.pnlPerEntryNotionalRateSum - a.standard.pnlPerEntryNotionalRateSum);
 }

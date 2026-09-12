@@ -1,8 +1,5 @@
 import type { ProofCycleStatsSlice, ProofSymbolStatsRow } from '@/lib/mock/proof-mock';
-import {
-  meetsQualityThresholdsForPeriod,
-  symbolsMeetingQualityThresholds,
-} from './symbolQuality';
+import { meetsQualityThresholdsForPeriod, symbolsMeetingQualityThresholds } from './symbolQuality';
 
 function slice(overrides: Partial<ProofCycleStatsSlice> = {}): ProofCycleStatsSlice {
   return {
@@ -28,6 +25,8 @@ function row(overrides: Partial<ProofSymbolStatsRow> = {}): ProofSymbolStatsRow 
     shortName: 'BCH',
     recent30Total: slice({ winRate: 1, winLossRatio: null }),
     recent3moTotal: slice({ winRate: 0.7, winLossRatio: 1.4 }),
+    recent30Discounted: slice({ winRate: 1, winLossRatio: null }),
+    recent3moDiscounted: slice({ winRate: 0.7, winLossRatio: 1.4 }),
     standard: slice({ winRate: 0.65, winLossRatio: 1.2 }),
     discounted: slice(),
     ...overrides,
@@ -43,8 +42,8 @@ describe('proof symbol quality filter', () => {
 
   it('requires win rate and P/L ratio to pass in the same period', () => {
     const mixedPeriods = row({
-      recent3moTotal: slice({ winRate: 0.7, winLossRatio: 0.8 }),
-      standard: slice({ winRate: 0.5, winLossRatio: 1.5 }),
+      recent3moDiscounted: slice({ winRate: 0.7, winLossRatio: 0.8 }),
+      discounted: slice({ winRate: 0.5, winLossRatio: 1.5 }),
     });
 
     expect(meetsQualityThresholdsForPeriod(mixedPeriods, 60, 1, 'last3mo')).toBe(false);
@@ -53,8 +52,8 @@ describe('proof symbol quality filter', () => {
 
   it('does not treat a missing P/L ratio as a qualifying zero', () => {
     const missingRatios = row({
-      recent3moTotal: slice({ winRate: 0.7, winLossRatio: null }),
-      standard: slice({ winRate: 0.7, winLossRatio: null }),
+      recent3moDiscounted: slice({ winRate: 0.7, winLossRatio: null }),
+      discounted: slice({ winRate: 0.7, winLossRatio: null }),
     });
 
     expect(meetsQualityThresholdsForPeriod(missingRatios, 60, 0, 'all')).toBe(false);
@@ -63,9 +62,9 @@ describe('proof symbol quality filter', () => {
   it('returns the same qualifying symbol set used by the pinned aggregate', () => {
     const rejected = row({
       symbol: 'XRPUSDT',
-      recent30Total: slice({ winRate: 0.5, winLossRatio: 0.8 }),
-      recent3moTotal: slice({ winRate: 0.5, winLossRatio: 0.8 }),
-      standard: slice({ winRate: 0.5, winLossRatio: 0.8 }),
+      recent30Discounted: slice({ winRate: 0.5, winLossRatio: 0.8 }),
+      recent3moDiscounted: slice({ winRate: 0.5, winLossRatio: 0.8 }),
+      discounted: slice({ winRate: 0.5, winLossRatio: 0.8 }),
     });
 
     expect(symbolsMeetingQualityThresholds([row(), rejected], 60, 1, 'last3mo')).toEqual([

@@ -126,8 +126,13 @@ export interface ProofSymbolStatsRow {
   shortName: string;
   recent30Total: ProofCycleStatsSlice;
   recent3moTotal: ProofCycleStatsSlice;
+  recent30Discounted: ProofCycleStatsSlice;
+  recent3moDiscounted: ProofCycleStatsSlice;
+  recent30Combined: ProofCycleStatsSlice;
+  recent3moCombined: ProofCycleStatsSlice;
   standard: ProofCycleStatsSlice;
   discounted: ProofCycleStatsSlice;
+  combined: ProofCycleStatsSlice;
 }
 
 export interface ProofSimulationData {

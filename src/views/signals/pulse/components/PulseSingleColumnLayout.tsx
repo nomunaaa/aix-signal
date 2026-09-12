@@ -275,7 +275,6 @@ export function PulseSingleColumnLayout({
   const sortBy = usePulseStore((s) => s.sortBy);
   const sortDir = usePulseStore((s) => s.sortDir);
   const favorites = usePulseStore((s) => s.favorites);
-  const showFavoritesOnly = usePulseStore((s) => s.showFavoritesOnly);
   const streamFilter = usePulseStore((s) => s.streamFilter);
   const isSymbolLocked = allowedSymbols.length === 0;
   const historyStreamFilter = streamFilter;
@@ -370,30 +369,36 @@ export function PulseSingleColumnLayout({
     [closedForActiveTrendModes, effectiveHistoryDatePeriod, exactHistoryDateRange]
   );
   const fallbackStreamWinRates = useMemo(() => {
-    const totals: Record<SignalStreamId, { wins: number; count: number }> = {
-      pulse: { wins: 0, count: 0 },
-      wave: { wins: 0, count: 0 },
+    const totals: Record<SignalStreamId, Map<string, { wins: number; count: number }>> = {
+      pulse: new Map(),
+      wave: new Map(),
     };
-    // Reuse the exact period-filtered history data shown below, so the badge and
-    // History total always respond to the same 30d / 3M / all-time selection.
+    const qualifiedSet = new Set(qualityScopedSymbols.map(favoriteSymbolKey));
     for (const signal of closedForActivePeriod) {
-      if (showFavoritesOnly && !favorites.has(favoriteSymbolKey(signal.symbol))) continue;
+      const symbol = favoriteSymbolKey(signal.symbol);
+      if (!qualifiedSet.has(symbol)) continue;
       const stream = streamFromClosedSignal(signal);
       const pnl = Number(signal.pnlPercent);
       if (!Number.isFinite(pnl)) continue;
-      totals[stream].count += 1;
-      if (pnl > 0) totals[stream].wins += 1;
+      const current = totals[stream].get(symbol) ?? { wins: 0, count: 0 };
+      current.count += 1;
+      if (pnl > 0) current.wins += 1;
+      totals[stream].set(symbol, current);
     }
-    return {
-      pulse: totals.pulse.count ? (totals.pulse.wins / totals.pulse.count) * 100 : undefined,
-      wave: totals.wave.count ? (totals.wave.wins / totals.wave.count) * 100 : undefined,
+    const averageRate = (stats: Map<string, { wins: number; count: number }>) => {
+      const rates = [...stats.values()]
+        .filter((value) => value.count > 0)
+        .map((value) => (value.wins / value.count) * 100);
+      return rates.length ? rates.reduce((sum, value) => sum + value, 0) / rates.length : undefined;
     };
-  }, [closedForActivePeriod, favorites, showFavoritesOnly]);
+    return {
+      pulse: averageRate(totals.pulse),
+      wave: averageRate(totals.wave),
+    };
+  }, [closedForActivePeriod, qualityScopedSymbols]);
   const serverStreamWinRates = useStreamWinRates({
     enabled: !USE_MOCK_SIGNALS && !isSymbolLocked,
-    symbols: allowedSymbols,
-    favorites,
-    favoritesOnly: showFavoritesOnly,
+    qualifiedSymbols: qualityScopedSymbols,
     period: effectiveHistoryDatePeriod,
   });
   const streamWinRates = USE_MOCK_SIGNALS ? fallbackStreamWinRates : serverStreamWinRates;

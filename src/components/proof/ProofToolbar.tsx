@@ -1,5 +1,4 @@
 import type { Ref } from 'react';
-import type { EngineStats } from '@/lib/mock/proof-mock';
 import { getSymbolsFromEnv } from '@/config/symbols';
 import {
   TableControlBar,
@@ -20,23 +19,17 @@ function signalPeriodToProofPeriod(period: SignalDatePeriod): ProofQualityPeriod
 }
 
 export function ProofToolbar({
-  engines,
+  streamWinRates,
   qualityPeriod,
   onQualityPeriodChange,
   containerRef,
 }: {
-  engines: readonly [EngineStats, EngineStats];
+  streamWinRates: Partial<Record<'pulse' | 'wave', number>>;
   qualityPeriod: ProofQualityPeriod;
   onQualityPeriodChange: (period: ProofQualityPeriod) => void;
   containerRef?: Ref<HTMLDivElement>;
 }) {
   const favoriteSymbols = getSymbolsFromEnv();
-  const pulseEngine = engines.find((engine) => engine.engine === 'PULSE');
-  const waveEngine = engines.find((engine) => engine.engine === 'WAVE');
-  const streamWinRates = {
-    pulse: pulseEngine ? pulseEngine.winRate * 100 : undefined,
-    wave: waveEngine ? waveEngine.winRate * 100 : undefined,
-  };
 
   return (
     <div

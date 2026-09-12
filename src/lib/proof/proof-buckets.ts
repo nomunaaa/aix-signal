@@ -465,43 +465,51 @@ function combinedAcc(
 
 function finalizeSlice(
   acc: ProofBucketAccumulator,
-  variant: 'standard' | 'discounted'
+  variant: 'standard' | 'discounted' | 'combined'
 ): ProofCycleStatsSlice {
   if (acc.count === 0) return emptyStatsSlice();
 
-  const winCount = variant === 'discounted' ? acc.discWinCount : acc.winCount;
-  const lossCount = variant === 'discounted' ? acc.discLossCount : acc.lossCount;
+  const isDiscounted = variant === 'discounted';
+  const isCombined = variant === 'combined';
+  const winCount = isCombined ? acc.winCount + acc.discWinCount : isDiscounted ? acc.discWinCount : acc.winCount;
+  const lossCount = isCombined ? acc.lossCount + acc.discLossCount : isDiscounted ? acc.discLossCount : acc.lossCount;
   const winsRateSum =
-    variant === 'discounted'
+    isCombined
+      ? acc.winsPerEntryNotionalRateSum + acc.discWinsPerEntryNotionalRateSum
+      : isDiscounted
       ? acc.discWinsPerEntryNotionalRateSum
       : acc.winsPerEntryNotionalRateSum;
   const lossesRateAbsSum =
-    variant === 'discounted'
+    isCombined
+      ? acc.lossesPerEntryNotionalRateAbsSum + acc.discLossesPerEntryNotionalRateAbsSum
+      : isDiscounted
       ? acc.discLossesPerEntryNotionalRateAbsSum
       : acc.lossesPerEntryNotionalRateAbsSum;
-  const pnlSum = variant === 'discounted' ? acc.discPnlSum : acc.pnlSum;
+  const pnlSum = isCombined ? acc.pnlSum + acc.discPnlSum : isDiscounted ? acc.discPnlSum : acc.pnlSum;
   const pnlRateSum =
-    variant === 'discounted' ? acc.discPnlPerEntryNotionalRateSum : acc.pnlPerEntryNotionalRateSum;
-  const maxPnl = variant === 'discounted' ? acc.discMaxPnl : acc.maxPnl;
-  const minPnl = variant === 'discounted' ? acc.discMinPnl : acc.minPnl;
+    isCombined
+      ? acc.pnlPerEntryNotionalRateSum + acc.discPnlPerEntryNotionalRateSum
+      : isDiscounted ? acc.discPnlPerEntryNotionalRateSum : acc.pnlPerEntryNotionalRateSum;
+  const maxPnl = isCombined ? Math.max(acc.maxPnl, acc.discMaxPnl) : isDiscounted ? acc.discMaxPnl : acc.maxPnl;
+  const minPnl = isCombined ? Math.min(acc.minPnl, acc.discMinPnl) : isDiscounted ? acc.discMinPnl : acc.minPnl;
   const maxPnlRate =
-    variant === 'discounted' ? acc.discMaxPnlPerEntryNotionalRate : acc.maxPnlPerEntryNotionalRate;
+    isCombined ? Math.max(acc.maxPnlPerEntryNotionalRate, acc.discMaxPnlPerEntryNotionalRate) : isDiscounted ? acc.discMaxPnlPerEntryNotionalRate : acc.maxPnlPerEntryNotionalRate;
   const minPnlRate =
-    variant === 'discounted' ? acc.discMinPnlPerEntryNotionalRate : acc.minPnlPerEntryNotionalRate;
+    isCombined ? Math.min(acc.minPnlPerEntryNotionalRate, acc.discMinPnlPerEntryNotionalRate) : isDiscounted ? acc.discMinPnlPerEntryNotionalRate : acc.minPnlPerEntryNotionalRate;
   const avgWin = winCount > 0 ? winsRateSum / winCount : 0;
   const avgLossAbs = lossCount > 0 ? lossesRateAbsSum / lossCount : 0;
 
   return {
-    cycleCount: acc.count,
+    cycleCount: isCombined ? acc.count * 2 : acc.count,
     asOfIso: isoFromTimestampMs(acc.asOfMs),
     pnlPctSum: round2(pnlSum),
     pnlPerEntryNotionalRateSum: round8(pnlRateSum),
-    entryLegCountSum: round8(acc.entryLegCountSum),
+    entryLegCountSum: round8(isCombined ? acc.entryLegCountSum * 2 : acc.entryLegCountSum),
     maxPnlPct: round2(maxPnl),
     minPnlPct: round2(minPnl),
     maxPnlPerEntryNotionalRate: round8(maxPnlRate),
     minPnlPerEntryNotionalRate: round8(minPnlRate),
-    winRate: winRateDecimal(winCount, acc.count),
+    winRate: winRateDecimal(winCount, isCombined ? acc.count * 2 : acc.count),
     winLossRatio: winLossRatioFromAverages(avgWin, avgLossAbs),
     avgHoldSec: Math.round(acc.holdSecSum / acc.count),
   };
@@ -621,8 +629,13 @@ export function reconstructSymbolStats(
       shortName: symbolShortName(symbol),
       recent30Total: finalizeSlice(recent30Acc, 'standard'),
       recent3moTotal: finalizeSlice(recent3moAcc, 'standard'),
+      recent30Discounted: finalizeSlice(recent30Acc, 'discounted'),
+      recent3moDiscounted: finalizeSlice(recent3moAcc, 'discounted'),
+      recent30Combined: finalizeSlice(recent30Acc, 'combined'),
+      recent3moCombined: finalizeSlice(recent3moAcc, 'combined'),
       standard: finalizeSlice(totalAcc, 'standard'),
       discounted: finalizeSlice(totalAcc, 'discounted'),
+      combined: finalizeSlice(totalAcc, 'combined'),
     });
   }
 

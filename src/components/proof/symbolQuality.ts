@@ -19,9 +19,9 @@ function qualitySliceForPeriod(
   row: ProofSymbolStatsRow,
   period: ProofQualityPeriod
 ): ProofCycleStatsSlice {
-  if (period === 'last30d') return row.recent30Total;
-  if (period === 'last3mo') return row.recent3moTotal;
-  return row.standard;
+  if (period === 'last30d') return row.recent30Combined;
+  if (period === 'last3mo') return row.recent3moCombined;
+  return row.combined;
 }
 
 /** Keep a symbol only when the selected period satisfies both quality thresholds. */
