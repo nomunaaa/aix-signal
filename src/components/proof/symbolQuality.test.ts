@@ -27,8 +27,11 @@ function row(overrides: Partial<ProofSymbolStatsRow> = {}): ProofSymbolStatsRow 
     recent3moTotal: slice({ winRate: 0.7, winLossRatio: 1.4 }),
     recent30Discounted: slice({ winRate: 1, winLossRatio: null }),
     recent3moDiscounted: slice({ winRate: 0.7, winLossRatio: 1.4 }),
+    recent30Combined: slice({ winRate: 1, winLossRatio: null }),
+    recent3moCombined: slice({ winRate: 0.7, winLossRatio: 1.4 }),
     standard: slice({ winRate: 0.65, winLossRatio: 1.2 }),
     discounted: slice(),
+    combined: slice(),
     ...overrides,
   };
 }
