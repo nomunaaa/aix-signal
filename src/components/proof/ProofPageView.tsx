@@ -2,41 +2,27 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ProofPageMock, ProofStatsStream, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
+import type { ProofPageMock, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
 import type { TradingCategory } from '@/lib/trading-category';
-import {
-  reconstructSymbolStats,
-  reconstructTotalStatsForSymbols,
-} from '@/lib/proof/proof-buckets';
+import { reconstructSymbolStats, reconstructTotalStatsForSymbols } from '@/lib/proof/proof-buckets';
 import {
   DEFAULT_SHARED_SIMULATION_INPUT,
-  SIMULATION_LIMITS,
   readSharedSimulationInput,
   subscribeSharedSimulationInput,
-  writeSharedSimulationInput,
 } from '@/lib/simulationStorage';
 import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import { ProofFooter } from '@/components/proof/ProofFooter';
 import { PROOF_COPY } from './proofCopy';
-import { clamp, proofLanguageFromCode } from './proofFormat';
+import { proofLanguageFromCode } from './proofFormat';
 import { ALL_STREAMS, PROOF_STREAM_TO_HISTORY_STREAM } from './HistoryEntryCountLink';
 import { ProofToolbar } from './ProofToolbar';
 import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
-import {
-  symbolsMeetingQualityThresholds,
-  type ProofQualityPeriod,
-} from './symbolQuality';
+import { symbolsMeetingQualityThresholds, type ProofQualityPeriod } from './symbolQuality';
 
-const MIN_SEED = SIMULATION_LIMITS.capital.min;
-const MAX_SEED = SIMULATION_LIMITS.capital.max;
 const DEFAULT_SEED = DEFAULT_SHARED_SIMULATION_INPUT.capital;
-const MIN_ENTRY_RATIO = SIMULATION_LIMITS.capitalRatio.min;
-const MAX_ENTRY_RATIO = SIMULATION_LIMITS.capitalRatio.max;
 const DEFAULT_ENTRY_RATIO = DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio;
-const MIN_LEVERAGE = SIMULATION_LIMITS.leverage.min;
-const MAX_LEVERAGE = SIMULATION_LIMITS.leverage.max;
 const DEFAULT_LEVERAGE = DEFAULT_SHARED_SIMULATION_INPUT.leverage;
 
 export function ProofPageView({ data }: { data: ProofPageMock }) {
@@ -48,7 +34,6 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
   // Stream/Category/Signal 필터는 즐겨찾기·시뮬레이터처럼 Signal Board와 공유되는
   // usePulseStore가 소스 오브 트루스다 — 로컬 state로 들고 있지 않는다.
   const streamFilter = usePulseStore((state) => state.streamFilter);
-  const toggleStreamFilterStore = usePulseStore((state) => state.toggleStreamFilter);
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
   const searchQuery = usePulseStore((state) => state.searchQuery);
@@ -154,55 +139,13 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
     };
   }, []);
 
-  const persistSimulationInput = (next: {
-    capital?: number;
-    capitalRatio?: number;
-    leverage?: number;
-  }) =>
-    writeSharedSimulationInput({
-      capital: next.capital ?? seed,
-      capitalRatio: next.capitalRatio ?? entryRatio,
-      leverage: next.leverage ?? leverage,
-    });
-
-  const toggleStream = (stream: ProofStatsStream) => {
-    toggleStreamFilterStore(PROOF_STREAM_TO_HISTORY_STREAM[stream]);
-  };
-
-  const handleSeedChange = (value: number) => {
-    const next = clamp(value, MIN_SEED, MAX_SEED);
-    setSeed(next);
-    persistSimulationInput({ capital: next });
-  };
-
-  const handleEntryRatioChange = (value: number) => {
-    const next = clamp(value, MIN_ENTRY_RATIO, MAX_ENTRY_RATIO);
-    setEntryRatio(next);
-    persistSimulationInput({ capitalRatio: next });
-  };
-
-  const handleLeverageChange = (value: number) => {
-    const next = clamp(value, MIN_LEVERAGE, MAX_LEVERAGE);
-    setLeverage(next);
-    persistSimulationInput({ leverage: next });
-  };
-
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1400px] bg-background px-4 py-8 pb-20 text-foreground md:px-5">
       <ProofToolbar
         containerRef={toolbarRef}
-        streams={streams}
         engines={data.engines}
-        copy={copy}
-        onToggleStream={toggleStream}
-        seed={seed}
-        entryRatio={entryRatio}
-        leverage={leverage}
         qualityPeriod={qualityPeriod}
         onQualityPeriodChange={setQualityPeriod}
-        onSeedChange={handleSeedChange}
-        onEntryRatioChange={handleEntryRatioChange}
-        onLeverageChange={handleLeverageChange}
       />
 
       <ProofStatBar
@@ -216,15 +159,13 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
 
       <section className="mt-8">
         <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
-          {copy.sections.simulator.title}
+          {copy.simulator.step2Title}
         </h2>
         <ProofSimulatorCard
           rows={activeStats.totalStats}
           seed={seed}
           entryRatio={entryRatio}
           leverage={leverage}
-          monthlyFeeUsd={data.simulator.monthlyFeeUsd}
-          yearlyFeeUsd={data.simulator.yearlyFeeUsd}
           copy={copy}
           language={language}
         />
