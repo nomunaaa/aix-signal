@@ -26,7 +26,6 @@ import {
   type TrendBoardHistoricalQualityStat,
 } from '@/hooks/useTrendBoardHistoricalQuality';
 import { useThrottledSymbolStoreRevision } from '@/hooks/useThrottledSymbolStoreRevision';
-import { TrendBoardSkeletonRows } from '@/components/trend/v8/TrendBoardSkeletonRows';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAllowedSymbols, getSymbolsFromEnv } from '@/config/symbols';
 import { cn } from '@/lib/utils';
@@ -1276,7 +1275,9 @@ function TrendBoardFilterPanel({
               />
             </div>
             <div>
-              <p className="mb-2 text-xs font-medium text-muted-foreground">{qualityCopy.periodGroup}</p>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {qualityCopy.periodGroup}
+              </p>
               <div className="grid grid-cols-3 gap-2">
                 {(['last30d', 'last3mo', 'all'] as TrendQualityPeriod[]).map((key) => (
                   <button
@@ -1944,7 +1945,11 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                   </td>
                 </tr>
               ) : showLoading ? (
-                <TrendBoardSkeletonRows />
+                <tr>
+                  <td colSpan={10} aria-busy="true">
+                    <div className="trend-front-loading" />
+                  </td>
+                </tr>
               ) : rankedDisplayRows.length === 0 ? (
                 <tr>
                   <td colSpan={10}>
@@ -2189,7 +2194,7 @@ const TREND_FRONT_STYLES = `
      값만 덮어써서 같은 레이아웃이 밝은 테마로 렌더되게 한다.
      색상 값은 흰 배경 대비 4.5 이상이 되도록 골랐다(green 4.9 / red 5.4 / gold 5.3 /
      blue 5.2 / dim 4.5). */
-  :root:not(.dark) .trend-front {
+  :root[data-theme="light"] .trend-front {
     --tf-bg: #F5F5F5;
     --tf-panel: #FFFFFF;
     --tf-field: #F1F1F1;
@@ -2204,9 +2209,9 @@ const TREND_FRONT_STYLES = `
     --tf-gold: #854D0E;
     --tf-blue: #1D4ED8;
   }
-  :root:not(.dark) .trend-front * { scrollbar-color: #c9c9c9 transparent; }
-  :root:not(.dark) .trend-front *::-webkit-scrollbar-thumb { background: #c9c9c9; background-clip: padding-box; }
-  :root:not(.dark) .trend-front *::-webkit-scrollbar-thumb:hover { background: #b0b0b0; background-clip: padding-box; }
+  :root[data-theme="light"] .trend-front * { scrollbar-color: #c9c9c9 transparent; }
+  :root[data-theme="light"] .trend-front *::-webkit-scrollbar-thumb { background: #c9c9c9; background-clip: padding-box; }
+  :root[data-theme="light"] .trend-front *::-webkit-scrollbar-thumb:hover { background: #b0b0b0; background-clip: padding-box; }
   .trend-front * { box-sizing: border-box; scrollbar-width: thin; scrollbar-color: #2b2b2b transparent; }
   .trend-front *::-webkit-scrollbar { width: 9px; height: 9px; }
   .trend-front *::-webkit-scrollbar-thumb { background: #2b2b2b; border-radius: 6px; border: 2px solid transparent; background-clip: padding-box; }
@@ -2242,7 +2247,7 @@ const TREND_FRONT_STYLES = `
   .trend-front-sortbtn:hover { color: var(--tf-text); border-color: var(--tf-border-2); }
   .trend-front-sortbtn.trend-front-on { color: #fff; background: rgba(91,141,239,.12); border-color: var(--tf-blue); }
   /* 라이트 모드에서는 옅은 파란 틴트 위에 흰 글자라 선택된 탭이 안 보였다. */
-  :root:not(.dark) .trend-front-sortbtn.trend-front-on { color: var(--tf-blue); background: rgba(29,78,216,.10); }
+  :root[data-theme="light"] .trend-front-sortbtn.trend-front-on { color: var(--tf-blue); background: rgba(29,78,216,.10); }
   .trend-front-pair-note { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 11.5px; color: var(--tf-dim); margin: 0 2px 14px; }
   .trend-front-error { color: var(--tf-red); }
   .trend-front-tbl-wrap { overflow-x: auto; border: 1px solid var(--tf-border); border-radius: 12px; background: var(--tf-panel); }
@@ -2267,6 +2272,7 @@ const TREND_FRONT_STYLES = `
   .trend-front-group-start { border-left: 1px solid var(--tf-border-2); }
   .trend-front-dt tbody tr:last-child td { border-bottom: none; }
   .trend-front-dt tbody tr:hover td { background: #151515; }
+  :root[data-theme="light"] .trend-front-dt tbody tr:hover td { background: #f0f4ff; }
   .trend-front-dt th:first-child { font-weight: 700; }
   .trend-front-symbol-cell { text-align: left; font-weight: 700; }
   .trend-front-dt tbody td.trend-front-strategy-cell { text-align: center; white-space: normal; }
@@ -2275,14 +2281,14 @@ const TREND_FRONT_STYLES = `
   .trend-front-highlight td { background: rgba(14, 203, 129, .035); }
   .trend-front-dt tbody td.trend-front-cell-quality-match { background: rgba(240, 185, 11, .16); }
   .trend-front-dt tbody tr:hover td.trend-front-cell-quality-match { background: rgba(240, 185, 11, .22); }
-  :root:not(.dark) .trend-front-dt tbody td.trend-front-cell-quality-match { background: rgba(254, 240, 138, .72); }
-  :root:not(.dark) .trend-front-dt tbody tr:hover td.trend-front-cell-quality-match { background: rgba(254, 240, 138, .88); }
+  :root[data-theme="light"] .trend-front-dt tbody td.trend-front-cell-quality-match { background: rgba(254, 240, 138, .72); }
+  :root[data-theme="light"] .trend-front-dt tbody tr:hover td.trend-front-cell-quality-match { background: rgba(254, 240, 138, .88); }
   .trend-front-symbol { display: inline-flex; width: 100%; min-width: 0; align-items: center; gap: 8px; background: transparent; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
   .trend-front-symbol:hover .trend-front-symbol-code { color: var(--tf-blue); }
   .trend-front-symbol-icon { box-shadow: 0 0 0 1px rgba(255,255,255,.08); }
   .trend-front-symbol-text { display: inline-flex; min-width: 0; align-items: center; }
   .trend-front-symbol-main { display: inline-flex; min-width: 0; align-items: center; gap: 7px; }
-  .trend-front-symbol-code { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: #fff; font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 800; line-height: 1.15; }
+  .trend-front-symbol-code { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--tf-text); font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; font-weight: 800; line-height: 1.15; }
   .trend-front-symbol-price { flex-shrink: 0; color: var(--tf-text); font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-style: normal; font-weight: 800; line-height: 1.15; opacity: .86; }
   .trend-front-strategy-branch-cell { box-shadow: inset 2px 0 0 rgba(240,185,11,.32); }
   .trend-front-strategy-pill { display: inline-flex; max-width: 100%; min-width: 42px; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--tf-border); border-radius: 7px; background: var(--tf-field); padding: 3px 8px; color: var(--tf-text); font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; font-weight: 800; }
@@ -2339,6 +2345,7 @@ const TREND_FRONT_STYLES = `
   .trend-front-vol-low { color: var(--tf-muted); }
   .trend-front-vol-gray { color: var(--tf-muted); }
   .trend-front-empty { min-height: 132px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--tf-muted); text-align: center; }
+  .trend-front-loading { min-height: 132px; }
   .trend-front-empty p { color: var(--tf-text); font-size: 14px; font-weight: 700; }
   .trend-front-empty span { color: var(--tf-muted); font-size: 12px; font-weight: 400; }
   .trend-front-sec { margin-top: 44px; margin-bottom: 44px; }
