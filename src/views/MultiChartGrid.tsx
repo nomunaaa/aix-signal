@@ -1,10 +1,12 @@
 'use client';
 
 /**
- * /multichart — 4 tiles (was 6; trimmed to make room for a real mock-trade
- * sidebar, matching /chart1m). The toolbar mirrors chart1m's controls
- * (Pulse/Wave interval, 구분 trend-mode checkboxes, 신호 category, timeframe
- * pills, Bollinger, Trend short/long) but applies them to all 4 tiles at once.
+ * /multichart — starts with 4 tiles (room for a real mock-trade sidebar,
+ * matching /chart1m) and grows up to MAX_TILES via a "차트 추가" (+) tile,
+ * shrinks via the × on each tile's header. The toolbar mirrors chart1m's
+ * controls (Pulse/Wave interval, 구분 trend-mode checkboxes, 신호 category,
+ * timeframe pills, Bollinger, Trend short/long) but applies them to every
+ * tile at once.
  *
  * Mock trading happens on exactly one tile at a time — the "selected" one
  * (ring highlight, click any tile to select). Each tile still owns its own
@@ -12,6 +14,11 @@
  * only reports its snapshot/actions up; the sidebar renders whichever tile
  * is currently selected using the same ChartSignalCard / SimulatorSettingsPanel
  * / MockTradeEntryPanel / MockTradePositionCard components /chart1m uses.
+ *
+ * Tiles are keyed by a stable id (not array index) precisely so add/remove
+ * doesn't misalign the id-keyed mockSnapshots/mockActionsRef maps below —
+ * removing tile #1 out of four must not make tile #2's data suddenly render
+ * under #1's old slot.
  *
  * Mobile (<sm) collapses the whole control cluster behind one summary
  * button + bottom Sheet — the same pattern PulseActionControlsBar uses —
@@ -21,7 +28,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
+import { Plus, SlidersHorizontal, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Select,
@@ -49,6 +56,17 @@ import type { ChartTradingCategoryFilter, ChartTrendMode } from '@/views/Multipl
 
 const DEFAULT_SYMBOLS = VOLUME_TOP5_SYMBOLS.slice(0, 4);
 
+/** 타일마다 useBinanceChart(자체 WS 연결) + useMockTrade 인스턴스가 하나씩 붙는다 —
+ * 무제한으로 늘리면 연결/구독 비용이 커지므로 상한을 둔다. 원래 6개 그리드였던
+ * 이력과 맞춰 6을 상한으로 잡는다. */
+const MAX_TILES = 6;
+const MIN_TILES = 1;
+
+interface TileConfig {
+  id: number;
+  symbol: string;
+}
+
 const STREAMS = [
   { label: 'Pulse (1m)', value: '1m' },
   { label: 'Wave (10m)', value: '10m' },
@@ -69,7 +87,10 @@ const INDICATORS = [
 ] as const;
 
 export default function MultiChartGrid() {
-  const [symbols, setSymbols] = useState<string[]>(DEFAULT_SYMBOLS);
+  const [tiles, setTiles] = useState<TileConfig[]>(() =>
+    DEFAULT_SYMBOLS.map((symbol, id) => ({ id, symbol }))
+  );
+  const nextTileIdRef = useRef(DEFAULT_SYMBOLS.length);
   const [barInterval, setBarInterval] = useState<string>('1m');
   const [timeframe, setTimeframe] = useState<MultichartTfKey>('6H');
   const [showTrendShort, setShowTrendShort] = useState(true);
@@ -83,13 +104,37 @@ export default function MultiChartGrid() {
   ]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedId, setSelectedId] = useState(0);
+  // id로 키를 잡는다 — 배열 index를 쓰면 타일을 하나 지웠을 때 뒤쪽 타일들의
+  // index가 전부 밀리면서 스냅샷/액션이 엉뚱한 타일 것으로 뒤바뀐다.
   const [mockSnapshots, setMockSnapshots] = useState<Record<number, MultiChartMockSnapshot>>({});
   const mockActionsRef = useRef<Record<number, MultiChartMockActions>>({});
   const [simulationInput] = useSharedSimulationInput();
 
-  const setSymbolAt = (index: number, symbol: string) => {
-    setSymbols((prev) => prev.map((s, i) => (i === index ? symbol : s)));
+  const setSymbolFor = (id: number, symbol: string) => {
+    setTiles((prev) => prev.map((t) => (t.id === id ? { ...t, symbol } : t)));
+  };
+
+  const addTile = () => {
+    if (tiles.length >= MAX_TILES) return;
+    const used = new Set(tiles.map((t) => t.symbol));
+    const nextSymbol = ALL_SYMBOLS.find((s) => !used.has(s)) ?? ALL_SYMBOLS[0];
+    const id = nextTileIdRef.current++;
+    setTiles((prev) => [...prev, { id, symbol: nextSymbol }]);
+    setSelectedId(id);
+  };
+
+  const removeTile = (id: number) => {
+    if (tiles.length <= MIN_TILES) return;
+    const remaining = tiles.filter((t) => t.id !== id);
+    setTiles(remaining);
+    setMockSnapshots((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    delete mockActionsRef.current[id];
+    setSelectedId((prevSelected) => (prevSelected === id ? remaining[0].id : prevSelected));
   };
 
   const toggleTrendMode = (mode: ChartTrendMode) => {
@@ -110,19 +155,19 @@ export default function MultiChartGrid() {
 
   const streamLabel = barInterval === '1m' ? 'Pulse' : 'Wave';
 
-  const handleMockStateChange = useCallback((index: number, snapshot: MultiChartMockSnapshot) => {
-    setMockSnapshots((prev) => ({ ...prev, [index]: snapshot }));
+  const handleMockStateChange = useCallback((id: number, snapshot: MultiChartMockSnapshot) => {
+    setMockSnapshots((prev) => ({ ...prev, [id]: snapshot }));
   }, []);
 
   const registerMockActionsFor = useCallback(
-    (index: number) => (actions: MultiChartMockActions) => {
-      mockActionsRef.current[index] = actions;
+    (id: number) => (actions: MultiChartMockActions) => {
+      mockActionsRef.current[id] = actions;
     },
     []
   );
 
-  const selectedSnapshot = mockSnapshots[selectedIndex];
-  const selectedActions = mockActionsRef.current[selectedIndex];
+  const selectedSnapshot = mockSnapshots[selectedId];
+  const selectedActions = mockActionsRef.current[selectedId];
   const selectedInPosition =
     !!selectedSnapshot &&
     selectedSnapshot.mockOpen &&
@@ -324,30 +369,43 @@ export default function MultiChartGrid() {
         </SheetContent>
       </Sheet>
 
-      {/* 4개 타일(2x2) + 모의매매 사이드바 — /chart1m의 ChartWorkspaceShell과 같은
+      {/* 타일 + 모의매매 사이드바 — /chart1m의 ChartWorkspaceShell과 같은
           반응형 패턴: 모바일은 세로로 쌓고, lg 이상에서만 좌우로 나눈다. */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="grid flex-1 grid-cols-1 gap-3 p-3 sm:grid-cols-2">
-          {symbols.map((symbol, index) => (
+          {tiles.map((tile) => (
             <div
-              key={index}
+              key={tile.id}
               className="flex h-[360px] flex-col rounded-lg border border-border bg-card p-2"
             >
-              <Select value={symbol} onValueChange={(v) => setSymbolAt(index, v)}>
-                <SelectTrigger className="h-8 w-full shrink-0 text-xs">
-                  <SelectValue>{symbol}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {ALL_SYMBOLS.map((s) => (
-                    <SelectItem key={s} value={s} className="text-xs">
-                      {s}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex shrink-0 items-center gap-1.5">
+                <Select value={tile.symbol} onValueChange={(v) => setSymbolFor(tile.id, v)}>
+                  <SelectTrigger className="h-8 w-full text-xs">
+                    <SelectValue>{tile.symbol}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_SYMBOLS.map((s) => (
+                      <SelectItem key={s} value={s} className="text-xs">
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {tiles.length > MIN_TILES ? (
+                  <button
+                    type="button"
+                    onClick={() => removeTile(tile.id)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                    aria-label={`${tile.symbol} 차트 닫기`}
+                    title="차트 닫기"
+                  >
+                    <X className="h-3.5 w-3.5" aria-hidden />
+                  </button>
+                ) : null}
+              </div>
               <div className="mt-2 min-h-0 flex-1">
                 <MultiChartTile
-                  symbol={symbol}
+                  symbol={tile.symbol}
                   barInterval={barInterval}
                   timeframe={timeframe}
                   showTrendShort={showTrendShort}
@@ -355,19 +413,31 @@ export default function MultiChartGrid() {
                   showBollinger={showBollinger}
                   tradingCategoryFilter={category}
                   trendModesFilter={trendModes}
-                  selected={index === selectedIndex}
-                  onSelect={() => setSelectedIndex(index)}
-                  onMockStateChange={(snapshot) => handleMockStateChange(index, snapshot)}
-                  registerMockActions={registerMockActionsFor(index)}
+                  selected={tile.id === selectedId}
+                  onSelect={() => setSelectedId(tile.id)}
+                  onMockStateChange={(snapshot) => handleMockStateChange(tile.id, snapshot)}
+                  registerMockActions={registerMockActionsFor(tile.id)}
                 />
               </div>
             </div>
           ))}
+
+          {tiles.length < MAX_TILES ? (
+            <button
+              type="button"
+              onClick={addTile}
+              className="flex h-[360px] flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-primary/50 hover:bg-muted/20 hover:text-foreground"
+              aria-label="차트 추가"
+            >
+              <Plus className="h-8 w-8" aria-hidden />
+              <span className="text-sm font-medium">차트 추가</span>
+            </button>
+          ) : null}
         </div>
 
-        <aside className="flex w-full flex-none flex-col gap-3 border-t border-border bg-card/40 p-3.5 lg:w-[340px] lg:overflow-y-auto lg:border-l lg:border-t-0">
+        <aside className="flex w-full flex-none flex-col gap-3 border-t border-border bg-card/40 p-3.5 lg:w-[340px] lg:overflow-y-auto lg:border-t-0 lg:border-l">
           <div className="text-xs font-bold tracking-wide text-muted-foreground">
-            선택된 차트: {symbols[selectedIndex]}
+            선택된 차트: {tiles.find((t) => t.id === selectedId)?.symbol ?? '-'}
           </div>
 
           {selectedSnapshot ? (
