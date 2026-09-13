@@ -141,6 +141,10 @@ export interface HistoryTableProps {
   selectedStrategy: StrategyId;
   onFilteredSignalsChange?: (signals: ClosedSignal[]) => void;
   onHistoryQueryChange?: (queryState: HistoryQueryState) => void;
+  /** Signals that client-only PnL filters need the complete history dataset. */
+  onHistoryFullDataModeChange?: (required: boolean) => void;
+  /** Server-paginated results are fetched in full for CSV export and aggregate counts. */
+  onFetchAllSignals?: (queryState: HistoryQueryState) => Promise<ClosedSignal[]>;
 }
 
 // 독립 필터 상태 (메인 테이블 pulseStore에 영향 없음) — 단, 전략(trading category)/추세 여부는
@@ -448,8 +452,23 @@ function StreamBadgeRenderer(params: ICellRendererParams<ClosedSignal>) {
   const categoryColor = tradingCategoryColor(params.data.tradingCategory);
   return (
     <span className="flex items-center gap-1.5">
-      <span className={cn('inline-flex h-4 items-center justify-center rounded px-1 text-[10px] font-semibold leading-none', isWave ? 'bg-purple-500/15 text-purple-400' : 'bg-cyan-500/15 text-cyan-400')} title={isWave ? 'Wave' : 'Pulse'}>{isWave ? 'W' : 'P'}</span>
-      {categoryColor ? <span className="h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor }} title={params.data.tradingCategory} aria-label={params.data.tradingCategory} /> : null}
+      <span
+        className={cn(
+          'inline-flex h-4 items-center justify-center rounded px-1 text-[10px] font-semibold leading-none',
+          isWave ? 'bg-purple-500/15 text-purple-400' : 'bg-cyan-500/15 text-cyan-400'
+        )}
+        title={isWave ? 'Wave' : 'Pulse'}
+      >
+        {isWave ? 'W' : 'P'}
+      </span>
+      {categoryColor ? (
+        <span
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: categoryColor }}
+          title={params.data.tradingCategory}
+          aria-label={params.data.tradingCategory}
+        />
+      ) : null}
     </span>
   );
 }
@@ -819,6 +838,8 @@ export function HistoryTable({
   selectedStrategy,
   onFilteredSignalsChange,
   onHistoryQueryChange,
+  onHistoryFullDataModeChange,
+  onFetchAllSignals,
 }: HistoryTableProps) {
   const { language, copy } = usePulseCopy();
   const gridRef = useRef<AgGridReact<ClosedSignal>>(null);
@@ -828,6 +849,8 @@ export function HistoryTable({
   const [historySectionOpen, setHistorySectionOpen] = useState(() => !signalFilterActive);
   // 청산일시 기준 실제 시간순 정렬(전략 성과 그룹핑과 무관) — 기본은 내림차순(최신순).
   const [historySort, setHistorySort] = useState<HistorySortState>({ by: 'time', dir: 'desc' });
+  const [isExporting, setIsExporting] = useState(false);
+  const [serverSymbolCount, setServerSymbolCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (!signalFilterActive) setHistorySectionOpen(true);
@@ -889,6 +912,10 @@ export function HistoryTable({
     });
   }, [filter, historySort, onHistoryQueryChange, showFavoritesOnly]);
 
+  useEffect(() => {
+    onHistoryFullDataModeChange?.(Boolean(filter.minReturn.trim() || filter.maxReturn.trim()));
+  }, [filter.maxReturn, filter.minReturn, onHistoryFullDataModeChange]);
+
   // Apply filters before pagination so the table, CSV export, and simulator share one result set.
   const sourceSignals = allSignals ?? signals;
 
@@ -947,11 +974,52 @@ export function HistoryTable({
     const start = (safeCurrentPage - 1) * effectivePageSize;
     return filteredAllSignals.slice(start, start + effectivePageSize);
   }, [effectivePageSize, filteredAllSignals, safeCurrentPage, serverPaginated]);
+  useEffect(() => {
+    if (!serverPaginated || !onFetchAllSignals) {
+      setServerSymbolCount(null);
+      return;
+    }
+
+    let cancelled = false;
+    setServerSymbolCount(null);
+    void onFetchAllSignals({ filter, showFavoritesOnly, sort: historySort })
+      .then((allServerSignals) => {
+        if (cancelled) return;
+        const filtered = applyHistoryFilter(
+          allServerSignals,
+          filter,
+          simulationInput,
+          selectedStrategy,
+          favorites,
+          showFavoritesOnly
+        );
+        setServerSymbolCount(
+          new Set(filtered.map((signal) => signal.symbol.trim().toUpperCase()).filter(Boolean)).size
+        );
+      })
+      .catch((error) => {
+        if (!cancelled) console.error('Signal history symbol count failed:', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    favorites,
+    filter,
+    historySort,
+    onFetchAllSignals,
+    selectedStrategy,
+    serverPaginated,
+    showFavoritesOnly,
+    simulationInput,
+  ]);
   const visibleSymbolCount = useMemo(
     () =>
+      serverSymbolCount ??
       new Set(filteredSignals.map((signal) => signal.symbol.trim().toUpperCase()).filter(Boolean))
         .size,
-    [filteredSignals]
+    [filteredSignals, serverSymbolCount]
   );
 
   // CSV export uses the same filtered set before pagination.
@@ -1055,10 +1123,10 @@ export function HistoryTable({
     return str;
   };
 
-  const handleExportCsv = () => {
+  const downloadCsv = (signalsToExport: ClosedSignal[]) => {
     const headers = copy.history.csvHeaders;
     const dateLocale = language === 'ko' ? 'ko-KR' : 'en-US';
-    const rows = exportSignals.map((s) => {
+    const rows = signalsToExport.map((s) => {
       const closedAt = typeof s.closedAt === 'string' ? new Date(s.closedAt) : s.closedAt;
       const { pnlAmount, pnlPercent } = calculateHistorySimulationPnl(
         s,
@@ -1094,6 +1162,40 @@ export function HistoryTable({
     a.download = `pulse-history-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleExportCsv = async () => {
+    if (isExporting) return;
+    if (!serverPaginated || !onFetchAllSignals) {
+      downloadCsv(exportSignals);
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      const allServerSignals = await onFetchAllSignals({
+        filter,
+        showFavoritesOnly,
+        sort: historySort,
+      });
+      const filteredForExport = sortClosedSignals(
+        applyHistoryFilter(
+          allServerSignals,
+          filter,
+          simulationInput,
+          selectedStrategy,
+          favorites,
+          showFavoritesOnly
+        ),
+        historySort.by,
+        historySort.dir
+      );
+      downloadCsv(filteredForExport);
+    } catch (error) {
+      console.error('Signal history CSV export failed:', error);
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const getRowId = useCallback((params: GetRowIdParams<ClosedSignal>) => params.data.id, []);
@@ -1225,16 +1327,32 @@ export function HistoryTable({
             >
               {copy.history.reset}
             </Button>
-            <Button variant="outline" size="sm" className="h-8 shrink-0 gap-2" onClick={() => {
-              setHistorySort((current) => ({ by: 'time', dir: current.by === 'time' && current.dir === 'desc' ? 'asc' : 'desc' }));
-              onPageChange(1);
-            }}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 gap-2"
+              onClick={() => {
+                setHistorySort((current) => ({
+                  by: 'time',
+                  dir: current.by === 'time' && current.dir === 'desc' ? 'asc' : 'desc',
+                }));
+                onPageChange(1);
+              }}
+            >
               <ArrowDownUp className="h-4 w-4" />
-              {historySort.by !== 'time' || historySort.dir === 'desc' ? copy.history.sortNewestFirst : copy.history.sortOldestFirst}
+              {historySort.by !== 'time' || historySort.dir === 'desc'
+                ? copy.history.sortNewestFirst
+                : copy.history.sortOldestFirst}
             </Button>
-            <Button variant="outline" size="sm" className="h-8 shrink-0 gap-2" onClick={handleExportCsv}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 shrink-0 gap-2"
+              onClick={() => void handleExportCsv()}
+              disabled={isExporting}
+            >
               <Download className="h-4 w-4" />
-              {copy.history.exportCsv}
+              {isExporting ? 'Exporting…' : copy.history.exportCsv}
             </Button>
           </div>
 

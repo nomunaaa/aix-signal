@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TRADING_CATEGORY_ORDER, type TradingCategory } from '@/lib/trading-category';
 import { enrichSignalCyclesWithLifecycleActions } from '@/lib/queries/signals';
@@ -42,7 +42,10 @@ type ClosedSignalHistoryPageState = {
   loading: boolean;
   hasLoaded: boolean;
   error: Error | null;
+  fetchAll: (queryState: HistoryQueryState) => Promise<ClosedSignal[]>;
 };
+
+const NO_HISTORY_SIGNALS = async (): Promise<ClosedSignal[]> => [];
 
 const EMPTY_HISTORY_PAGE: ClosedSignalHistoryPageState = {
   signals: [],
@@ -51,6 +54,7 @@ const EMPTY_HISTORY_PAGE: ClosedSignalHistoryPageState = {
   loading: false,
   hasLoaded: false,
   error: null,
+  fetchAll: NO_HISTORY_SIGNALS,
 };
 
 const EMPTY_LOADED_HISTORY_PAGE: ClosedSignalHistoryPageState = {
@@ -137,6 +141,92 @@ export function useClosedSignalHistoryPage({
   const trendModeKey = `${trendModeFilter.trend ? 'trend' : ''}|${
     trendModeFilter.nonTrend ? 'nonTrend' : ''
   }|${trendModeFilter.reversal ? 'reversal' : ''}`;
+
+  const fetchAll = useCallback(
+    async (queryState: HistoryQueryState): Promise<ClosedSignal[]> => {
+      const normalizedSymbols = symbolsKey ? symbolsKey.split(',') : [];
+      const normalizedFavorites = new Set(favoritesKey ? favoritesKey.split(',') : []);
+      const barIntervals = [
+        streamFilter.pulse ? ('1m' as const) : null,
+        streamFilter.wave ? ('10m' as const) : null,
+      ].filter((item): item is '1m' | '10m' => Boolean(item));
+      const selectedCategories = TRADING_CATEGORY_ORDER.filter((category) =>
+        tradingCategories.includes(category)
+      );
+      const trendModeOrFilter = postgrestTrendModeOrFilter(trendModeFilter);
+      const scopedSymbols = queryState.showFavoritesOnly
+        ? normalizedSymbols.filter((symbol) => normalizedFavorites.has(symbol))
+        : normalizedSymbols;
+
+      if (
+        scopedSymbols.length === 0 ||
+        barIntervals.length === 0 ||
+        selectedCategories.length === 0 ||
+        !trendModeOrFilter
+      ) {
+        return [];
+      }
+
+      const applyFilters = (query: any): any => {
+        const filter = queryState.filter;
+        let next = query
+          .eq('is_open', false)
+          .not('exit_time', 'is', null)
+          .in('symbol', scopedSymbols)
+          .in('barinterval', barIntervals)
+          .or(trendModeOrFilter);
+
+        if (selectedCategories.length !== TRADING_CATEGORY_ORDER.length) {
+          next = next.in('trading_category', selectedCategories);
+        }
+        if (filter.symbol.trim()) next = next.ilike('symbol', symbolPattern(filter.symbol));
+        if (searchQuery.trim()) next = next.ilike('symbol', symbolPattern(searchQuery));
+        if (filter.direction)
+          next = next.eq('side', filter.direction === 'long' ? 'LONG' : 'SHORT');
+
+        const exactFromIso = normalizeIsoTimestamp(filter.exactDateFromIso);
+        const fromIso = exactFromIso ?? isoFromMs(dateInputStartMs(filter.dateFrom));
+        if (fromIso) next = next.gte('exit_time', fromIso);
+        const exactToIso = normalizeIsoTimestamp(filter.exactDateToIso);
+        if (exactToIso) next = next.lte('exit_time', exactToIso);
+        else {
+          const toIso = isoFromMs(dateInputEndExclusiveMs(filter.dateTo));
+          if (toIso) next = next.lt('exit_time', toIso);
+        }
+        return next;
+      };
+
+      const batchSize = 1_000;
+      const rows: ClosedSignalCycleRow[] = [];
+      for (let from = 0; ; from += batchSize) {
+        let query = applyFilters(
+          supabase.from('signal_cycles').select(HISTORY_CLOSED_CYCLE_COLUMNS)
+        );
+        query =
+          queryState.sort.by === 'symbol'
+            ? query
+                .order('symbol', { ascending: queryState.sort.dir === 'asc' })
+                .order('exit_time', { ascending: false })
+            : query.order('exit_time', { ascending: queryState.sort.dir === 'asc' });
+        const result = await query.range(from, from + batchSize - 1);
+        if (result.error) throw result.error;
+        const batch = (result.data ?? []) as ClosedSignalCycleRow[];
+        rows.push(...batch);
+        if (batch.length < batchSize) break;
+      }
+
+      return mapCycleRowsToClosedSignals(await enrichSignalCyclesWithLifecycleActions(rows));
+    },
+    [
+      favoritesKey,
+      searchQuery,
+      streamFilter.pulse,
+      streamFilter.wave,
+      symbolsKey,
+      tradingCategories,
+      trendModeFilter,
+    ]
+  );
 
   useEffect(() => {
     const safePageSize = Number.isFinite(pageSize) && pageSize > 0 ? Math.floor(pageSize) : 10;
@@ -255,6 +345,7 @@ export function useClosedSignalHistoryPage({
         loading: false,
         hasLoaded: true,
         error: null,
+        fetchAll,
       });
     };
 
@@ -266,6 +357,7 @@ export function useClosedSignalHistoryPage({
         loading: false,
         hasLoaded: true,
         error: error instanceof Error ? error : new Error(String(error)),
+        fetchAll,
       });
     });
 
@@ -287,7 +379,8 @@ export function useClosedSignalHistoryPage({
     trendModeFilter,
     trendModeKey,
     tradingCategories,
+    fetchAll,
   ]);
 
-  return state;
+  return { ...state, fetchAll };
 }

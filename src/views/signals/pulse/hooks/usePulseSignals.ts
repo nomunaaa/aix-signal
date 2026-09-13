@@ -65,6 +65,7 @@ export interface UsePulseSignalsReturn {
   signals: Signal[];
   tickerEvents: TickerEvent[];
   isLoading: boolean;
+  isOpenSignalsLoading: boolean;
   isConnected: boolean;
   error: Error | null;
   // 하위 호환: 기존 소비자용 확장 필드
@@ -194,7 +195,8 @@ function signalToTickerEvent(s: Signal): TickerEvent {
 export function usePulseSignals(
   allowedSymbols: string[] = ALL_SYMBOLS,
   stream: SignalStreamId = 'pulse',
-  strategy: StrategyId | null = 'oneshot'
+  strategy: StrategyId | null = 'oneshot',
+  options: { loadHistory?: boolean } = {}
 ): UsePulseSignalsReturn {
   const { preloadIcons } = useCryptoIcons();
   const { data: sectionsData } = useSignalSections();
@@ -213,6 +215,7 @@ export function usePulseSignals(
     openSignalsLoading,
   } = useSignalCycles(barInterval, {
     enabled: allowedSymbols.length > 0,
+    loadHistory: options.loadHistory,
     symbols: allowedSymbols,
     tradingCategory,
     historyTradingCategory: null,
@@ -294,6 +297,7 @@ export function usePulseSignals(
     signals: openSignals,
     tickerEvents,
     isLoading: openSignalsLoading || historyLoading,
+    isOpenSignalsLoading: openSignalsLoading,
     isConnected: !openSignalsLoading,
     error: null,
     // 하위 호환 확장 필드

@@ -10,7 +10,7 @@
  * No "구간" column. Each table has unique columns.
  */
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef, useDeferredValue } from 'react';
 import { WifiOff, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PulseSectionTable } from './PulseSectionTable';
@@ -203,6 +203,8 @@ export interface PulseSingleColumnLayoutProps {
   readonly allowedSymbols?: string[];
   readonly favoriteSymbols?: readonly string[];
   readonly qualityQualifiedSymbols?: ReadonlySet<string>;
+  /** Enables the legacy client-side history only for filters that cannot be expressed in SQL. */
+  readonly onHistoryFullDataModeChange?: (required: boolean) => void;
   /** Dedicated History page keeps the shared controls/table but omits open-signal sections. */
   readonly showOpenSections?: boolean;
 }
@@ -221,6 +223,7 @@ export function PulseSingleColumnLayout({
   allowedSymbols = [],
   favoriteSymbols = [],
   qualityQualifiedSymbols = new Set<string>(),
+  onHistoryFullDataModeChange,
   showOpenSections = true,
 }: PulseSingleColumnLayoutProps) {
   const { language, copy } = usePulseCopy();
@@ -286,6 +289,9 @@ export function PulseSingleColumnLayout({
       allowedSymbols.filter((symbol) => qualityQualifiedSymbols.has(symbol.trim().toUpperCase())),
     [allowedSymbols, qualityQualifiedSymbols]
   );
+  // Range inputs update on every pointer move. Defer only the History query's symbol scope so
+  // dragging a quality slider does not compete with pointer painting or issue a request per step.
+  const deferredHistorySymbols = useDeferredValue(qualityScopedSymbols);
 
   const handleDatePeriodChange = useCallback(
     (period: SignalDatePeriod) => {
@@ -433,10 +439,10 @@ export function PulseSingleColumnLayout({
     !isSymbolLocked &&
     historyQueryState !== null &&
     !hasUnsupportedHistoryServerFilter &&
-    qualityScopedSymbols.length > 0;
+    deferredHistorySymbols.length > 0;
   const serverHistoryPage = useClosedSignalHistoryPage({
     enabled: canUseHistoryServerPagination,
-    symbols: qualityScopedSymbols,
+    symbols: deferredHistorySymbols,
     streamFilter: historyStreamFilter,
     trendModeFilter: historyTrendModeFilter,
     tradingCategories: historyTradingCategories,
@@ -884,6 +890,10 @@ export function PulseSingleColumnLayout({
                 selectedStrategy={selectedStrategy}
                 onFilteredSignalsChange={handleHistoryFilteredSignalsChange}
                 onHistoryQueryChange={setHistoryQueryState}
+                onHistoryFullDataModeChange={onHistoryFullDataModeChange}
+                onFetchAllSignals={
+                  useHistoryServerPagination ? serverHistoryPage.fetchAll : undefined
+                }
               />
             </div>
           </div>

@@ -40,6 +40,8 @@ type SignalEventLite = {
 
 type UseSignalCyclesOptions = {
   enabled?: boolean;
+  /** Skip legacy bulk-history hydration when the consumer uses paginated history queries. */
+  loadHistory?: boolean;
   symbols?: string[];
   tradingCategory?: TradingCategory;
   historyTradingCategory?: TradingCategory | null;
@@ -490,6 +492,7 @@ export const useSignalCycles = (
   options: UseSignalCyclesOptions = {}
 ) => {
   const enabled = options.enabled ?? true;
+  const loadHistory = options.loadHistory ?? true;
   const optionSymbols = options.symbols;
   const tradingCategory = options.tradingCategory;
   const historyTradingCategory =
@@ -615,7 +618,7 @@ export const useSignalCycles = (
   );
 
   const fetchHistory = useCallback(async () => {
-    if (!enabled || symbols.length === 0) {
+    if (!enabled || !loadHistory || symbols.length === 0) {
       setHistoryData([]);
       setHistoryTotalCount(0);
       setLoading(false);
@@ -694,6 +697,7 @@ export const useSignalCycles = (
     enabled,
     historyPeriod,
     historyTradingCategory,
+    loadHistory,
     symbolsKey,
   ]);
 
@@ -749,9 +753,9 @@ export const useSignalCycles = (
     setHistoryData([]);
     setHistoryTotalCount(0);
     setOpenSignals([]);
-    setLoading(Boolean(enabled && symbols.length > 0));
+    setLoading(Boolean(enabled && loadHistory && symbols.length > 0));
     setOpenSignalsLoading(Boolean(enabled && symbols.length > 0));
-  }, [barinterval, categoryKey, enabled, symbols.length, symbolsKey]);
+  }, [barinterval, categoryKey, enabled, loadHistory, symbols.length, symbolsKey]);
 
   useEffect(() => {
     if (!enabled || symbols.length === 0) return;
@@ -841,7 +845,7 @@ export const useSignalCycles = (
 
           if (cycle.is_open === false) {
             setOpenSignals((prev) => prev.filter((signal) => signal.id !== String(cycle.id ?? '')));
-            if (!matchesHistoryCategory) return;
+            if (!loadHistory || !matchesHistoryCategory) return;
 
             const [enrichedCycle] = await enrichSignalCyclesWithLifecycleActions([cycle]);
             const updatedPair = convertCyclesToPairs([enrichedCycle ?? cycle])[0];
@@ -881,6 +885,7 @@ export const useSignalCycles = (
     convertCyclesToPairs,
     enabled,
     historyTradingCategory,
+    loadHistory,
     openTradingCategory,
     symbolSet,
     symbolsKey,

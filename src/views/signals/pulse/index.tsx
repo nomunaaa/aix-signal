@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useMemo } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from '@/lib/navigation-compat';
 import { PulseEntryGate } from './components/PulseEntryGate';
@@ -104,6 +104,7 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
   const favoriteSymbols = useMemo(() => getSymbolsFromEnv(), []);
   const allowedSymbolSet = useMemo(() => new Set(allowedSymbols), [allowedSymbols]);
   const pulseApiEnabled = isPulseApiEnabled();
+  const [historyNeedsFullClientData, setHistoryNeedsFullClientData] = useState(false);
 
   useEffect(() => {
     syncFromURL(searchParams);
@@ -169,8 +170,14 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
     enabled:
       pulseApiEnabled && allowedSymbols.length > 0 && (!!pulseApi.refetch || !!waveApi.refetch),
   });
-  const legacyPulse = usePulseSignals(allowedSymbols, 'pulse', 'full');
-  const legacyWave = usePulseSignals(allowedSymbols, 'wave', 'full');
+  // HistoryTable owns its server-paginated fetch. Do not hydrate up to 5,000 legacy history rows
+  // per stream before the board can paint.
+  const legacyPulse = usePulseSignals(allowedSymbols, 'pulse', 'full', {
+    loadHistory: USE_MOCK_SIGNALS || historyNeedsFullClientData,
+  });
+  const legacyWave = usePulseSignals(allowedSymbols, 'wave', 'full', {
+    loadHistory: USE_MOCK_SIGNALS || historyNeedsFullClientData,
+  });
 
   const usePulseApiData = pulseApi.isEnabled && !pulseApi.isLoading && !pulseApi.isError;
   const useWaveApiData = waveApi.isEnabled && !waveApi.isLoading && !waveApi.isError;
@@ -215,8 +222,8 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
   const panelLoading =
     openSignalsForPanel.length === 0 &&
     ((pulseApiEnabled && (pulseApi.isLoading || waveApi.isLoading)) ||
-      legacyPulse.isLoading ||
-      legacyWave.isLoading);
+      legacyPulse.isOpenSignalsLoading ||
+      legacyWave.isOpenSignalsLoading);
 
   const total24hSignals = legacyPulse.total24hSignals + legacyWave.total24hSignals;
   const closedSignalsTotalCount =
@@ -276,12 +283,13 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
         closedSignalsTotalCount={closedSignalsTotalCount}
         showDiscount={showDiscount}
         showLocked={showLocked}
-        openSignalsLoading={panelLoading || qualitySymbolsLoading}
+        openSignalsLoading={panelLoading}
         isReconnecting={isReconnecting}
         total24hSignals={total24hSignals}
         allowedSymbols={allowedSymbols}
         favoriteSymbols={favoriteSymbols}
         qualityQualifiedSymbols={qualifiedSymbols}
+        onHistoryFullDataModeChange={setHistoryNeedsFullClientData}
         showOpenSections={!historyOnly}
       />
 
