@@ -173,6 +173,7 @@ export function TableControlBar({
   const setQualityRiskRewardThreshold = usePulseStore((s) => s.setQualityRiskRewardThreshold);
   const { input: simulationInput } = useSimulation({ historySignals: simulationHistorySignals });
   const [simulationOpen, setSimulationOpen] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [, setClockTick] = useState(0);
 
   // The status timestamp represents the newest currently-open signal. Re-render it so
@@ -182,6 +183,32 @@ export function TableControlBar({
     const timer = window.setInterval(() => setClockTick((tick) => tick + 1), 1_000);
     return () => window.clearInterval(timer);
   }, [lastUpdate]);
+
+  /** 모바일 요약 버튼 라벨 — 현재 스트림과 기간을 한 줄로 압축해 보여준다. */
+  const activeStreams = (['pulse', 'wave'] as SignalStreamId[]).filter((st) => streamFilter[st]);
+  const streamSummary =
+    activeStreams.length === 2
+      ? 'PULSE+WAVE'
+      : activeStreams.length === 1
+        ? activeStreams[0].toUpperCase()
+        : language === 'ko'
+          ? '스트림 없음'
+          : 'No stream';
+  const periodSummary =
+    datePeriod === '90d'
+      ? language === 'ko'
+        ? '3개월'
+        : '3mo'
+      : datePeriod === 'all'
+        ? language === 'ko'
+          ? '누적'
+          : 'All'
+        : language === 'ko'
+          ? '30일'
+          : '30d';
+  const mobileFilterSummary = datePeriod
+    ? `${streamSummary} · ${periodSummary}`
+    : streamSummary;
 
   const sectionId = activeTableId ?? 'default';
   const sectionOverrides = sectionColumnVisibility[sectionId] ?? {};
@@ -323,6 +350,35 @@ export function TableControlBar({
         )}
       </div>
 
+
+      {/* ── 모바일(<sm) 필터 진입점 ──────────────────────────────────────────
+          375px에서 이 바의 컨트롤 5그룹을 flex-wrap으로 늘어놓으면 제각각 너비로
+          6줄(269px = 화면의 33%)이 쌓이고, 가장 넓은 그룹(즐겨찾기+PULSE/WAVE,
+          520px)은 shrink-0라 줄바꿈도 안 돼 화면 밖으로 잘려 나갔다.
+          모바일에서는 요약 버튼 하나 + 시트로 접고, 위 컨트롤들은 sm 이상에서만 편다. */}
+      <button
+        type="button"
+        onClick={() => setFilterSheetOpen(true)}
+        className="flex h-9 min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/35 active:bg-muted/45 sm:hidden"
+        aria-haspopup="dialog"
+        aria-label={`${copy.tableControls.viewPreset}: ${mobileFilterSummary}`}
+      >
+        <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+        <span className="min-w-0 truncate text-left">{mobileFilterSummary}</span>
+      </button>
+
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setSimulationOpen(true)}
+        className="h-9 shrink-0 gap-1 px-2 text-xs sm:hidden"
+        aria-label={copy.actionBar.simulationTitle}
+      >
+        <span className="font-mono tabular-nums">
+          {formatSimulationUsd(simulationInput.capital)} · {simulationInput.leverage}x
+        </span>
+      </Button>
+
       {/* 열 구성 + 시간·방향 — 단일 Popover (프리셋 UI 통합) */}
       <div className="hidden">
         {onColumnPresetChange ? (
@@ -454,9 +510,9 @@ export function TableControlBar({
         <span>{language === 'ko' ? '더보기' : 'More'}</span>
       </button>
 
-      {/* flex-wrap: 375px에서 즐겨찾기 드롭다운 + Pulse/Wave 토글을 합친 폭이 화면보다
-          넓다 — nowrap이면 상위(overflow-hidden) 밖으로 잘려 사라진다. */}
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+      {/* 데스크톱 전용 — 모바일에서는 아래 필터 시트 안에서 같은 컨트롤을 렌더한다.
+          (이 그룹은 375px에서 520px를 차지해 화면 밖으로 잘렸다: shrink-0라 줄바꿈도 안 된다.) */}
+      <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
         <FavoriteScopeControls symbols={favoriteSymbols} />
         <div
           className="flex min-w-[10rem] shrink-0 items-stretch gap-0 overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5"
@@ -501,7 +557,7 @@ export function TableControlBar({
       </div>
 
       {datePeriod && onDatePeriodChange ? (
-        <div className="shrink-0">
+        <div className="hidden shrink-0 sm:block">
           <Select
             value={datePeriod}
             onValueChange={(value) => {
@@ -526,8 +582,8 @@ export function TableControlBar({
         </div>
       ) : null}
 
-      {/* flex-wrap (same reason): 두 슬라이더 폭 합이 375px에서 잘려 화면 밖으로 사라졌다. */}
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
+      {/* 데스크톱 전용 — 모바일에서는 필터 시트 안에 전체폭으로 들어간다. */}
+      <div className="hidden flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5 sm:flex">
         <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs">
           <span className="flex items-center justify-between text-muted-foreground">
             <span>Win Rate</span>
@@ -564,7 +620,7 @@ export function TableControlBar({
           <Button
             type="button"
             variant="outline"
-            className="h-10 min-w-[240px] justify-between gap-2 text-left text-xs"
+            className="hidden h-10 min-w-[240px] justify-between gap-2 text-left text-xs sm:flex"
           >
             <span className="font-medium text-muted-foreground">
               {copy.actionBar.simulationTitle}
@@ -713,6 +769,133 @@ export function TableControlBar({
           </button>
         </div>
       ) : null}
+
+      {/* 모바일 필터 시트 — 모든 행이 전체폭이라 컨트롤 너비가 들쭉날쭉해지지 않는다. */}
+      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto sm:hidden">
+          <SheetHeader>
+            <SheetTitle className="text-base font-semibold text-foreground">
+              {language === 'ko' ? '필터' : 'Filters'}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-4 space-y-5">
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {language === 'ko' ? '스트림' : 'Stream'}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => {
+                  const on = streamFilter[stream];
+                  const rate = streamWinRates[stream];
+                  return (
+                    <button
+                      key={stream}
+                      type="button"
+                      onClick={() => toggleStreamFilter(stream)}
+                      role="checkbox"
+                      aria-checked={on}
+                      className={cn(
+                        'flex h-11 items-center justify-center gap-1.5 rounded-md border text-xs font-semibold transition-colors',
+                        on
+                          ? 'border-primary/50 bg-primary/10 text-foreground'
+                          : 'border-border bg-muted/30 text-muted-foreground'
+                      )}
+                    >
+                      {stream === 'pulse' ? 'PULSE' : 'WAVE'}
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        {typeof rate === 'number' ? `${rate.toFixed(0)}%` : '—'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {language === 'ko' ? '종목' : 'Symbols'}
+              </p>
+              <FavoriteScopeControls symbols={favoriteSymbols} />
+            </div>
+
+            {datePeriod && onDatePeriodChange ? (
+              <div>
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  {language === 'ko' ? '기간' : 'Period'}
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['30d', '90d', 'all'] as SignalDatePeriod[]).map((period) => (
+                    <button
+                      key={period}
+                      type="button"
+                      onClick={() => onDatePeriodChange(period)}
+                      className={cn(
+                        'h-11 rounded-md border text-xs font-medium transition-colors',
+                        datePeriod === period
+                          ? 'border-primary/50 bg-primary/10 text-foreground'
+                          : 'border-border bg-muted/30 text-muted-foreground'
+                      )}
+                    >
+                      {period === '30d'
+                        ? language === 'ko'
+                          ? '최근 30일'
+                          : 'Last 30d'
+                        : period === '90d'
+                          ? language === 'ko'
+                            ? '최근 3개월'
+                            : 'Last 3mo'
+                          : language === 'ko'
+                            ? '누적'
+                            : 'All time'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {language === 'ko' ? '최소 기준' : 'Minimum thresholds'}
+              </p>
+              <div className="space-y-4 rounded-lg border border-border bg-card/50 p-3">
+                <label className="block text-xs">
+                  <span className="mb-1.5 flex items-center justify-between text-muted-foreground">
+                    <span>Win Rate</span>
+                    <b className="font-mono text-foreground">{qualityWinRateThreshold}%</b>
+                  </span>
+                  <input
+                    className="h-1.5 w-full cursor-pointer accent-primary"
+                    type="range"
+                    min="35"
+                    max="100"
+                    step="1"
+                    value={qualityWinRateThreshold}
+                    onChange={(e) => setQualityWinRateThreshold(Number(e.target.value))}
+                  />
+                </label>
+                <label className="block text-xs">
+                  <span className="mb-1.5 flex items-center justify-between text-muted-foreground">
+                    <span>Risk/Reward</span>
+                    <b className="font-mono text-foreground">
+                      {qualityRiskRewardThreshold.toFixed(1)}
+                    </b>
+                  </span>
+                  <input
+                    className="h-1.5 w-full cursor-pointer accent-primary"
+                    type="range"
+                    min="0.6"
+                    max="5"
+                    step="0.1"
+                    value={qualityRiskRewardThreshold}
+                    onChange={(e) => setQualityRiskRewardThreshold(Number(e.target.value))}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <Sheet open={moreSheetOpen} onOpenChange={setMoreSheetOpen}>
         <SheetContent side="bottom" className="max-h-[80vh] overflow-y-auto sm:hidden">
