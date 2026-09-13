@@ -707,7 +707,7 @@ export function TableControlBar({
       </div>
 
       {showStatusSummary ? (
-        <div className="ml-auto flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex w-full shrink-0 items-center justify-end gap-2 sm:w-auto">
           <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-xs">
             <span
               className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-semantic-bull"
