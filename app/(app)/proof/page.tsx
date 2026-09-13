@@ -1,10 +1,5 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { fetchProofPageData } from '@/lib/proof/fetch-proof';
 import { ProofPageView } from '@/components/proof/ProofPageView';
-
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: '수익인증 · 시그널 성과',
@@ -17,11 +12,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function ProofPage() {
-  const data = await fetchProofPageData();
-  return (
-    <Suspense fallback={null}>
-      <ProofPageView data={data} />
-    </Suspense>
-  );
+export default function ProofPage() {
+  return <ProofPageView />;
 }

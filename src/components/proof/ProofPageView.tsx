@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ProofPageMock, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
+import { buildEmptyProofPage } from '@/lib/proof/build-proof-page-data';
 import type { TradingCategory } from '@/lib/trading-category';
 import { reconstructSymbolStats, reconstructTotalStatsForSymbols } from '@/lib/proof/proof-buckets';
 import {
@@ -25,7 +26,7 @@ const DEFAULT_SEED = DEFAULT_SHARED_SIMULATION_INPUT.capital;
 const DEFAULT_ENTRY_RATIO = DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio;
 const DEFAULT_LEVERAGE = DEFAULT_SHARED_SIMULATION_INPUT.leverage;
 
-export function ProofPageView({ data }: { data: ProofPageMock }) {
+export function ProofPageView() {
   const { i18n } = useTranslation();
   const language = proofLanguageFromCode(i18n.resolvedLanguage ?? i18n.language);
   const copy = PROOF_COPY[language];
@@ -52,6 +53,22 @@ export function ProofPageView({ data }: { data: ProofPageMock }) {
   const [leverage, setLeverage] = useState(DEFAULT_LEVERAGE);
   const [toolbarHeight, setToolbarHeight] = useState(0);
   const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
+  const [data, setData] = useState<ProofPageMock>(() => buildEmptyProofPage('30d'));
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch('/api/proof', { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Proof data request failed: ${response.status}`);
+        return (await response.json()) as ProofPageMock;
+      })
+      .then(setData)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        console.error('[proof] client data fetch failed:', error);
+      });
+    return () => controller.abort();
+  }, []);
 
   // data.buckets는 서버가 한 번의 스캔으로 만들어 둔 작은 합산 큐브다(stream x
   // trendMode x category x window) — 필터가 바뀔 때마다 해당 버킷만 합산해 즉시

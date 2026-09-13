@@ -7,7 +7,8 @@
 /* Pretendard Variable — main font, non-blocking via @font-face */
 @font-face {
   font-family: 'Pretendard Variable';
-  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.woff2') format('woff2');
+  src: url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.woff2')
+    format('woff2');
   font-weight: 45 920;
   font-style: normal;
   font-display: swap;
@@ -16,7 +17,8 @@
 /* JetBrains Mono — monospace/code font, non-blocking */
 @font-face {
   font-family: 'JetBrains Mono';
-  src: url('https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjOVmNog.woff2') format('woff2');
+  src: url('https://fonts.gstatic.com/s/jetbrainsmono/v18/tDbY2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKxjOVmNog.woff2')
+    format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: optional;
@@ -29,7 +31,7 @@
 @layer components {
   /** Right-aligned numeric / price cells — tabular nums */
   .price-cell {
-    @apply font-mono text-right tabular-nums;
+    @apply text-right font-mono tabular-nums;
     font-feature-settings: 'tnum' 1;
     font-variant-numeric: tabular-nums;
   }
@@ -106,9 +108,13 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 0 100% 50%;
-    --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Noto Sans KR', sans-serif;
+    --font-sans:
+      'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+      'Noto Sans KR', sans-serif;
     --font-serif: ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
-    --font-mono: 'JetBrains Mono', 'D2Coding', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --font-mono:
+      'JetBrains Mono', 'D2Coding', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      'Liberation Mono', 'Courier New', monospace;
     --radius: 1.5rem;
     --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
     --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
@@ -171,7 +177,7 @@
     --animate-rainbow: rainbow var(--speed, 2s) infinite linear;
     --animate-rippling: rippling var(--duration) ease-out;
     --animate-grid: grid 15s linear infinite;
-    --animate-ripple: ripple var(--duration,2s) ease calc(var(--i, 0)*.2s) infinite;
+    --animate-ripple: ripple var(--duration, 2s) ease calc(var(--i, 0) * 0.2s) infinite;
     --animate-background-position-spin: background-position-spin 3000ms infinite alternate;
     --animate-pulse: pulse var(--duration) ease-out infinite;
   }
@@ -209,11 +215,13 @@
   /* === CONSOLIDATED DESIGN TOKENS === */
 
   /* Font Family — Pretendard Variable */
-  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Noto Sans KR", sans-serif;
+  --font-sans:
+    'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto,
+    'Noto Sans KR', sans-serif;
 
   /* Brand Colors (HSL format) */
-  --brand-primary: 0 100% 50%;       /* #ff0000 */
-  --brand-tertiary: 226 52% 18%;     /* #151d46 */
+  --brand-primary: 0 100% 50%; /* #ff0000 */
+  --brand-tertiary: 226 52% 18%; /* #151d46 */
 
   /* PnL / heat tint (aligned with `src/lib/color-scale.ts`, CoinGlass-style caps) */
   --color-profit: 160 84% 39%;
@@ -244,7 +252,7 @@
   --fs-body: 16px;
   --lh-body: 24px;
   --fw-body: 500;
-  --fs-nav: 14px;          /* Navigation menu items */
+  --fs-nav: 14px; /* Navigation menu items */
   --lh-nav: 20px;
   --fw-nav: 500;
   --fs-caption: 12px;
@@ -294,7 +302,8 @@
 
   /* Subtle Pulse Animation */
   @keyframes subtle-pulse {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 0.8;
     }
     50% {
@@ -303,46 +312,46 @@
   }
 
   /* Semantic Colors (Global Standard: Green=Bull, Red=Bear) */
-  --semantic-bull: 142 71% 45%;              /* Green for up/profit */
+  --semantic-bull: 142 71% 45%; /* Green for up/profit */
   --semantic-bull-foreground: 0 0% 98%;
-  --semantic-bear: 0 84% 60%;                /* Red for down/loss */
+  --semantic-bear: 0 84% 60%; /* Red for down/loss */
   --semantic-bear-foreground: 0 0% 98%;
-  --semantic-neutral: 0 0% 62%;              /* Gray for neutral */
-  --stream-pulse: 188 94% 53%;              /* Cyan for PULSE stream */
-  --stream-wave: 263 70% 75%;               /* Violet for WAVE stream */
+  --semantic-neutral: 0 0% 62%; /* Gray for neutral */
+  --stream-pulse: 188 94% 53%; /* Cyan for PULSE stream */
+  --stream-wave: 263 70% 75%; /* Violet for WAVE stream */
   --semantic-neutral-foreground: 0 0% 98%;
-  --semantic-cta: 217 91% 60%;               /* Blue for CTA */
+  --semantic-cta: 217 91% 60%; /* Blue for CTA */
   --semantic-cta-foreground: 0 0% 98%;
 
   /* Radar Signal Colors (Bloomberg Terminal Style) */
-  --radar-buy: 142 71% 45%;                  /* Radar Green #10B981 */
-  --radar-buy-scan: 142 76% 54%;             /* Scan Line #34D399 */
-  --radar-sell: 0 84% 60%;                   /* Alert Red #EF4444 */
-  --radar-sell-warning: 0 91% 71%;           /* Warning Line #F87171 */
-  --radar-standby: 38 92% 50%;               /* Standby Amber #F59E0B */
+  --radar-buy: 142 71% 45%; /* Radar Green #10B981 */
+  --radar-buy-scan: 142 76% 54%; /* Scan Line #34D399 */
+  --radar-sell: 0 84% 60%; /* Alert Red #EF4444 */
+  --radar-sell-warning: 0 91% 71%; /* Warning Line #F87171 */
+  --radar-standby: 38 92% 50%; /* Standby Amber #F59E0B */
   --radar-standby-foreground: 0 0% 98%;
 
   /* Icon Colors - Light Mode (Dark icons for visibility) */
-  --icon-default: 0 0% 20%;                    /* Almost black - high visibility on light bg */
-  --icon-muted: 0 0% 50%;                      /* Mid gray for secondary icons */
-  --icon-primary: 0 100% 50%;                  /* Brand red #ff0000 */
-  --icon-secondary: 217 91% 60%;               /* Brand blue */
-  --icon-success: 142 71% 45%;                 /* Green (bull) */
-  --icon-danger: 0 84% 60%;                    /* Red (bear) */
-  --icon-warning: 38 92% 50%;                  /* Amber */
-  --icon-info: 217 91% 60%;                    /* Blue */
-  --icon-bull: 142 71% 45%;                    /* Green for up/profit */
-  --icon-bear: 0 84% 60%;                      /* Red for down/loss */
-  --icon-neutral: 0 0% 62%;                    /* Gray for neutral */
+  --icon-default: 0 0% 20%; /* Almost black - high visibility on light bg */
+  --icon-muted: 0 0% 50%; /* Mid gray for secondary icons */
+  --icon-primary: 0 100% 50%; /* Brand red #ff0000 */
+  --icon-secondary: 217 91% 60%; /* Brand blue */
+  --icon-success: 142 71% 45%; /* Green (bull) */
+  --icon-danger: 0 84% 60%; /* Red (bear) */
+  --icon-warning: 38 92% 50%; /* Amber */
+  --icon-info: 217 91% 60%; /* Blue */
+  --icon-bull: 142 71% 45%; /* Green for up/profit */
+  --icon-bear: 0 84% 60%; /* Red for down/loss */
+  --icon-neutral: 0 0% 62%; /* Gray for neutral */
 
   /* Icon Sizing Scale */
-  --icon-xs: 0.75rem;    /* 12px - Caption icons */
-  --icon-sm: 1rem;       /* 16px - Inline text icons */
-  --icon-md: 1.25rem;    /* 20px - Default button icons */
-  --icon-lg: 1.5rem;     /* 24px - Header icons */
-  --icon-xl: 2rem;       /* 32px - Hero section icons */
-  --icon-2xl: 2.5rem;    /* 40px - Large feature icons */
-  --icon-3xl: 3rem;      /* 48px - Extra large display icons */
+  --icon-xs: 0.75rem; /* 12px - Caption icons */
+  --icon-sm: 1rem; /* 16px - Inline text icons */
+  --icon-md: 1.25rem; /* 20px - Default button icons */
+  --icon-lg: 1.5rem; /* 24px - Header icons */
+  --icon-xl: 2rem; /* 32px - Hero section icons */
+  --icon-2xl: 2.5rem; /* 40px - Large feature icons */
+  --icon-3xl: 3rem; /* 48px - Extra large display icons */
 
   /* Z-index hierarchy */
   --z-header: 50;
@@ -351,17 +360,17 @@
   --z-sticky-cta: 9999;
 
   /* Header Tokens */
-  --header-height: 4rem;           /* 64px */
-  --header-logo-height: 2rem;      /* 32px */
+  --header-height: 4rem; /* 64px */
+  --header-logo-height: 2rem; /* 32px */
   --header-button-height: 2.25rem; /* 36px */
-  --header-padding-x: 1rem;        /* 16px */
-  --header-gap: 0.25rem;           /* 4px */
+  --header-padding-x: 1rem; /* 16px */
+  --header-gap: 0.25rem; /* 4px */
   --header-blur: 12px;
 
   /* Dropdown Tokens */
-  --dropdown-width: 14rem;         /* 224px */
-  --dropdown-offset: 0.5rem;       /* 8px */
-  --dropdown-padding: 0.75rem;     /* 12px */
+  --dropdown-width: 14rem; /* 224px */
+  --dropdown-offset: 0.5rem; /* 8px */
+  --dropdown-padding: 0.75rem; /* 12px */
   --dropdown-item-padding-x: 0.75rem;
   --dropdown-item-padding-y: 0.5rem;
 
@@ -385,7 +394,7 @@
 
 /* Theme Tokens - Light */
 :root,
-:root[data-theme="light"] {
+:root[data-theme='light'] {
   /* 페이지 배경은 순백(100%)이 아닌 부드러운 오프화이트 — 흰 카드가 도드라져
      "너무 밝아서 눈부심" 문제를 완화한다. 카드/팝오버는 흰색으로 유지해 대비를 준다. */
   --background: 0 0% 96%;
@@ -448,20 +457,20 @@
   --text-1: 0 0% 4%;
   --text-2: 0 0% 25%;
   --text-muted: 0 0% 40%;
-  --glass-fill-ultra: rgba(255,255,255,.07);
-  --glass-fill-thin: rgba(255,255,255,.4);
-  --glass-fill-regular: rgba(245,245,245,.6);
-  --glass-fill-thick: rgba(255,255,255,.84);
+  --glass-fill-ultra: rgba(255, 255, 255, 0.07);
+  --glass-fill-thin: rgba(255, 255, 255, 0.4);
+  --glass-fill-regular: rgba(245, 245, 245, 0.6);
+  --glass-fill-thick: rgba(255, 255, 255, 0.84);
   --ink-on-glass: 0 0% 0%;
 
   /* Icon Colors - Light Mode (다크 아이콘 for 라이트 배경) */
-  --icon-color: 0 0% 20%;              /* 거의 검정 - 라이트모드 고가시성 */
-  --icon-color-muted: 0 0% 50%;        /* 중간 회색 */
+  --icon-color: 0 0% 20%; /* 거의 검정 - 라이트모드 고가시성 */
+  --icon-color-muted: 0 0% 50%; /* 중간 회색 */
 
   /* Brand Secondary - Navy (라이트모드 히어로/호버용) */
-  --brand-navy: 222 47% 21%;           /* #1C2541 - 프로페셔널 네이비 */
-  --hero-accent: 222 47% 21%;          /* 라이트모드: 네이비 그라데이션 */
-  --hover-accent: 222 47% 21%;         /* 라이트모드: 호버 색상 */
+  --brand-navy: 222 47% 21%; /* #1C2541 - 프로페셔널 네이비 */
+  --hero-accent: 222 47% 21%; /* 라이트모드: 네이비 그라데이션 */
+  --hover-accent: 222 47% 21%; /* 라이트모드: 호버 색상 */
 
   /* Layout shell (Header/Footer/Loading) - same as background for consistency */
   --layout-bg: 0 0% 100%;
@@ -543,8 +552,16 @@
   --blur-mobile: 16px;
 
   /* Background gradients - Light */
-  --bg-grad-a: radial-gradient(1200px at 70% 20%, rgba(236, 28, 36, 0.04) 0%, rgba(255, 255, 255, 0) 60%);
-  --bg-grad-b: radial-gradient(900px at 20% 80%, rgba(59, 199, 255, 0.03) 0%, rgba(255, 255, 255, 0) 55%);
+  --bg-grad-a: radial-gradient(
+    1200px at 70% 20%,
+    rgba(236, 28, 36, 0.04) 0%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  --bg-grad-b: radial-gradient(
+    900px at 20% 80%,
+    rgba(59, 199, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0) 55%
+  );
   --bg-grad-c: linear-gradient(180deg, hsl(0 0% 100%), hsl(0 0% 98%) 100%);
 
   /* Header specific - Light mode */
@@ -553,8 +570,8 @@
 
   /* PnL(손익) 방향 색 — 라이트 모드는 흰 배경 대비를 위해 어둡게.
      시그널 보드/히스토리의 인라인 스타일이 hsl(var(--pnl-up/down))로 참조. */
-  --pnl-up: 142 72% 24%;   /* green-800 — /15 틴트 위에서도 AA(측정 4.14 → 4.6) */
-  --pnl-down: 0 72% 42%;   /* --semantic-bear와 동일하게 정렬 (틴트 위 대비 확보) */
+  --pnl-up: 142 72% 24%; /* green-800 — /15 틴트 위에서도 AA(측정 4.14 → 4.6) */
+  --pnl-down: 0 72% 42%; /* --semantic-bear와 동일하게 정렬 (틴트 위 대비 확보) */
 
   /* 수익=상승 시맨틱 색(text-semantic-bull)도 흰 배경 대비를 위해 어둡게 */
   --semantic-bull: 142 72% 24%;
@@ -591,117 +608,285 @@
  * ───────────────────────────────────────────────────────────────────── */
 :root:not(.dark) .text-red-300,
 :root:not(.dark) .text-red-400,
-:root:not(.dark) .text-red-500 { color: #b91c1c; }      /* red-700 */
+:root:not(.dark) .text-red-500 {
+  color: #b91c1c;
+} /* red-700 */
 :root:not(.dark) .text-rose-300,
 :root:not(.dark) .text-rose-400,
-:root:not(.dark) .text-rose-500 { color: #be123c; }     /* rose-700 */
+:root:not(.dark) .text-rose-500 {
+  color: #be123c;
+} /* rose-700 */
 :root:not(.dark) .text-pink-400,
-:root:not(.dark) .text-pink-500 { color: #be185d; }     /* pink-700 */
+:root:not(.dark) .text-pink-500 {
+  color: #be185d;
+} /* pink-700 */
 :root:not(.dark) .text-fuchsia-400,
-:root:not(.dark) .text-fuchsia-500 { color: #a21caf; }  /* fuchsia-700 */
+:root:not(.dark) .text-fuchsia-500 {
+  color: #a21caf;
+} /* fuchsia-700 */
 :root:not(.dark) .text-purple-300,
 :root:not(.dark) .text-purple-400,
-:root:not(.dark) .text-purple-500 { color: #7e22ce; }   /* purple-700 */
+:root:not(.dark) .text-purple-500 {
+  color: #7e22ce;
+} /* purple-700 */
 :root:not(.dark) .text-violet-300,
 :root:not(.dark) .text-violet-400,
-:root:not(.dark) .text-violet-500 { color: #6d28d9; }   /* violet-700 */
+:root:not(.dark) .text-violet-500 {
+  color: #6d28d9;
+} /* violet-700 */
 :root:not(.dark) .text-indigo-300,
 :root:not(.dark) .text-indigo-400,
-:root:not(.dark) .text-indigo-500 { color: #4338ca; }   /* indigo-700 */
+:root:not(.dark) .text-indigo-500 {
+  color: #4338ca;
+} /* indigo-700 */
 :root:not(.dark) .text-blue-300,
 :root:not(.dark) .text-blue-400,
-:root:not(.dark) .text-blue-500 { color: #1d4ed8; }     /* blue-700 */
+:root:not(.dark) .text-blue-500 {
+  color: #1d4ed8;
+} /* blue-700 */
 :root:not(.dark) .text-sky-300,
 :root:not(.dark) .text-sky-400,
-:root:not(.dark) .text-sky-500 { color: #075985; }      /* sky-800 */
+:root:not(.dark) .text-sky-500 {
+  color: #075985;
+} /* sky-800 */
 :root:not(.dark) .text-cyan-300,
 :root:not(.dark) .text-cyan-400,
-:root:not(.dark) .text-cyan-500 { color: #155e75; }     /* cyan-800 */
+:root:not(.dark) .text-cyan-500 {
+  color: #155e75;
+} /* cyan-800 */
 :root:not(.dark) .text-teal-300,
 :root:not(.dark) .text-teal-400,
-:root:not(.dark) .text-teal-500 { color: #115e59; }     /* teal-800 */
+:root:not(.dark) .text-teal-500 {
+  color: #115e59;
+} /* teal-800 */
 :root:not(.dark) .text-green-300,
 :root:not(.dark) .text-green-400,
-:root:not(.dark) .text-green-500 { color: #166534; }    /* green-800 — /20 틴트에서도 AA */
+:root:not(.dark) .text-green-500 {
+  color: #166534;
+} /* green-800 — /20 틴트에서도 AA */
 :root:not(.dark) .text-emerald-300,
 :root:not(.dark) .text-emerald-400,
-:root:not(.dark) .text-emerald-500 { color: #065f46; }  /* emerald-800 */
+:root:not(.dark) .text-emerald-500 {
+  color: #065f46;
+} /* emerald-800 */
 :root:not(.dark) .text-lime-400,
-:root:not(.dark) .text-lime-500 { color: #365314; }     /* lime-900 */
+:root:not(.dark) .text-lime-500 {
+  color: #365314;
+} /* lime-900 */
 :root:not(.dark) .text-yellow-300,
 :root:not(.dark) .text-yellow-400,
-:root:not(.dark) .text-yellow-500 { color: #713f12; }   /* yellow-900 */
+:root:not(.dark) .text-yellow-500 {
+  color: #713f12;
+} /* yellow-900 */
 :root:not(.dark) .text-amber-300,
 :root:not(.dark) .text-amber-400,
-:root:not(.dark) .text-amber-500 { color: #78350f; }    /* amber-900 */
+:root:not(.dark) .text-amber-500 {
+  color: #78350f;
+} /* amber-900 */
 :root:not(.dark) .text-orange-400,
-:root:not(.dark) .text-orange-500 { color: #9a3412; }   /* orange-800 */
+:root:not(.dark) .text-orange-500 {
+  color: #9a3412;
+} /* orange-800 */
 
 /* -600 단계도 초록/노랑/주황 계열은 흰 배경에서 미달이다(측정: emerald-600 3.77,
    green-600 3.30, amber-600 3.19, yellow-600 2.94, orange-600 3.56).
    red/rose/blue/purple-600은 4.7~5.4로 통과하므로 건드리지 않는다. */
-:root:not(.dark) .text-emerald-600 { color: #065f46; }  /* emerald-800 */
-:root:not(.dark) .text-green-600   { color: #166534; }  /* green-800 */
-:root:not(.dark) .text-teal-600    { color: #115e59; }  /* teal-800 */
-:root:not(.dark) .text-lime-600    { color: #365314; }  /* lime-900 */
-:root:not(.dark) .text-amber-600   { color: #78350f; }  /* amber-900 */
-:root:not(.dark) .text-yellow-600  { color: #713f12; }  /* yellow-900 */
-:root:not(.dark) .text-orange-600  { color: #9a3412; }  /* orange-800 */
+:root:not(.dark) .text-emerald-600 {
+  color: #065f46;
+} /* emerald-800 */
+:root:not(.dark) .text-green-600 {
+  color: #166534;
+} /* green-800 */
+:root:not(.dark) .text-teal-600 {
+  color: #115e59;
+} /* teal-800 */
+:root:not(.dark) .text-lime-600 {
+  color: #365314;
+} /* lime-900 */
+:root:not(.dark) .text-amber-600 {
+  color: #78350f;
+} /* amber-900 */
+:root:not(.dark) .text-yellow-600 {
+  color: #713f12;
+} /* yellow-900 */
+:root:not(.dark) .text-orange-600 {
+  color: #9a3412;
+} /* orange-800 */
 
 /* 흰 글자를 얹는 solid 채움 버튼도 -600은 미달이다(측정: /chart의 LONG 버튼
    white on bg-emerald-600 = 3.77 — 라이트·다크 동일). 두 테마 모두에 적용한다.
    투명도 변형(bg-*-600/20 등)은 클래스명이 달라 영향을 받지 않는다. */
-.bg-emerald-600 { background-color: #047857; } /* emerald-700 */
-.bg-green-600   { background-color: #15803d; } /* green-700 */
-.bg-teal-600    { background-color: #0f766e; } /* teal-700 */
-.bg-cyan-600    { background-color: #155e75; } /* cyan-800 */
-.bg-amber-600   { background-color: #92400e; } /* amber-800 */
-.bg-yellow-600  { background-color: #854d0e; } /* yellow-800 */
-.bg-lime-600    { background-color: #3f6212; } /* lime-800 */
+.bg-emerald-600 {
+  background-color: #047857;
+} /* emerald-700 */
+.bg-green-600 {
+  background-color: #15803d;
+} /* green-700 */
+.bg-teal-600 {
+  background-color: #0f766e;
+} /* teal-700 */
+.bg-cyan-600 {
+  background-color: #155e75;
+} /* cyan-800 */
+.bg-amber-600 {
+  background-color: #92400e;
+} /* amber-800 */
+.bg-yellow-600 {
+  background-color: #854d0e;
+} /* yellow-800 */
+.bg-lime-600 {
+  background-color: #3f6212;
+} /* lime-800 */
 
 /* ── 반대 방향: 다크 모드에서 너무 어두운 -600/-700/-800 유틸리티 ──
  * 라이트 대비 보정만 있었고, 어두운 값을 다크에서 밝히는 규칙은 없었다.
  * 측정: /signals 손실 수치의 text-red-600(#DC2626)이 카드(#18181B) 위에서 3.67로 미달.
  * -500 단계로 올리면 4.7 이상이 된다. */
-.dark .text-red-600,    .dark .text-red-700,    .dark .text-red-800    { color: #ef4444; } /* red-500 */
-.dark .text-rose-600,   .dark .text-rose-700                           { color: #fb7185; } /* rose-400 */
-.dark .text-orange-600, .dark .text-orange-700                         { color: #fb923c; } /* orange-400 */
-.dark .text-amber-600,  .dark .text-amber-700                          { color: #fbbf24; } /* amber-400 */
-.dark .text-yellow-600, .dark .text-yellow-700                         { color: #facc15; } /* yellow-400 */
-.dark .text-lime-600                                                   { color: #a3e635; } /* lime-400 */
-.dark .text-green-600,  .dark .text-green-700                          { color: #22c55e; } /* green-500 */
-.dark .text-emerald-600,.dark .text-emerald-700,.dark .text-emerald-800{ color: #10b981; } /* emerald-500 */
-.dark .text-teal-600,   .dark .text-teal-700                           { color: #2dd4bf; } /* teal-400 */
-.dark .text-cyan-600,   .dark .text-cyan-700                           { color: #22d3ee; } /* cyan-400 */
-.dark .text-sky-600,    .dark .text-sky-700                            { color: #38bdf8; } /* sky-400 */
-.dark .text-blue-600,   .dark .text-blue-700                           { color: #60a5fa; } /* blue-400 */
-.dark .text-indigo-600, .dark .text-indigo-700                         { color: #818cf8; } /* indigo-400 */
-.dark .text-violet-600, .dark .text-violet-700                         { color: #a78bfa; } /* violet-400 */
-.dark .text-purple-600, .dark .text-purple-700                         { color: #c084fc; } /* purple-400 */
-.dark .text-pink-600,   .dark .text-pink-700                           { color: #f472b6; } /* pink-400 */
+.dark .text-red-600,
+.dark .text-red-700,
+.dark .text-red-800 {
+  color: #ef4444;
+} /* red-500 */
+.dark .text-rose-600,
+.dark .text-rose-700 {
+  color: #fb7185;
+} /* rose-400 */
+.dark .text-orange-600,
+.dark .text-orange-700 {
+  color: #fb923c;
+} /* orange-400 */
+.dark .text-amber-600,
+.dark .text-amber-700 {
+  color: #fbbf24;
+} /* amber-400 */
+.dark .text-yellow-600,
+.dark .text-yellow-700 {
+  color: #facc15;
+} /* yellow-400 */
+.dark .text-lime-600 {
+  color: #a3e635;
+} /* lime-400 */
+.dark .text-green-600,
+.dark .text-green-700 {
+  color: #22c55e;
+} /* green-500 */
+.dark .text-emerald-600,
+.dark .text-emerald-700,
+.dark .text-emerald-800 {
+  color: #10b981;
+} /* emerald-500 */
+.dark .text-teal-600,
+.dark .text-teal-700 {
+  color: #2dd4bf;
+} /* teal-400 */
+.dark .text-cyan-600,
+.dark .text-cyan-700 {
+  color: #22d3ee;
+} /* cyan-400 */
+
+/* Proof Trading Performance: this app's active dark theme is data-theme="dark",
+ * while Tailwind's dark: utility expects a .dark ancestor. Keep these eleven
+ * metric cards on their original dark gradients regardless of utility ordering. */
+:root[data-theme='dark'] .proof-performance-summary-blue {
+  background-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 150, 0.9),
+    rgba(0, 0, 0, 1)
+  ) !important;
+}
+:root[data-theme='dark'] .proof-performance-summary-green {
+  background-image: linear-gradient(
+    135deg, 
+    rgba(0, 50, 0, 0.9), 
+    rgba(0, 0, 0, 1)) 
+    !important;
+}
+:root[data-theme='dark'] .proof-performance-summary-amber {
+  background-image: linear-gradient(
+    135deg,
+    rgba(50, 50, 0, 0.9),
+    rgba(0, 0, 0, 1)
+  ) !important;
+}
+:root[data-theme='dark'] .proof-performance-metric-purple {
+  background-image: linear-gradient(
+    135deg,
+    rgba(80, 0, 120, 0.9),
+    rgba(0, 0, 0, 1)
+  ) !important;
+}
+:root[data-theme='dark'] .proof-performance-metric-green {
+  background-image: linear-gradient(
+    135deg,
+    rgba(0, 50, 0, 0.9),
+    rgba(0, 0, 0, 1)
+  ) !important;
+}
+:root[data-theme='dark'] .proof-performance-metric-blue {
+  background-image: linear-gradient(
+    135deg,
+    rgba(0, 0, 150, 0.9),
+    rgba(0, 0, 0, 1)
+  ) !important;
+}
+:root[data-theme='dark'] .proof-performance-metric-red {
+  background-image: linear-gradient(
+    135deg,
+    rgba(50, 0, 0, 0.9),
+    rgba(0, 0, 0, 1)
+  ) !important;
+}
+.dark .text-sky-600,
+.dark .text-sky-700 {
+  color: #38bdf8;
+} /* sky-400 */
+.dark .text-blue-600,
+.dark .text-blue-700 {
+  color: #60a5fa;
+} /* blue-400 */
+.dark .text-indigo-600,
+.dark .text-indigo-700 {
+  color: #818cf8;
+} /* indigo-400 */
+.dark .text-violet-600,
+.dark .text-violet-700 {
+  color: #a78bfa;
+} /* violet-400 */
+.dark .text-purple-600,
+.dark .text-purple-700 {
+  color: #c084fc;
+} /* purple-400 */
+.dark .text-pink-600,
+.dark .text-pink-700 {
+  color: #f472b6;
+} /* pink-400 */
 
 /* 다크 --destructive(346.8 77.2% 49.8%)는 어두운 배경에 얹는 글자로는 너무 어둡다
    (측정: /insights의 bg-destructive/15 text-destructive = 2.89).
    버튼은 bg-destructive + --destructive-foreground를 쓰므로 영향이 없다. */
-.dark .text-destructive { color: hsl(347 90% 70%); }
+.dark .text-destructive {
+  color: hsl(347 90% 70%);
+}
 
 /* 브랜드 레드(--primary: #FF0000)는 흰 배경/옅은 브랜드 틴트 위에서 대비가 3.1~3.4로
    AA 미달이다. 랜딩·요금제의 `bg-primary/10 text-primary` 필 뱃지 수십 곳이 여기 해당한다.
    라이트 모드에서만 brand hover 계열(#BD0000, 대비 ~5.1)로 낮춰 글자 가독성을 확보한다.
    버튼 배경(bg-primary)과 로고는 --primary를 그대로 쓰므로 브랜드 톤은 유지된다.
    다크 카드 위의 아이콘은 밝은 레드가 필요하므로 해당 컴포넌트에서 명시 색을 쓴다. */
-:root:not(.dark) .text-primary { color: hsl(0 100% 37%); }
+:root:not(.dark) .text-primary {
+  color: hsl(0 100% 37%);
+}
 
 /* input[type="date"]의 네이티브 캘린더 아이콘이 다크 모드에서 안 보인다.
    브라우저 기본 아이콘은 검정 실루엣이라 다크 배경(카드/인풋) 위에서 거의 안 보임 —
    Signal Board 하단 History 날짜 필터에서 확인됨. 흰색으로 반전한다. */
-.dark input[type="date"]::-webkit-calendar-picker-indicator {
+.dark input[type='date']::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
 
 /* Theme Tokens - Dark (Slate 기반 중립 색상 스케일) */
 /* NOTE: .dark 클래스도 지원하여 Tailwind dark: 접두사와 호환성 유지 */
-:root[data-theme="dark"] {
+:root[data-theme='dark'] {
   /* === 1. 중립(Neutral) 색상: Tailwind Slate 팔레트 === */
 
   /* Background - Deep Black (거의 검정색) */
@@ -723,8 +908,8 @@
   --primary-foreground: 0 0% 100%;
 
   /* PnL(손익) 방향 색 — 다크 모드는 기존 밝은 값 유지 */
-  --pnl-up: 142 71% 45%;   /* green-500 #22C55E */
-  --pnl-down: 0 84% 60%;   /* red-500 #EF4444 */
+  --pnl-up: 142 71% 45%; /* green-500 #22C55E */
+  --pnl-down: 0 84% 60%; /* red-500 #EF4444 */
   --semantic-bull: 142 71% 45%; /* 다크: 기존 밝은 초록 유지 */
   /* bear는 다크 블록에 선언이 없어, 라이트에서 어둡게 한 값이 다크로 새어 들어왔다.
      bull과 짝을 맞춰 다크 전용 밝은 값을 명시한다(= --pnl-down과 동일). */
@@ -826,13 +1011,13 @@
   --info: 194 98% 61%; /* #3BC7FF - Cyan for info/accent */
 
   /* Brand Secondary - 다크모드: 레드 유지 */
-  --brand-navy: 222 47% 21%;           /* 네이비 정의는 유지 (참조용) */
-  --hero-accent: 356 93% 52%;          /* 다크모드: 레드 그라데이션 유지 */
-  --hover-accent: 0 100% 50%;          /* 다크모드: 브랜드 레드 */
+  --brand-navy: 222 47% 21%; /* 네이비 정의는 유지 (참조용) */
+  --hero-accent: 356 93% 52%; /* 다크모드: 레드 그라데이션 유지 */
+  --hover-accent: 0 100% 50%; /* 다크모드: 브랜드 레드 */
 
   /* Icon Colors - 다크 모드 전용 (밝은 아이콘) */
-  --icon-color: 0 0% 98%;                      /* 거의 흰색 - 다크모드 고가시성 */
-  --icon-color-muted: 0 0% 70%;                /* 약간 어두운 회색 */
+  --icon-color: 0 0% 98%; /* 거의 흰색 - 다크모드 고가시성 */
+  --icon-color-muted: 0 0% 70%; /* 약간 어두운 회색 */
 
   /* Mobile Card Background Tints */
   --card-rise-tint: 158 48% 15%; /* Dark Green tint #143C30 */
@@ -873,8 +1058,16 @@
   --glass-blur: 24px;
 
   /* Background gradients (updated to Bybit black base) */
-  --bg-grad-a: radial-gradient(1200px at 70% 20%, rgba(236, 28, 36, 0.08) 0%, rgba(15, 15, 17, 0) 60%);
-  --bg-grad-b: radial-gradient(900px at 20% 80%, rgba(59, 199, 255, 0.06) 0%, rgba(15, 15, 17, 0) 55%);
+  --bg-grad-a: radial-gradient(
+    1200px at 70% 20%,
+    rgba(236, 28, 36, 0.08) 0%,
+    rgba(15, 15, 17, 0) 60%
+  );
+  --bg-grad-b: radial-gradient(
+    900px at 20% 80%,
+    rgba(59, 199, 255, 0.06) 0%,
+    rgba(15, 15, 17, 0) 55%
+  );
   --bg-grad-c: linear-gradient(180deg, hsl(240 6% 6%), hsl(240 6% 7%) 100%);
 
   /* Text hierarchy */
@@ -885,7 +1078,7 @@
   /* Glass fill variations (with Slate undertone) */
   --glass-fill-ultra: rgba(226, 232, 240, 0.06); /* Slate-200 at 6% */
   --glass-fill-thin: rgba(226, 232, 240, 0.08); /* Slate-200 at 8% */
-  --glass-fill-regular: rgba(226, 232, 240, 0.10); /* Slate-200 at 10% */
+  --glass-fill-regular: rgba(226, 232, 240, 0.1); /* Slate-200 at 10% */
   --glass-fill-thick: rgba(226, 232, 240, 0.12); /* Slate-200 at 12% */
 
   /* Text on glass */
@@ -1101,7 +1294,9 @@
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
   transform: translate(-50%, -50%);
-  transition: width var(--duration-normal) ease, height var(--duration-normal) ease;
+  transition:
+    width var(--duration-normal) ease,
+    height var(--duration-normal) ease;
 }
 
 .btn-hover:hover::before {
@@ -1124,8 +1319,8 @@
 
 /* Clickable Element Cursor */
 button:not(:disabled),
-[role="button"]:not(:disabled),
-[tabindex="0"]:not(:disabled) {
+[role='button']:not(:disabled),
+[tabindex='0']:not(:disabled) {
   cursor: pointer;
 }
 
@@ -1135,7 +1330,9 @@ button:not(:disabled),
   }
 
   /* NanumSquare 폰트 - 모든 제목(h1~h3)에 적용 */
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     font-family: 'NanumSquare', 'NanumSquareOTF', 'Pretendard Variable', sans-serif;
   }
 
@@ -1153,7 +1350,7 @@ button:not(:disabled),
   }
 
   body::after {
-    content: "";
+    content: '';
     position: fixed;
     inset: 0;
     pointer-events: none;
@@ -1201,24 +1398,24 @@ button:not(:disabled),
 
 /* LiquidCard - Apple Glass Style */
 .liquid {
-  background: rgba(255,255,255,.06);
+  background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(16px) saturate(120%);
-  border: 1px solid rgba(255,255,255,.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   position: relative;
   will-change: transform;
   transform: translateZ(0);
 }
 
 .liquid::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: 
-    inset 0 1px 0 rgba(255,255,255,.35),
-    inset 0 0 0 1px rgba(255,255,255,.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
   pointer-events: none;
 }
 
@@ -1233,19 +1430,19 @@ button:not(:disabled),
   inset: 0;
   pointer-events: none;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255,255,255,.18) 0%, transparent 50%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 50%);
   mix-blend-mode: plus-lighter;
 }
 
 /* Font Awesome Global Styles */
-[class^="fa-"],
-[class*=" fa-"] {
+[class^='fa-'],
+[class*=' fa-'] {
   color: hsl(var(--foreground));
   transition: color var(--duration-fast) var(--ease-out);
 }
 
-.dark [class^="fa-"],
-.dark [class*=" fa-"] {
+.dark [class^='fa-'],
+.dark [class*=' fa-'] {
   color: hsl(var(--foreground));
 }
 
@@ -1255,22 +1452,22 @@ button:not(:disabled),
 
 /* Light Mode Icon Colors */
 :root {
-  --icon-primary: 220 70% 50%;     /* Blue */
-  --icon-secondary: 240 5% 64%;    /* Gray */
-  --icon-success: 142 71% 45%;     /* Green */
-  --icon-warning: 38 92% 50%;      /* Orange */
-  --icon-danger: 0 84% 60%;        /* Red */
-  --icon-muted: 240 5% 64%;        /* Light Gray */
+  --icon-primary: 220 70% 50%; /* Blue */
+  --icon-secondary: 240 5% 64%; /* Gray */
+  --icon-success: 142 71% 45%; /* Green */
+  --icon-warning: 38 92% 50%; /* Orange */
+  --icon-danger: 0 84% 60%; /* Red */
+  --icon-muted: 240 5% 64%; /* Light Gray */
 }
 
 /* Dark Mode Icon Colors */
 .dark {
-  --icon-primary: 213 94% 68%;     /* Brighter Blue */
-  --icon-secondary: 240 5% 84%;    /* Lighter Gray */
-  --icon-success: 142 71% 55%;     /* Brighter Green */
-  --icon-warning: 38 92% 60%;      /* Brighter Orange */
-  --icon-danger: 0 84% 70%;        /* Brighter Red */
-  --icon-muted: 240 3% 54%;        /* Medium Gray */
+  --icon-primary: 213 94% 68%; /* Brighter Blue */
+  --icon-secondary: 240 5% 84%; /* Lighter Gray */
+  --icon-success: 142 71% 55%; /* Brighter Green */
+  --icon-warning: 38 92% 60%; /* Brighter Orange */
+  --icon-danger: 0 84% 70%; /* Brighter Red */
+  --icon-muted: 240 3% 54%; /* Medium Gray */
 }
 
 /* Base Font Awesome Icon Styles */
@@ -1283,55 +1480,67 @@ button:not(:disabled),
 }
 
 /* Contextual Icon Colors */
-.icon-primary { color: hsl(var(--icon-primary)) !important; }
-.icon-secondary { color: hsl(var(--icon-secondary)) !important; }
-.icon-success { color: hsl(var(--icon-success)) !important; }
-.icon-warning { color: hsl(var(--icon-warning)) !important; }
-.icon-danger { color: hsl(var(--icon-danger)) !important; }
-.icon-muted { color: hsl(var(--icon-muted)) !important; }
+.icon-primary {
+  color: hsl(var(--icon-primary)) !important;
+}
+.icon-secondary {
+  color: hsl(var(--icon-secondary)) !important;
+}
+.icon-success {
+  color: hsl(var(--icon-success)) !important;
+}
+.icon-warning {
+  color: hsl(var(--icon-warning)) !important;
+}
+.icon-danger {
+  color: hsl(var(--icon-danger)) !important;
+}
+.icon-muted {
+  color: hsl(var(--icon-muted)) !important;
+}
 
 /* Icon Size Utilities */
-.icon-xs { 
-  font-size: var(--icon-xs); 
-  width: var(--icon-xs); 
-  height: var(--icon-xs); 
-  min-width: var(--icon-xs); 
+.icon-xs {
+  font-size: var(--icon-xs);
+  width: var(--icon-xs);
+  height: var(--icon-xs);
+  min-width: var(--icon-xs);
 }
-.icon-sm { 
-  font-size: var(--icon-sm); 
-  width: var(--icon-sm); 
-  height: var(--icon-sm); 
-  min-width: var(--icon-sm); 
+.icon-sm {
+  font-size: var(--icon-sm);
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  min-width: var(--icon-sm);
 }
-.icon-md { 
-  font-size: var(--icon-md); 
-  width: var(--icon-md); 
-  height: var(--icon-md); 
-  min-width: var(--icon-md); 
+.icon-md {
+  font-size: var(--icon-md);
+  width: var(--icon-md);
+  height: var(--icon-md);
+  min-width: var(--icon-md);
 }
-.icon-lg { 
-  font-size: var(--icon-lg); 
-  width: var(--icon-lg); 
-  height: var(--icon-lg); 
-  min-width: var(--icon-lg); 
+.icon-lg {
+  font-size: var(--icon-lg);
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  min-width: var(--icon-lg);
 }
-.icon-xl { 
-  font-size: var(--icon-xl); 
-  width: var(--icon-xl); 
-  height: var(--icon-xl); 
-  min-width: var(--icon-xl); 
+.icon-xl {
+  font-size: var(--icon-xl);
+  width: var(--icon-xl);
+  height: var(--icon-xl);
+  min-width: var(--icon-xl);
 }
-.icon-2xl { 
-  font-size: var(--icon-2xl); 
-  width: var(--icon-2xl); 
-  height: var(--icon-2xl); 
-  min-width: var(--icon-2xl); 
+.icon-2xl {
+  font-size: var(--icon-2xl);
+  width: var(--icon-2xl);
+  height: var(--icon-2xl);
+  min-width: var(--icon-2xl);
 }
-.icon-3xl { 
-  font-size: var(--icon-3xl); 
-  width: var(--icon-3xl); 
-  height: var(--icon-3xl); 
-  min-width: var(--icon-3xl); 
+.icon-3xl {
+  font-size: var(--icon-3xl);
+  width: var(--icon-3xl);
+  height: var(--icon-3xl);
+  min-width: var(--icon-3xl);
 }
 
 /* Icon Positioning Utilities */
@@ -1347,22 +1556,32 @@ button:not(:disabled),
 }
 
 /* Icon Spacing Utilities */
-.icon-mr-sm { margin-right: 0.5rem; }
-.icon-mr-md { margin-right: 0.75rem; }
-.icon-ml-sm { margin-left: 0.5rem; }
-.icon-ml-md { margin-left: 0.75rem; }
+.icon-mr-sm {
+  margin-right: 0.5rem;
+}
+.icon-mr-md {
+  margin-right: 0.75rem;
+}
+.icon-ml-sm {
+  margin-left: 0.5rem;
+}
+.icon-ml-md {
+  margin-left: 0.75rem;
+}
 
 /* Remove button hover override - let Font Awesome handle its own colors */
 
 @media (prefers-reduced-motion: no-preference) {
   .liquid,
   .liquid-card {
-    transition: transform 180ms ease-out, box-shadow 120ms ease-out;
+    transition:
+      transform 180ms ease-out,
+      box-shadow 120ms ease-out;
   }
   .liquid:hover,
   .liquid-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 16px 40px rgba(0,0,0,.4);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -1379,7 +1598,7 @@ button:not(:disabled),
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background: 
+  background:
     radial-gradient(60% 80% at 10% 12%, rgba(122, 92, 255, 0.26), transparent 60%),
     radial-gradient(50% 60% at 88% 18%, rgba(51, 209, 255, 0.18), transparent 70%),
     radial-gradient(40% 50% at 70% 78%, rgba(255, 0, 128, 0.12), transparent 70%),
@@ -1390,7 +1609,7 @@ button:not(:disabled),
 
 /* Aurora noise overlay - disabled for performance */
 .aurora-field::after {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -1508,29 +1727,31 @@ button:not(:disabled),
   display: grid;
   place-items: center;
   font: 600 13px/1 var(--font-sans);
-  letter-spacing: .5px;
+  letter-spacing: 0.5px;
   color: #fff;
   background: linear-gradient(135deg, #0091ff, #4f0f9e);
-  box-shadow: 0 2px 8px rgba(0,0,0,.2), inset 0 0 12px rgba(255,255,255,.25);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 0 12px rgba(255, 255, 255, 0.25);
 }
 
-.coin[data-ticker="BTC"] {
+.coin[data-ticker='BTC'] {
   background: linear-gradient(135deg, #f7931a, #ffb347);
 }
 
-.coin[data-ticker="ETH"] {
+.coin[data-ticker='ETH'] {
   background: linear-gradient(135deg, #3c3c3d, #8a92b2);
 }
 
-.coin[data-ticker="SOL"] {
+.coin[data-ticker='SOL'] {
   background: linear-gradient(135deg, #14f195, #9945ff);
 }
 
-.coin[data-ticker="XRP"] {
+.coin[data-ticker='XRP'] {
   background: linear-gradient(135deg, #23292f, #346aa9);
 }
 
-.coin[data-ticker="ADA"] {
+.coin[data-ticker='ADA'] {
   background: linear-gradient(135deg, #0033ad, #3468d1);
 }
 
@@ -1538,9 +1759,9 @@ button:not(:disabled),
 .badge {
   padding: 8px 14px;
   border-radius: 999px;
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: var(--text-primary);
   font-size: 13px;
   font-weight: 500;
@@ -1549,8 +1770,14 @@ button:not(:disabled),
 }
 
 @keyframes badgePulse {
-  from { transform: scale(0.98); opacity: 0.7; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.98);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Reduced motion support for badge animation */
@@ -1560,9 +1787,9 @@ button:not(:disabled),
   }
 }
 
-[data-theme="light"] .badge {
-  background: rgba(0,0,0,.08);
-  border: 1px solid rgba(0,0,0,.14);
+[data-theme='light'] .badge {
+  background: rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   color: #313541;
 }
 
@@ -1633,41 +1860,43 @@ button:not(:disabled),
 }
 
 .cta-primary:focus {
-  outline: 2px solid rgba(255,255,255,.4);
+  outline: 2px solid rgba(255, 255, 255, 0.4);
   outline-offset: 2px;
 }
 
 .cta-secondary {
-  background: rgba(255,255,255,.06);
+  background: rgba(255, 255, 255, 0.06);
   color: var(--text-primary);
   padding: 14px 32px;
   border-radius: 999px;
   font-weight: 600;
-  border: 1px solid rgba(255,255,255,.12);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   cursor: pointer;
   transition: background 120ms ease-out;
 }
 
 .cta-secondary:hover {
-  background: rgba(255,255,255,.08);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Hero Card Glow */
 .hero-card-glow {
-  box-shadow: 
-    0 0 60px rgba(130,180,255,.15),
-    0 10px 30px rgba(0,0,0,.45);
+  box-shadow:
+    0 0 60px rgba(130, 180, 255, 0.15),
+    0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 /* Navigation & Dropdown - Mobile/Tablet z-index & scroll fix */
 /* 1) 네비/아코디언 기본 리셋 */
 .site-nav,
-.site-nav * { box-sizing: border-box; }
-.site-nav { 
+.site-nav * {
+  box-sizing: border-box;
+}
+.site-nav {
   position: sticky;
   top: 0;
-  overflow: visible; 
-  z-index: 9998; 
+  overflow: visible;
+  z-index: 9998;
 }
 
 .site-header,
@@ -1676,16 +1905,16 @@ button:not(:disabled),
 }
 
 /* 2) 트리거(메뉴명)는 항상 위에 */
-.nav-item { 
-  position: relative; 
+.nav-item {
+  position: relative;
 }
 
 .nav-trigger,
 .accordion-trigger {
-  position: relative; 
+  position: relative;
   z-index: 1;
-  display: flex; 
-  align-items: center; 
+  display: flex;
+  align-items: center;
   gap: 0.5rem;
   -webkit-tap-highlight-color: transparent;
 }
@@ -1696,7 +1925,7 @@ button:not(:disabled),
 .ax-acc-panel,
 .ax-dropdown {
   position: relative;
-  overflow: clip;       /* iOS Safari에서도 스크롤바 미노출 */
+  overflow: clip; /* iOS Safari에서도 스크롤바 미노출 */
   z-index: 0;
 }
 
@@ -1708,7 +1937,7 @@ button:not(:disabled),
   top: calc(100% + 8px) !important;
   z-index: 9999;
   min-width: 280px;
-  background: rgba(15,21,55,0.85) !important;
+  background: rgba(15, 21, 55, 0.85) !important;
   backdrop-filter: blur(20px) saturate(140%) !important;
   -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
   will-change: transform;
@@ -1741,12 +1970,12 @@ button:not(:disabled),
   display: block;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: rgba(15,21,55,0.85);
+  background: rgba(15, 21, 55, 0.85);
   border: 1px solid var(--ax-stroke);
   border-radius: var(--ax-radii);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
-  box-shadow: 0 10px 40px rgba(0,0,0,.8);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
   will-change: transform;
   transform: translateZ(0);
 }
@@ -1768,7 +1997,7 @@ button:not(:disabled),
   background: color-mix(in srgb, var(--ax-hover) 40%, transparent);
 }
 
-.ax-acc-trigger[aria-expanded="true"] {
+.ax-acc-trigger[aria-expanded='true'] {
   color: var(--ax-accent);
 }
 
@@ -1822,12 +2051,10 @@ button:not(:disabled),
   --rad: 16px;
   --fill: rgba(255, 255, 255, 0.04);
   --fill2: rgba(255, 255, 255, 0.06);
-  --bd: rgba(255, 255, 255, 0.10);
+  --bd: rgba(255, 255, 255, 0.1);
   --bd-hi: rgba(255, 255, 255, 0.18);
 
-  background: 
-    linear-gradient(180deg, var(--fill2), rgba(255, 255, 255, 0.02)),
-    var(--fill);
+  background: linear-gradient(180deg, var(--fill2), rgba(255, 255, 255, 0.02)), var(--fill);
   backdrop-filter: blur(var(--blur)) saturate(140%);
   -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
   border: 1px solid var(--bd);
@@ -1911,7 +2138,9 @@ button:not(:disabled),
   pointer-events: none;
   opacity: 0;
   scale: 0.98;
-  transition: opacity 0.16s ease, scale 0.16s ease;
+  transition:
+    opacity 0.16s ease,
+    scale 0.16s ease;
 }
 
 .lq-tip.lq-surface {
@@ -1935,17 +2164,25 @@ button:not(:disabled),
   background: color-mix(in oklab, var(--glass-surface, hsl(227 52% 6%)) 78%, transparent);
   backdrop-filter: blur(24px) saturate(120%);
   -webkit-backdrop-filter: blur(24px) saturate(120%);
-  box-shadow: 0 1px 0 hsl(0 0% 100% / 0.06) inset, 0 8px 24px hsl(0 0% 0% / 0.35);
+  box-shadow:
+    0 1px 0 hsl(0 0% 100% / 0.06) inset,
+    0 8px 24px hsl(0 0% 0% / 0.35);
   color: var(--on-glass, hsl(220 13% 91%));
-  font: 500 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font:
+    500 12px/1 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
 }
 
 .conv-cap .dot {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #fff8, #fff0 60%),
-              linear-gradient(90deg, hsl(var(--primary)), hsl(var(--background)));
+  background:
+    radial-gradient(circle at 30% 30%, #fff8, #fff0 60%),
+    linear-gradient(90deg, hsl(var(--primary)), hsl(var(--background)));
   box-shadow: 0 0 0 2px hsl(0 0% 100% / 0.06) inset;
 }
 
@@ -1985,7 +2222,12 @@ button:not(:disabled),
 
 .dd-title {
   color: hsl(var(--foreground));
-  font: 600 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font:
+    600 13px/1 system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   letter-spacing: 0.2px;
 }
 
@@ -2016,7 +2258,7 @@ html.abA .emph {
 
 /* Variant B: Gradient on emphasis */
 html.abB .emph {
-  background: linear-gradient(90deg, hsl(var(--primary)), #7A8BFF);
+  background: linear-gradient(90deg, hsl(var(--primary)), #7a8bff);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -2040,20 +2282,26 @@ html.abB .emph {
   }
 }
 
-
 @layer base {
   * {
     @apply border-border;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    @apply bg-background font-sans text-foreground antialiased;
+    font-family:
+      'Pretendard Variable',
+      -apple-system,
+      BlinkMacSystemFont,
+      system-ui,
+      Roboto,
+      sans-serif;
   }
 
   /* Mono font for numbers/data */
   .font-mono {
-    font-family: 'Inter', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    font-family:
+      'Inter', 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
   }
 
   /* Glass effect utilities */
@@ -2099,7 +2347,10 @@ html.abB .emph {
   }
 
   /* 가로 스크롤바 방지 */
-  html, body { overflow-x: clip; }
+  html,
+  body {
+    overflow-x: clip;
+  }
 
   /* 모바일 네비 스크림 */
   .menu-scrim {
@@ -2128,15 +2379,15 @@ html.abB .emph {
   }
 
   /* 드롭다운이 바 위로 깔리는 문제 방지 */
-  .dropdown { 
-    position: relative; 
-    z-index: 50; 
+  .dropdown {
+    position: relative;
+    z-index: 50;
   }
-  .dropdown-menu { 
-    position: absolute; 
-    left: 0; 
+  .dropdown-menu {
+    position: absolute;
+    left: 0;
     top: 100%;
-    z-index: 60; 
+    z-index: 60;
     transform: translateY(8px);
   }
 }
@@ -2608,7 +2859,7 @@ html.abB .emph {
   outline-offset: 2px;
 }
 
-.acc-item[data-open="true"] .acc-trigger {
+.acc-item[data-open='true'] .acc-trigger {
   background: linear-gradient(135deg, hsl(var(--primary) / 0.2), hsl(var(--info) / 0.2));
   border-color: hsl(var(--info) / 0.6);
   color: hsl(var(--info));
@@ -2618,7 +2869,7 @@ html.abB .emph {
   transition: transform 0.2s ease;
 }
 
-.acc-item[data-open="true"] .acc-chevron {
+.acc-item[data-open='true'] .acc-chevron {
   opacity: 0.8;
 }
 
@@ -2639,11 +2890,11 @@ html.abB .emph {
   will-change: transform, opacity;
 }
 
-.acc-item[data-side="left"] .acc-panel {
+.acc-item[data-side='left'] .acc-panel {
   right: 0;
 }
 
-.acc-item[data-side="right"] .acc-panel {
+.acc-item[data-side='right'] .acc-panel {
   left: 0;
 }
 
@@ -2742,7 +2993,9 @@ html.abB .emph {
   background: var(--glass-bg);
   border: 2px solid var(--glass-stroke);
   backdrop-filter: blur(calc(var(--glass-blur) * 1.5));
-  box-shadow: var(--glass-shadow), 0 0 0 1px var(--glass-stroke);
+  box-shadow:
+    var(--glass-shadow),
+    0 0 0 1px var(--glass-stroke);
 }
 
 .glass-subtle {
@@ -2785,7 +3038,7 @@ html.abB .emph {
 }
 
 .highcharts-range-selector-buttons .highcharts-button text {
-  fill: #FFFFFF !important;
+  fill: #ffffff !important;
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -2801,108 +3054,113 @@ html.abB .emph {
 
 @theme inline {
   @keyframes shine {
-  0% {
-    background-position: 0% 0%;
+    0% {
+      background-position: 0% 0%;
     }
-  50% {
-    background-position: 100% 100%;
+    50% {
+      background-position: 100% 100%;
     }
-  to {
-    background-position: 0% 0%;
+    to {
+      background-position: 0% 0%;
     }
   }
   @keyframes blink-cursor {
-  0%, 49% {
-    opacity: 1;
+    0%,
+    49% {
+      opacity: 1;
     }
-  50%, 100% {
-    opacity: 0;
+    50%,
+    100% {
+      opacity: 0;
     }
   }
   @keyframes line-shadow {
-  0% {
-    background-position: 0 0;
+    0% {
+      background-position: 0 0;
     }
-  100% {
-    background-position: 100% -100%;
+    100% {
+      background-position: 100% -100%;
     }
   }
   @keyframes aurora {
-  0% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
+    0% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
     }
-  25% {
-    background-position: 50% 100%;
-    transform: rotate(5deg) scale(1.1);
+    25% {
+      background-position: 50% 100%;
+      transform: rotate(5deg) scale(1.1);
     }
-  50% {
-    background-position: 100% 50%;
-    transform: rotate(-3deg) scale(0.95);
+    50% {
+      background-position: 100% 50%;
+      transform: rotate(-3deg) scale(0.95);
     }
-  75% {
-    background-position: 50% 0%;
-    transform: rotate(3deg) scale(1.05);
+    75% {
+      background-position: 50% 0%;
+      transform: rotate(3deg) scale(1.05);
     }
-  100% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
+    100% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
     }
   }
   @keyframes rainbow {
-  0% {
-    background-position: 0%;
+    0% {
+      background-position: 0%;
     }
-  100% {
-    background-position: 200%;
+    100% {
+      background-position: 200%;
     }
   }
   @keyframes rippling {
-  0% {
-    opacity: 1;
+    0% {
+      opacity: 1;
     }
-  100% {
-    transform: scale(2);
-    opacity: 0;
+    100% {
+      transform: scale(2);
+      opacity: 0;
     }
   }
   @keyframes grid {
-  0% {
-    transform: translateY(-50%);
+    0% {
+      transform: translateY(-50%);
     }
-  100% {
-    transform: translateY(0);
+    100% {
+      transform: translateY(0);
     }
   }
   @keyframes ripple {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
+    0%,
+    100% {
+      transform: translate(-50%, -50%) scale(1);
     }
-  50% {
-    transform: translate(-50%, -50%) scale(0.9);
+    50% {
+      transform: translate(-50%, -50%) scale(0.9);
     }
   }
   @keyframes background-position-spin {
-  0% {
-    background-position: top center;
+    0% {
+      background-position: top center;
     }
-  100% {
-    background-position: bottom center;
+    100% {
+      background-position: bottom center;
     }
   }
   @keyframes pulse {
-  0%, 100% {
-    boxShadow: 0 0 0 0 var(--pulse-color);
+    0%,
+    100% {
+      boxshadow: 0 0 0 0 var(--pulse-color);
     }
-  50% {
-    boxShadow: 0 0 0 8px var(--pulse-color);
+    50% {
+      boxshadow: 0 0 0 8px var(--pulse-color);
     }
   }
 }
 
-::view-transition-old(root), ::view-transition-new(root) {
-    animation: none;
-    mix-blend-mode: normal;
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 /* 실시간 연결 끊김 시 가격 데이터 grayout */
@@ -2917,8 +3175,12 @@ html.abB .emph {
 }
 
 @keyframes signal-flash {
-  0% { background-color: hsl(var(--primary) / 0.15); }
-  100% { background-color: transparent; }
+  0% {
+    background-color: hsl(var(--primary) / 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 /* CoinGlass-style cell flash (price / PnL change) */
@@ -3156,12 +3418,16 @@ html.abB .emph {
   }
 
   .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--center,
-  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--center .ag-cell-wrapper {
+  .ag-pulse-grid.pulse-signal-grid-host--narrow
+    .ag-cell.pulse-mobile-cell--center
+    .ag-cell-wrapper {
     justify-content: center;
   }
 
   .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--numeric,
-  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--numeric .ag-cell-wrapper {
+  .ag-pulse-grid.pulse-signal-grid-host--narrow
+    .ag-cell.pulse-mobile-cell--numeric
+    .ag-cell-wrapper {
     justify-content: flex-end;
   }
 
@@ -3169,17 +3435,25 @@ html.abB .emph {
     justify-content: center;
   }
 
-  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell.pulse-mobile-header--numeric .ag-header-cell-comp-wrapper,
-  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell.pulse-mobile-header--numeric .ag-header-cell-label {
+  .ag-pulse-grid.pulse-signal-grid-host--narrow
+    .ag-header-cell.pulse-mobile-header--numeric
+    .ag-header-cell-comp-wrapper,
+  .ag-pulse-grid.pulse-signal-grid-host--narrow
+    .ag-header-cell.pulse-mobile-header--numeric
+    .ag-header-cell-label {
     justify-content: center;
   }
 
-  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-header-cell.pulse-mobile-header--numeric .ag-header-cell-text {
+  .ag-pulse-grid.pulse-signal-grid-host--narrow
+    .ag-header-cell.pulse-mobile-header--numeric
+    .ag-header-cell-text {
     text-align: center;
   }
 
   .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--symbol,
-  .ag-pulse-grid.pulse-signal-grid-host--narrow .ag-cell.pulse-mobile-cell--symbol .ag-cell-wrapper {
+  .ag-pulse-grid.pulse-signal-grid-host--narrow
+    .ag-cell.pulse-mobile-cell--symbol
+    .ag-cell-wrapper {
     justify-content: flex-start;
   }
 }
@@ -3190,7 +3464,9 @@ html.abB .emph {
   background-color: hsl(var(--muted) / 0.32) !important;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  transition: background-color 0.14s ease, backdrop-filter 0.14s ease;
+  transition:
+    background-color 0.14s ease,
+    backdrop-filter 0.14s ease;
 }
 
 .ag-pulse-grid .ag-pinned-left-cols-container .ag-row-hover:not(.ag-row-focus) .ag-cell,

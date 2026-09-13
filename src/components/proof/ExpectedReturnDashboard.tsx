@@ -52,24 +52,24 @@ type Accent = 'purple' | 'green' | 'blue' | 'red';
 
 const ACCENTS: Record<Accent, { row: string; icon: string; value: string }> = {
   purple: {
-    row: 'border-purple-500/50 bg-[linear-gradient(90deg,rgba(88,28,135,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
-    icon: 'bg-purple-800',
-    value: 'text-blue-400',
+    row: 'border-purple-200 bg-purple-50 dark:border-purple-500/50 dark:!bg-[linear-gradient(90deg,rgba(88,28,135,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    icon: 'bg-purple-200 dark:bg-purple-800',
+    value: 'text-blue-600 dark:text-blue-400',
   },
   green: {
-    row: 'border-emerald-500/50 bg-[linear-gradient(90deg,rgba(6,95,70,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
-    icon: 'bg-emerald-700',
-    value: 'text-emerald-400',
+    row: 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/50 dark:!bg-[linear-gradient(90deg,rgba(6,95,70,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    icon: 'bg-emerald-200 dark:bg-emerald-700',
+    value: 'text-emerald-600 dark:text-emerald-400',
   },
   blue: {
-    row: 'border-blue-500/50 bg-[linear-gradient(90deg,rgba(30,58,138,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
-    icon: 'bg-blue-700',
-    value: 'text-blue-400',
+    row: 'border-blue-200 bg-blue-50 dark:border-blue-500/50 dark:!bg-[linear-gradient(90deg,rgba(30,58,138,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    icon: 'bg-blue-200 dark:bg-blue-700',
+    value: 'text-blue-600 dark:text-blue-400',
   },
   red: {
-    row: 'border-red-500/50 bg-[linear-gradient(90deg,rgba(127,29,29,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
-    icon: 'bg-red-700',
-    value: 'text-red-400',
+    row: 'border-red-200 bg-red-50 dark:border-red-500/50 dark:!bg-[linear-gradient(90deg,rgba(127,29,29,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    icon: 'bg-red-200 dark:bg-red-700',
+    value: 'text-red-600 dark:text-red-400',
   },
 };
 
@@ -87,7 +87,7 @@ function MetricRow({
   const colors = ACCENTS[accent];
   return (
     <div
-      className={`flex min-h-[58px] items-center justify-between gap-3 rounded-lg border px-3 py-2.5 sm:px-[15px] ${colors.row}`}
+      className={`proof-performance-metric proof-performance-metric-${accent} flex min-h-[58px] items-center justify-between gap-3 rounded-lg border px-3 py-2.5 sm:px-[15px] ${colors.row}`}
     >
       <div className="flex min-w-0 items-center gap-3">
         <div
@@ -96,8 +96,10 @@ function MetricRow({
           <Image src={`/proof/expected-return/${icon}`} alt="" width={18} height={18} />
         </div>
         <div className="min-w-0">
-          <div className="text-[13px] font-bold text-white">{copy[0]}</div>
-          <div className="text-[11px] leading-4 text-slate-400">{copy[1]}</div>
+          <div className="text-[13px] font-bold text-foreground dark:text-white">{copy[0]}</div>
+          <div className="text-[11px] leading-4 text-muted-foreground dark:text-slate-400">
+            {copy[1]}
+          </div>
         </div>
       </div>
       <div
@@ -167,20 +169,24 @@ export function ExpectedReturnDashboard({
   ];
 
   return (
-    <div className="rounded-xl border-2 border-blue-900 bg-[linear-gradient(135deg,#070b14_0%,#101c36_100%)] p-4 text-white shadow-[0_8px_32px_rgba(0,0,0,0.5)] sm:p-5">
-      <div className="mb-5 flex flex-col gap-3 border-b border-white/10 pb-[15px] sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-xl border-2 border-border bg-card p-4 text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:border-blue-900 dark:bg-[linear-gradient(135deg,#070b14_0%,#101c36_100%)] dark:text-white dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] sm:p-5">
+      <div className="mb-5 flex flex-col gap-3 border-b border-border pb-[15px] dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-x-[15px] gap-y-2">
           <div className="text-[22px] font-bold tracking-wider">
             AI<span className="text-pink-500">X</span>
           </div>
           <div className="text-lg font-bold">{copy.title}</div>
-          <div className="rounded bg-white/5 px-2.5 py-1 text-[13px] text-slate-400">{period}</div>
+          <div className="rounded bg-muted px-2.5 py-1 text-[13px] text-muted-foreground dark:bg-white/5 dark:text-slate-400">
+            {period}
+          </div>
         </div>
-        <div className="text-xs text-slate-400">{copy.headerTagline}</div>
+        <div className="text-xs text-muted-foreground dark:text-slate-400">
+          {copy.headerTagline}
+        </div>
       </div>
 
       <div className="mb-[15px] grid grid-cols-1 gap-[15px] md:grid-cols-3">
-        <div className="rounded-lg border border-blue-500 bg-[linear-gradient(135deg,rgba(30,58,138,0.4),rgba(15,23,42,0.8))] p-[15px]">
+        <div className="proof-performance-summary proof-performance-summary-blue rounded-lg border border-blue-200 bg-blue-50 p-[15px] dark:border-blue-500 dark:!bg-[linear-gradient(135deg,rgba(30,58,138,0.4),rgba(15,23,42,0.8))]">
           <div className="mb-2.5 flex items-center gap-2">
             <div className="flex size-[30px] items-center justify-center rounded-md bg-blue-600">
               <Image src="/proof/expected-return/entries.png" alt="" width={18} height={18} />
@@ -195,7 +201,7 @@ export function ExpectedReturnDashboard({
             <span className="text-sm font-normal">{copy.times}</span>
           </div>
         </div>
-        <div className="rounded-lg border border-emerald-500 bg-[linear-gradient(135deg,rgba(6,95,70,0.4),rgba(15,23,42,0.8))] p-[15px]">
+        <div className="proof-performance-summary proof-performance-summary-green rounded-lg border border-emerald-200 bg-emerald-50 p-[15px] dark:border-emerald-500 dark:!bg-[linear-gradient(135deg,rgba(6,95,70,0.4),rgba(15,23,42,0.8))]">
           <div className="mb-2.5 flex items-center gap-2">
             <div className="flex size-[30px] items-center justify-center rounded-md bg-emerald-600">
               <Image src="/proof/expected-return/win-rate.png" alt="" width={18} height={18} />
@@ -216,7 +222,7 @@ export function ExpectedReturnDashboard({
               : '—'}
           </div>
         </div>
-        <div className="rounded-lg border border-yellow-500 bg-[linear-gradient(135deg,rgba(113,63,18,0.4),rgba(15,23,42,0.8))] p-[15px]">
+        <div className="proof-performance-summary proof-performance-summary-amber rounded-lg border border-amber-200 bg-amber-50 p-[15px] dark:border-yellow-500 dark:!bg-[linear-gradient(135deg,rgba(113,63,18,0.4),rgba(15,23,42,0.8))]">
           <div className="mb-2.5 flex items-center gap-2">
             <div className="flex size-[30px] items-center justify-center rounded-md bg-amber-600">
               <Image src="/proof/expected-return/risk-reward.png" alt="" width={18} height={18} />
@@ -299,7 +305,7 @@ export function ExpectedReturnDashboard({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1 border-t border-white/10 pt-2.5 text-[11px] text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-1 border-t border-border pt-2.5 text-[11px] text-muted-foreground dark:border-white/10 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-1">
           <span aria-hidden>ⓘ</span>
           <span>{copy.footnote}</span>
