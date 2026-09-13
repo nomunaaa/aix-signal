@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowDown, ArrowUp, ArrowUpDown, Search, Star } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Filter, Search, Star } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import type { SymbolAnalysis } from '@/lib/mock/trend-v8-mock';
 import { trendV8PageMock } from '@/lib/mock/trend-v8-mock-data';
 import { type CompactTrendSort, type TrendEngine } from '@/lib/trend-v8/compact-trend-board';
@@ -1147,6 +1148,7 @@ function TrendBoardFilterPanel({
   const filterCopy = trendBoardFilterCopy(language);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const searchExpanded = searchFocused || searchQuery.trim().length > 0;
 
   const openSearch = () => {
@@ -1193,12 +1195,39 @@ function TrendBoardFilterPanel({
             />
           ) : null}
         </div>
-        <FavoriteScopeControls symbols={favoriteSymbols} className="trend-front-favorite-control" />
+        {/* 모바일(<sm): Signal Board/Proof와 동일하게 요약 버튼 + 시트로 접는다.
+            (이 패널은 같은 컨트롤 4종을 TableControlBar와 중복 구현하고 있어,
+             375px에서 제각각 너비로 4줄이 쌓이던 자리다.) */}
+        <button
+          type="button"
+          onClick={() => setFilterSheetOpen(true)}
+          className="flex h-9 min-w-0 flex-1 items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/35 sm:hidden"
+          aria-haspopup="dialog"
+          aria-label={filterCopy.title}
+        >
+          <Filter className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <span className="min-w-0 truncate text-left">
+            {period === 'last30d'
+              ? qualityCopy.last30d
+              : period === 'last3mo'
+                ? qualityCopy.last3mo
+                : qualityCopy.all}
+            <span className="text-muted-foreground">
+              {' · '}
+              {qualityCopy.winRate} {formatWinRatePct(winRateThreshold)}
+            </span>
+          </span>
+        </button>
+
+        <FavoriteScopeControls
+          symbols={favoriteSymbols}
+          className="trend-front-favorite-control hidden sm:flex"
+        />
         <Select
           value={period}
           onValueChange={(value) => onPeriodChange(value as TrendQualityPeriod)}
         >
-          <SelectTrigger className="h-9 w-[132px] border-border bg-background text-xs">
+          <SelectTrigger className="hidden h-9 w-[132px] border-border bg-background text-xs sm:flex">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -1207,7 +1236,7 @@ function TrendBoardFilterPanel({
             <SelectItem value="all">{qualityCopy.all}</SelectItem>
           </SelectContent>
         </Select>
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
+        <div className="hidden flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5 sm:flex">
           <TrendQualitySlider
             label={qualityCopy.winRate}
             value={winRateThreshold}
@@ -1228,6 +1257,71 @@ function TrendBoardFilterPanel({
           />
         </div>
       </div>
+
+      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto sm:hidden">
+          <SheetHeader>
+            <SheetTitle className="text-base font-semibold text-foreground">
+              {filterCopy.title}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-5">
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">
+                {filterCopy.favorites}
+              </p>
+              <FavoriteScopeControls
+                symbols={favoriteSymbols}
+                className="grid w-full grid-cols-2 gap-2 [&>*]:w-full [&_button]:w-full"
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground">{qualityCopy.periodGroup}</p>
+              <div className="grid grid-cols-3 gap-2">
+                {(['last30d', 'last3mo', 'all'] as TrendQualityPeriod[]).map((key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => onPeriodChange(key)}
+                    className={cn(
+                      'h-11 rounded-md border text-xs font-medium transition-colors',
+                      period === key
+                        ? 'border-primary/50 bg-primary/10 text-foreground'
+                        : 'border-border bg-muted/30 text-muted-foreground'
+                    )}
+                  >
+                    {key === 'last30d'
+                      ? qualityCopy.last30d
+                      : key === 'last3mo'
+                        ? qualityCopy.last3mo
+                        : qualityCopy.all}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4 rounded-lg border border-border bg-card/50 p-3">
+              <TrendQualitySlider
+                label={qualityCopy.winRate}
+                value={winRateThreshold}
+                min={35}
+                max={100}
+                step={1}
+                valueLabel={formatWinRatePct(winRateThreshold)}
+                onChange={onWinRateChange}
+              />
+              <TrendQualitySlider
+                label={qualityCopy.riskReward}
+                value={riskRewardThreshold}
+                min={0.6}
+                max={5}
+                step={0.1}
+                valueLabel={formatRiskRewardRatio(riskRewardThreshold)}
+                onChange={onRiskRewardChange}
+              />
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </section>
   );
 }
