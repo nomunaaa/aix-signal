@@ -816,7 +816,10 @@ export function TableControlBar({
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 {language === 'ko' ? '종목' : 'Symbols'}
               </p>
-              <FavoriteScopeControls symbols={favoriteSymbols} />
+              <FavoriteScopeControls
+                symbols={favoriteSymbols}
+                className="grid w-full grid-cols-2 gap-2 [&>*]:w-full [&_button]:w-full"
+              />
             </div>
 
             {datePeriod && onDatePeriodChange ? (
