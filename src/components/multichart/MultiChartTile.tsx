@@ -8,21 +8,45 @@
  * trend candle-coloring, Bollinger, and the custom SVG signal arrows
  * with their labels, because it is literally the same code path.
  *
- * Only the surrounding chrome is reduced for a 6-up grid: no toolbar,
- * no OHLC legend row, no mock-trade panel. The per-tile controls that
- * remain map 1:1 onto the hook's own actions/state.
+ * Mock trading itself is NOT done here — the tile only owns useMockTrade
+ * (needed to draw its own entry/exit arrows via setMockTradeOverlay) and
+ * reports a snapshot + action handles up to MultiChartGrid, which renders
+ * one shared sidebar (matching /chart1m) for whichever tile is selected.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useBinanceChart } from '@/views/Multiplecharts/useBinanceChart';
 import { useMockTrade } from '@/views/Multiplecharts/useMockTrade';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSharedSimulationInput } from '@/hooks/useSharedSimulationInput';
-import { mockMarginFromPct } from '@/lib/mockTradeCapital';
+import { cn } from '@/lib/utils';
 import type { ChartTradingCategoryFilter, ChartTrendMode } from '@/views/Multiplecharts/types';
 
 export const MULTICHART_TF_KEYS = ['2H', '4H', '6H', '5D'] as const;
 export type MultichartTfKey = (typeof MULTICHART_TF_KEYS)[number];
+
+export interface MultiChartMockSnapshot {
+  symbol: string;
+  isAuthenticated: boolean;
+  lastPrice: number | null;
+  mockOpen: boolean;
+  mockPhase: 'entry' | 'exit';
+  mockDirection: 'long' | 'short';
+  mockEntryPrice: number | null;
+  mockExitReferencePrice: number | null;
+  mockExitLocked: boolean;
+  mockProfitPct: number | null;
+  remainingPct: number;
+  realizedPnlUsd: number;
+  mockSaving: boolean;
+  latestSignal: { direction: 'long' | 'short' | null; price: number | null; confidence: number | null };
+}
+
+export interface MultiChartMockActions {
+  enter: (direction: 'long' | 'short', marginUsd: number, leverage: number) => void;
+  addEntry: () => void;
+  partialClose: (pct: number) => void;
+  closeAll: () => void;
+}
 
 interface MultiChartTileProps {
   symbol: string;
@@ -34,6 +58,10 @@ interface MultiChartTileProps {
   showBollinger: boolean;
   tradingCategoryFilter: ChartTradingCategoryFilter;
   trendModesFilter: ChartTrendMode[];
+  selected: boolean;
+  onSelect: () => void;
+  onMockStateChange: (snapshot: MultiChartMockSnapshot) => void;
+  registerMockActions: (actions: MultiChartMockActions) => void;
 }
 
 export function MultiChartTile({
@@ -45,6 +73,10 @@ export function MultiChartTile({
   showBollinger,
   tradingCategoryFilter,
   trendModesFilter,
+  selected,
+  onSelect,
+  onMockStateChange,
+  registerMockActions,
 }: MultiChartTileProps) {
   const {
     refs: { containerRef, overlayRef, signalSvgOverlayRef, mockTradeSvgOverlayRef },
@@ -105,18 +137,24 @@ export function MultiChartTile({
   }, [containerRef]);
 
   const { isAuthenticated } = useAuth();
-  const [simulationInput] = useSharedSimulationInput();
 
   const {
     mockOpen,
     mockPhase,
     mockDirection,
     setMockDirection,
+    mockEntryPrice,
+    mockExitLocked,
+    mockExitReferencePrice,
     mockProfitPct,
     remainingPct,
+    realizedPnlUsd,
     mockSaving,
     fills,
     handleMockEntry,
+    handleAddEntry,
+    handlePartialClose,
+    handleMockExit,
     handleCloseAll,
   } = useMockTrade({ symbol, lastPrice, lastCandleTime, isAuthenticated, barInterval });
 
@@ -131,73 +169,107 @@ export function MultiChartTile({
     setMockTradeOverlay({ fills, direction: mockDirection });
   }, [mockPhase, fills, mockDirection, setMockTradeOverlay, clearMockTradeOverlay]);
 
-  const entryMargin = mockMarginFromPct(simulationInput.capitalRatio);
+  /** 이 종목의 가장 최근 진입 시그널 — Chart1m의 latestSignal과 동일 로직. */
+  const latestSignal = useMemo(() => {
+    const entries = (signalEvents ?? []).filter(
+      (ev) => String(ev.signal_type).toLowerCase() === 'entry'
+    );
+    const latest = entries.reduce<(typeof entries)[number] | null>(
+      (acc, ev) => (!acc || Number(ev.timestamp_ms) > Number(acc.timestamp_ms) ? ev : acc),
+      null
+    );
+    if (!latest) return { direction: null, price: null, confidence: null };
+    return {
+      direction:
+        String(latest.direction).toLowerCase() === 'short' ? ('short' as const) : ('long' as const),
+      price: Number(latest.price) || null,
+      confidence: latest.trend_confidence != null ? Number(latest.trend_confidence) : null,
+    };
+  }, [signalEvents]);
 
-  const onEntry = (direction: 'long' | 'short') => {
-    setMockDirection(direction);
-    void handleMockEntry(direction, undefined, entryMargin, simulationInput.leverage);
-  };
+  // 스냅샷은 부모(MultiChartGrid)의 사이드바 렌더링용 — 값이 바뀔 때만 올려보낸다.
+  useEffect(() => {
+    onMockStateChange({
+      symbol,
+      isAuthenticated,
+      lastPrice,
+      mockOpen,
+      mockPhase,
+      mockDirection,
+      mockEntryPrice,
+      mockExitReferencePrice,
+      mockExitLocked,
+      mockProfitPct,
+      remainingPct,
+      realizedPnlUsd,
+      mockSaving,
+      latestSignal,
+    });
+  }, [
+    symbol,
+    isAuthenticated,
+    lastPrice,
+    mockOpen,
+    mockPhase,
+    mockDirection,
+    mockEntryPrice,
+    mockExitReferencePrice,
+    mockExitLocked,
+    mockProfitPct,
+    remainingPct,
+    realizedPnlUsd,
+    mockSaving,
+    latestSignal,
+  ]);
+
+  // 액션 핸들은 매 렌더 최신값으로 갱신 — ref 등록이라 리렌더를 유발하지 않는다.
+  registerMockActions({
+    enter: (direction, marginUsd, leverage) => {
+      setMockDirection(direction);
+      void handleMockEntry(direction, undefined, marginUsd, leverage);
+    },
+    addEntry: () => void handleAddEntry(),
+    partialClose: (pct) => void handlePartialClose(pct),
+    closeAll: () => void (mockPhase === 'exit' && !mockExitLocked ? handleMockExit() : handleCloseAll()),
+  });
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div
+      onClick={onSelect}
+      className={cn(
+        'relative h-full w-full cursor-pointer overflow-hidden rounded-lg ring-2 ring-transparent transition-shadow',
+        selected && 'ring-primary'
+      )}
+    >
       {/* 순서·z-index 모두 Chart1m.tsx와 동일 */}
       <div ref={overlayRef} className="pointer-events-none absolute inset-0 z-10" />
       <div ref={signalSvgOverlayRef} className="pointer-events-none absolute inset-0 z-20" />
       <div ref={mockTradeSvgOverlayRef} className="pointer-events-none absolute inset-0 z-20" />
       <div ref={containerRef} className="absolute inset-0 z-0" />
 
-      <div className="absolute bottom-1 left-1 right-1 z-30 flex items-center gap-1">
-        {inPosition ? (
-          <>
-            <span
-              className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                mockDirection === 'long'
-                  ? 'bg-emerald-500/15 text-emerald-400'
-                  : 'bg-rose-500/15 text-rose-400'
-              }`}
-            >
-              {mockDirection === 'long' ? '롱' : '숏'} {remainingPct}%
-            </span>
-            <span
-              className={`rounded bg-background/70 px-1.5 py-0.5 text-[10px] font-mono font-semibold tabular-nums ${
-                (mockProfitPct ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
-              }`}
-            >
-              {(mockProfitPct ?? 0) >= 0 ? '+' : ''}
-              {(mockProfitPct ?? 0).toFixed(2)}%
-            </span>
-            <button
-              type="button"
-              disabled={mockSaving}
-              onClick={() => void handleCloseAll()}
-              className="ml-auto rounded bg-muted/80 px-2 py-0.5 text-[10px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
-            >
-              전량청산
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              disabled={!isAuthenticated || mockSaving || !lastPrice}
-              onClick={() => onEntry('long')}
-              className="rounded bg-emerald-600/80 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
-              title={isAuthenticated ? '모의매매 롱 진입' : '로그인 후 이용할 수 있습니다'}
-            >
-              매수·롱
-            </button>
-            <button
-              type="button"
-              disabled={!isAuthenticated || mockSaving || !lastPrice}
-              onClick={() => onEntry('short')}
-              className="rounded bg-rose-600/80 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
-              title={isAuthenticated ? '모의매매 숏 진입' : '로그인 후 이용할 수 있습니다'}
-            >
-              매도·숏
-            </button>
-          </>
-        )}
-      </div>
+      {inPosition ? (
+        <div className="pointer-events-none absolute bottom-1 left-1 z-30 flex items-center gap-1">
+          <span
+            className={cn(
+              'rounded px-1.5 py-0.5 text-[10px] font-semibold',
+              mockDirection === 'long'
+                ? 'bg-emerald-500/15 text-emerald-400'
+                : 'bg-rose-500/15 text-rose-400'
+            )}
+          >
+            {mockDirection === 'long' ? '롱' : '숏'} {remainingPct}%
+          </span>
+          <span
+            className={cn(
+              'rounded bg-background/70 px-1.5 py-0.5 text-[10px] font-mono font-semibold tabular-nums',
+              (mockProfitPct ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'
+            )}
+          >
+            {(mockProfitPct ?? 0) >= 0 ? '+' : ''}
+            {(mockProfitPct ?? 0).toFixed(2)}%
+          </span>
+        </div>
+      ) : null}
 
       {initialLoading ? (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-background/60 text-[11px] text-muted-foreground">

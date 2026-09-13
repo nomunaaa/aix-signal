@@ -1,10 +1,17 @@
 'use client';
 
 /**
- * /multichart — 6 tiles, each running the same useBinanceChart engine as
- * /chart1m. The toolbar mirrors chart1m's controls (Pulse/Wave interval,
- * 구분 trend-mode checkboxes, 신호 category, timeframe pills, Bollinger,
- * Trend short/long) but applies them to all 6 tiles at once.
+ * /multichart — 4 tiles (was 6; trimmed to make room for a real mock-trade
+ * sidebar, matching /chart1m). The toolbar mirrors chart1m's controls
+ * (Pulse/Wave interval, 구분 trend-mode checkboxes, 신호 category, timeframe
+ * pills, Bollinger, Trend short/long) but applies them to all 4 tiles at once.
+ *
+ * Mock trading happens on exactly one tile at a time — the "selected" one
+ * (ring highlight, click any tile to select). Each tile still owns its own
+ * useMockTrade internally (needed to draw its own entry/exit arrows), but
+ * only reports its snapshot/actions up; the sidebar renders whichever tile
+ * is currently selected using the same ChartSignalCard / SimulatorSettingsPanel
+ * / MockTradeEntryPanel / MockTradePositionCard components /chart1m uses.
  *
  * Mobile (<sm) collapses the whole control cluster behind one summary
  * button + bottom Sheet — the same pattern PulseActionControlsBar uses —
@@ -13,7 +20,7 @@
  * grid, so the sizing stays uniform.
  */
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -28,10 +35,19 @@ import {
   MultiChartTile,
   MULTICHART_TF_KEYS,
   type MultichartTfKey,
+  type MultiChartMockSnapshot,
+  type MultiChartMockActions,
 } from '@/components/multichart/MultiChartTile';
+import { ChartSignalCard } from '@/components/chart-workspace/ChartSignalCard';
+import { SimulatorSettingsPanel } from '@/components/chart-workspace/SimulatorSettingsPanel';
+import { MockTradeEntryPanel } from '@/components/chart-workspace/MockTradeEntryPanel';
+import { MockTradePositionCard } from '@/components/chart-workspace/MockTradePositionCard';
+import { MockTradeHelp } from '@/components/chart-workspace/MockTradeHelp';
+import { useSharedSimulationInput } from '@/hooks/useSharedSimulationInput';
+import { mockMarginFromPct } from '@/lib/mockTradeCapital';
 import type { ChartTradingCategoryFilter, ChartTrendMode } from '@/views/Multiplecharts/types';
 
-const DEFAULT_SYMBOLS = [...VOLUME_TOP5_SYMBOLS, 'DOGEUSDT'];
+const DEFAULT_SYMBOLS = VOLUME_TOP5_SYMBOLS.slice(0, 4);
 
 const STREAMS = [
   { label: 'Pulse (1m)', value: '1m' },
@@ -67,6 +83,11 @@ export default function MultiChartGrid() {
   ]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [mockSnapshots, setMockSnapshots] = useState<Record<number, MultiChartMockSnapshot>>({});
+  const mockActionsRef = useRef<Record<number, MultiChartMockActions>>({});
+  const [simulationInput] = useSharedSimulationInput();
+
   const setSymbolAt = (index: number, symbol: string) => {
     setSymbols((prev) => prev.map((s, i) => (i === index ? symbol : s)));
   };
@@ -88,6 +109,25 @@ export default function MultiChartGrid() {
   };
 
   const streamLabel = barInterval === '1m' ? 'Pulse' : 'Wave';
+
+  const handleMockStateChange = useCallback((index: number, snapshot: MultiChartMockSnapshot) => {
+    setMockSnapshots((prev) => ({ ...prev, [index]: snapshot }));
+  }, []);
+
+  const registerMockActionsFor = useCallback(
+    (index: number) => (actions: MultiChartMockActions) => {
+      mockActionsRef.current[index] = actions;
+    },
+    []
+  );
+
+  const selectedSnapshot = mockSnapshots[selectedIndex];
+  const selectedActions = mockActionsRef.current[selectedIndex];
+  const selectedInPosition =
+    !!selectedSnapshot &&
+    selectedSnapshot.mockOpen &&
+    selectedSnapshot.mockPhase === 'exit' &&
+    !selectedSnapshot.mockExitLocked;
 
   /** 공통 컨트롤 — 데스크톱 인라인과 모바일 시트가 같은 소스를 쓴다. */
   const streamSelect = (
@@ -284,38 +324,114 @@ export default function MultiChartGrid() {
         </SheetContent>
       </Sheet>
 
-      <div className="grid flex-1 grid-cols-1 gap-3 p-3 sm:grid-cols-2 lg:grid-cols-3">
-        {symbols.map((symbol, index) => (
-          <div
-            key={index}
-            className="flex h-[340px] flex-col rounded-lg border border-border bg-card p-2"
-          >
-            <Select value={symbol} onValueChange={(v) => setSymbolAt(index, v)}>
-              <SelectTrigger className="h-8 w-full shrink-0 text-xs">
-                <SelectValue>{symbol}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {ALL_SYMBOLS.map((s) => (
-                  <SelectItem key={s} value={s} className="text-xs">
-                    {s}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="mt-2 min-h-0 flex-1">
-              <MultiChartTile
-                symbol={symbol}
-                barInterval={barInterval}
-                timeframe={timeframe}
-                showTrendShort={showTrendShort}
-                showTrendLong={showTrendLong}
-                showBollinger={showBollinger}
-                tradingCategoryFilter={category}
-                trendModesFilter={trendModes}
-              />
+      {/* 4개 타일(2x2) + 모의매매 사이드바 — /chart1m의 ChartWorkspaceShell과 같은
+          반응형 패턴: 모바일은 세로로 쌓고, lg 이상에서만 좌우로 나눈다. */}
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="grid flex-1 grid-cols-1 gap-3 p-3 sm:grid-cols-2">
+          {symbols.map((symbol, index) => (
+            <div
+              key={index}
+              className="flex h-[360px] flex-col rounded-lg border border-border bg-card p-2"
+            >
+              <Select value={symbol} onValueChange={(v) => setSymbolAt(index, v)}>
+                <SelectTrigger className="h-8 w-full shrink-0 text-xs">
+                  <SelectValue>{symbol}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {ALL_SYMBOLS.map((s) => (
+                    <SelectItem key={s} value={s} className="text-xs">
+                      {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="mt-2 min-h-0 flex-1">
+                <MultiChartTile
+                  symbol={symbol}
+                  barInterval={barInterval}
+                  timeframe={timeframe}
+                  showTrendShort={showTrendShort}
+                  showTrendLong={showTrendLong}
+                  showBollinger={showBollinger}
+                  tradingCategoryFilter={category}
+                  trendModesFilter={trendModes}
+                  selected={index === selectedIndex}
+                  onSelect={() => setSelectedIndex(index)}
+                  onMockStateChange={(snapshot) => handleMockStateChange(index, snapshot)}
+                  registerMockActions={registerMockActionsFor(index)}
+                />
+              </div>
             </div>
+          ))}
+        </div>
+
+        <aside className="flex w-full flex-none flex-col gap-3 border-t border-border bg-card/40 p-3.5 lg:w-[340px] lg:overflow-y-auto lg:border-l lg:border-t-0">
+          <div className="text-xs font-bold tracking-wide text-muted-foreground">
+            선택된 차트: {symbols[selectedIndex]}
           </div>
-        ))}
+
+          {selectedSnapshot ? (
+            <>
+              <ChartSignalCard
+                symbol={selectedSnapshot.symbol}
+                barInterval={barInterval}
+                direction={selectedSnapshot.latestSignal.direction}
+                entryPrice={selectedSnapshot.latestSignal.price}
+                confidencePct={selectedSnapshot.latestSignal.confidence}
+              />
+
+              <SimulatorSettingsPanel />
+
+              <div className="mt-1 text-xs font-bold tracking-wide text-muted-foreground">
+                모의매매
+              </div>
+
+              {selectedInPosition ? (
+                <MockTradePositionCard
+                  symbol={selectedSnapshot.symbol}
+                  direction={selectedSnapshot.mockDirection}
+                  entryPrice={selectedSnapshot.mockEntryPrice}
+                  exitReferencePrice={selectedSnapshot.mockExitReferencePrice}
+                  profitPct={selectedSnapshot.mockProfitPct}
+                  remainingPct={selectedSnapshot.remainingPct}
+                  realizedPnlUsd={selectedSnapshot.realizedPnlUsd}
+                  exitLocked={selectedSnapshot.mockExitLocked}
+                  saving={selectedSnapshot.mockSaving}
+                  lastPrice={selectedSnapshot.lastPrice}
+                  onAddEntry={() => selectedActions?.addEntry()}
+                  onPartialClose={(pct) => selectedActions?.partialClose(pct)}
+                  onCloseAll={() => selectedActions?.closeAll()}
+                />
+              ) : (
+                <MockTradeEntryPanel
+                  symbol={selectedSnapshot.symbol}
+                  lastPrice={selectedSnapshot.lastPrice}
+                  pct={simulationInput.capitalRatio}
+                  leverage={simulationInput.leverage}
+                  onEnter={(direction) =>
+                    selectedActions?.enter(
+                      direction,
+                      mockMarginFromPct(simulationInput.capitalRatio),
+                      simulationInput.leverage
+                    )
+                  }
+                  disabled={
+                    !selectedSnapshot.isAuthenticated ||
+                    selectedSnapshot.mockSaving ||
+                    !selectedSnapshot.lastPrice
+                  }
+                  disabledReason={
+                    !selectedSnapshot.isAuthenticated
+                      ? '로그인 후 모의매매를 시작할 수 있습니다.'
+                      : undefined
+                  }
+                />
+              )}
+
+              <MockTradeHelp />
+            </>
+          ) : null}
+        </aside>
       </div>
     </div>
   );
