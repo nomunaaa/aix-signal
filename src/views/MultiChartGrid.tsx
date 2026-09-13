@@ -72,13 +72,9 @@ const STREAMS = [
   { label: 'Wave (10m)', value: '10m' },
 ] as const;
 
-const CATEGORIES: ChartTradingCategoryFilter[] = ['ALL', 'E1X1', 'E1X2', 'E2X1', 'E2X2'];
-
-const TREND_MODES: { key: ChartTrendMode; label: string }[] = [
-  { key: 'trend', label: '추세' },
-  { key: 'nonTrend', label: '비추세' },
-  { key: 'reversal', label: '역추세' },
-];
+// 멀티차트는 항상 E2X2(전략) + 역추세(추세 구분)로 고정한다 — 사용자 선택 UI 없음.
+const LOCKED_TRADING_CATEGORY: ChartTradingCategoryFilter = 'E2X2';
+const LOCKED_TREND_MODES: ChartTrendMode[] = ['reversal'];
 
 const INDICATORS = [
   { key: 'short', label: 'Trend short' },
@@ -96,12 +92,6 @@ export default function MultiChartGrid() {
   const [showTrendShort, setShowTrendShort] = useState(true);
   const [showTrendLong, setShowTrendLong] = useState(true);
   const [showBollinger, setShowBollinger] = useState(false);
-  const [category, setCategory] = useState<ChartTradingCategoryFilter>('ALL');
-  const [trendModes, setTrendModes] = useState<ChartTrendMode[]>([
-    'trend',
-    'nonTrend',
-    'reversal',
-  ]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const [selectedId, setSelectedId] = useState(0);
@@ -135,13 +125,6 @@ export default function MultiChartGrid() {
     });
     delete mockActionsRef.current[id];
     setSelectedId((prevSelected) => (prevSelected === id ? remaining[0].id : prevSelected));
-  };
-
-  const toggleTrendMode = (mode: ChartTrendMode) => {
-    setTrendModes((prev) => {
-      const next = prev.includes(mode) ? prev.filter((m) => m !== mode) : [...prev, mode];
-      return next.length === 0 ? prev : next;
-    });
   };
 
   const indicatorValue = (key: (typeof INDICATORS)[number]['key']) =>
@@ -190,25 +173,14 @@ export default function MultiChartGrid() {
     </Select>
   );
 
-  const categorySelect = (
-    <Select value={category} onValueChange={(v) => setCategory(v as ChartTradingCategoryFilter)}>
-      <SelectTrigger className="h-8 w-full text-xs sm:h-7 sm:w-[84px]">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {CATEGORIES.map((c) => (
-          <SelectItem key={c} value={c} className="text-xs">
-            {c}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
-
   return (
     <div className="flex min-h-[calc(100vh-var(--header-height))] flex-col">
       <div className="flex items-center gap-x-4 gap-y-2 border-b border-border px-4 py-2.5 sm:flex-wrap">
         <h1 className="shrink-0 text-sm font-semibold text-foreground">멀티차트</h1>
+
+        <span className="inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-500/40 bg-card px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          E2X2 · 역추세
+        </span>
 
         {/* 모바일: 요약 한 줄 + 시트 */}
         <button
@@ -216,11 +188,11 @@ export default function MultiChartGrid() {
           onClick={() => setFilterSheetOpen(true)}
           className="ml-auto flex h-8 min-w-0 items-center gap-1.5 rounded-md border border-border bg-card/50 px-2.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/35 sm:hidden"
           aria-haspopup="dialog"
-          aria-label={`필터: ${streamLabel}, ${category}, ${timeframe}`}
+          aria-label={`필터: ${streamLabel}, ${timeframe}`}
         >
           <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
           <span className="min-w-0 truncate">
-            {streamLabel} · {category} · {timeframe}
+            {streamLabel} · {timeframe}
           </span>
         </button>
 
@@ -228,26 +200,6 @@ export default function MultiChartGrid() {
         <label className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
           차트
           {streamSelect}
-        </label>
-
-        <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex">
-          구분
-          {TREND_MODES.map((m) => (
-            <label key={m.key} className="flex cursor-pointer items-center gap-1 text-foreground">
-              <input
-                type="checkbox"
-                checked={trendModes.includes(m.key)}
-                onChange={() => toggleTrendMode(m.key)}
-                className="h-3.5 w-3.5 accent-primary"
-              />
-              {m.label}
-            </label>
-          ))}
-        </div>
-
-        <label className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-          신호
-          {categorySelect}
         </label>
 
         <div className="hidden items-center gap-1 rounded-md border border-border bg-card/50 p-0.5 sm:flex">
@@ -296,11 +248,6 @@ export default function MultiChartGrid() {
             </div>
 
             <div>
-              <p className="mb-1.5 text-xs font-medium text-muted-foreground">신호</p>
-              {categorySelect}
-            </div>
-
-            <div>
               <p className="mb-1.5 text-xs font-medium text-muted-foreground">기간</p>
               <div className="grid grid-cols-4 gap-2">
                 {MULTICHART_TF_KEYS.map((tf) => (
@@ -317,29 +264,6 @@ export default function MultiChartGrid() {
                     {tf}
                   </button>
                 ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-1.5 text-xs font-medium text-muted-foreground">구분</p>
-              <div className="grid grid-cols-3 gap-2">
-                {TREND_MODES.map((m) => {
-                  const on = trendModes.includes(m.key);
-                  return (
-                    <button
-                      key={m.key}
-                      type="button"
-                      onClick={() => toggleTrendMode(m.key)}
-                      className={`h-10 rounded-md border text-xs font-medium transition-colors ${
-                        on
-                          ? 'border-primary/50 bg-primary/10 text-foreground'
-                          : 'border-border bg-muted/30 text-muted-foreground'
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  );
-                })}
               </div>
             </div>
 
@@ -411,8 +335,8 @@ export default function MultiChartGrid() {
                   showTrendShort={showTrendShort}
                   showTrendLong={showTrendLong}
                   showBollinger={showBollinger}
-                  tradingCategoryFilter={category}
-                  trendModesFilter={trendModes}
+                  tradingCategoryFilter={LOCKED_TRADING_CATEGORY}
+                  trendModesFilter={LOCKED_TREND_MODES}
                   selected={tile.id === selectedId}
                   onSelect={() => setSelectedId(tile.id)}
                   onMockStateChange={(snapshot) => handleMockStateChange(tile.id, snapshot)}

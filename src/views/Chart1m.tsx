@@ -21,10 +21,7 @@ import { getAllowedSymbols } from "@/config/symbols";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMockTrade } from "@/views/Multiplecharts/useMockTrade";
 import { ChartIntervalSelect } from "@/views/Multiplecharts/ChartIntervalSelect";
-import { ChartSignalFilterBar } from "@/views/Multiplecharts/ChartSignalFilterBar";
 import type { ChartTradingCategoryFilter, ChartTrendMode } from "@/views/Multiplecharts/types";
-import { normalizeTradingCategory, resolveSingleTradingCategory } from "@/lib/trading-category";
-import { usePulseStore } from "@/views/signals/pulse/stores/pulseStore";
 import { useBinanceChart } from "./Multiplecharts/useBinanceChart";
 import { supabase } from "@/integrations/supabase/client";
 import * as htmlToImage from "html-to-image";
@@ -78,7 +75,6 @@ const Binance1mChartContainer: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const symbolFromQuery = searchParams.get('symbol');
-  const tradingCategoryFromQuery = normalizeTradingCategory(searchParams.get('tradingCategory'));
   const defaultSymbol = 'BTCUSDT';
 
   // 구독 플랜에 따른 종목 게이팅 (free: 없음, pro: 전체)
@@ -93,45 +89,16 @@ const Binance1mChartContainer: React.FC = () => {
   );
   const normalizedSymbol = symbol.trim().toUpperCase();
 
-  // 신호/전략(구분)은 Signal Board/Trend Board/AIX 수익통계와 pulseStore를 공유한다.
-  // 그 화면들은 다중 선택이 가능하지만 Chart는 한 번에 하나만 표시할 수 있어,
-  // 여러 개가 선택돼 있으면 우선순위(E2X2 > E2X1 > E1X2 > E1X1)로 하나만 고른다.
-  const storeTradingCategoryFilters = usePulseStore((state) => state.tradingCategoryFilters);
-  const setStoreTradingCategoryFilters = usePulseStore((state) => state.setTradingCategoryFilters);
-  const tradingCategoryFilter: ChartTradingCategoryFilter = resolveSingleTradingCategory(
-    storeTradingCategoryFilters
-  );
-  const setTradingCategoryFilter = (category: ChartTradingCategoryFilter) => {
-    if (category === "ALL") return;
-    setStoreTradingCategoryFilters([category]);
-  };
-  // 추세/비추세 필터도 Signal Board/Trend Board와 pulseStore를 공유한다.
-  const storeTrendModeFilter = usePulseStore((state) => state.trendModeFilter);
-  const setStoreTrendModeFilter = usePulseStore((state) => state.setTrendModeFilter);
-  const trendModesFilter: ChartTrendMode[] = useMemo(() => {
-    const modes: ChartTrendMode[] = [];
-    if (storeTrendModeFilter.trend) modes.push("trend");
-    if (storeTrendModeFilter.nonTrend) modes.push("nonTrend");
-    if (storeTrendModeFilter.reversal) modes.push("reversal");
-    return modes;
-  }, [storeTrendModeFilter]);
-  const toggleTrendModeFilter = (mode: ChartTrendMode) => {
-    const isOn = storeTrendModeFilter[mode];
-    if (isOn && trendModesFilter.length === 1) return;
-    setStoreTrendModeFilter({ ...storeTrendModeFilter, [mode]: !isOn });
-  };
+  // Chart는 항상 E2X2(전략) + 역추세(추세 구분)로 고정한다 — Signal Board/Trend Board와
+  // 공유하던 pulseStore 선택은 더 이상 반영하지 않는다(사용자 선택 불가, UI도 제거됨).
+  const tradingCategoryFilter: ChartTradingCategoryFilter = 'E2X2';
+  const trendModesFilter: ChartTrendMode[] = useMemo(() => ['reversal'], []);
 
   useEffect(() => {
     if (symbolFromQuery) {
       setSymbol(symbolFromQuery);
     }
   }, [symbolFromQuery]);
-
-  useEffect(() => {
-    if (tradingCategoryFromQuery) {
-      setStoreTradingCategoryFilters([tradingCategoryFromQuery]);
-    }
-  }, [tradingCategoryFromQuery, setStoreTradingCategoryFilters]);
 
   // URL ?symbol= 로 잠긴 종목에 접근하는 것을 차단 (플랜 확정 후에만 클램프)
   useEffect(() => {
@@ -1392,12 +1359,9 @@ const Binance1mChartContainer: React.FC = () => {
                 disabled={SYMBOLS.length === 0}
               />
 
-              <ChartSignalFilterBar
-                tradingCategory={tradingCategoryFilter}
-                onTradingCategoryChange={setTradingCategoryFilter}
-                trendModes={trendModesFilter}
-                onToggleTrendMode={toggleTrendModeFilter}
-              />
+              <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-500/40 bg-card px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                E2X2 · 역추세
+              </span>
 
               {/* Zoom */}
               <div className="flex items-center gap-2">
@@ -1555,12 +1519,9 @@ const Binance1mChartContainer: React.FC = () => {
                 disabled={SYMBOLS.length === 0}
               />
 
-              <ChartSignalFilterBar
-                tradingCategory={tradingCategoryFilter}
-                onTradingCategoryChange={setTradingCategoryFilter}
-                trendModes={trendModesFilter}
-                onToggleTrendMode={toggleTrendModeFilter}
-              />
+              <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-500/40 bg-card px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                E2X2 · 역추세
+              </span>
 
               {/* Zoom */}
               <div className="flex items-center gap-1">
