@@ -254,7 +254,7 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
     });
   }, [legacyPriceMap, openSignalsForPanel]);
 
-  const { qualifiedSymbols, loading: qualitySymbolsLoading } = useProofQualitySymbols({
+  const { qualifiedSymbols } = useProofQualitySymbols({
     enabled: !USE_MOCK_SIGNALS && allowedSymbols.length > 0,
     symbols: allowedSymbols,
     streamFilter,
@@ -262,18 +262,10 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
     minWinRate: qualityWinRateThreshold,
     minRiskReward: qualityRiskRewardThreshold,
   });
-  const {
-    filtered: filteredOpenBeforeQuality,
-    showDiscount,
-    showLocked,
-  } = useSignalFilter(openWithLivePrices);
-  const filteredOpen = useMemo(
-    () =>
-      filteredOpenBeforeQuality.filter((signal) =>
-        qualifiedSymbols.has(signal.symbol.trim().toUpperCase())
-      ),
-    [filteredOpenBeforeQuality, qualifiedSymbols]
-  );
+  // Open signals are governed by the client scope (E2X2 + entry-snapshot Reversal).
+  // Historical WR/RR qualification is still used by History, but must not hide a
+  // valid live cycle merely because the symbol has insufficient proof history.
+  const { filtered: filteredOpen, showDiscount, showLocked } = useSignalFilter(openWithLivePrices);
 
   return (
     <>
