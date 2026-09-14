@@ -790,49 +790,49 @@
 :root[data-theme='dark'] .proof-performance-summary-blue {
   background-image: linear-gradient(
     135deg,
-    rgba(0, 0, 150, 0.9),
+    rgba(0, 0, 100, 0.9),
     rgba(0, 0, 0, 1)
   ) !important;
 }
 :root[data-theme='dark'] .proof-performance-summary-green {
   background-image: linear-gradient(
     135deg, 
-    rgba(0, 50, 0, 0.9), 
+    rgba(0, 40, 0, 0.9), 
     rgba(0, 0, 0, 1)) 
     !important;
 }
 :root[data-theme='dark'] .proof-performance-summary-amber {
   background-image: linear-gradient(
     135deg,
-    rgba(50, 50, 0, 0.9),
+    rgba(40, 40, 0, 0.9),
     rgba(0, 0, 0, 1)
   ) !important;
 }
 :root[data-theme='dark'] .proof-performance-metric-purple {
   background-image: linear-gradient(
     135deg,
-    rgba(80, 0, 120, 0.9),
+    rgba(60, 0, 100, 0.9),
     rgba(0, 0, 0, 1)
   ) !important;
 }
 :root[data-theme='dark'] .proof-performance-metric-green {
   background-image: linear-gradient(
     135deg,
-    rgba(0, 50, 0, 0.9),
+    rgba(0, 40, 0, 0.9),
     rgba(0, 0, 0, 1)
   ) !important;
 }
 :root[data-theme='dark'] .proof-performance-metric-blue {
   background-image: linear-gradient(
     135deg,
-    rgba(0, 0, 150, 0.9),
+    rgba(0, 0, 100, 0.9),
     rgba(0, 0, 0, 1)
   ) !important;
 }
 :root[data-theme='dark'] .proof-performance-metric-red {
   background-image: linear-gradient(
     135deg,
-    rgba(50, 0, 0, 0.9),
+    rgba(40, 0, 0, 0.9),
     rgba(0, 0, 0, 1)
   ) !important;
 }

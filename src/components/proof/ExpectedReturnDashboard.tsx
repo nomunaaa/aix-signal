@@ -50,37 +50,35 @@ const COPY = {
 type MetricCopy = readonly [string, string];
 type Accent = 'purple' | 'green' | 'blue' | 'red';
 
-const ACCENTS: Record<Accent, { row: string; icon: string; value: string }> = {
+const ACCENTS: Record<Accent, { row: string; icon: string }> = {
   purple: {
     row: 'border-purple-200 bg-purple-50 dark:border-purple-500/50 dark:!bg-[linear-gradient(90deg,rgba(88,28,135,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
     icon: 'bg-purple-200 dark:bg-purple-800',
-    value: 'text-blue-600 dark:text-blue-400',
   },
   green: {
     row: 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/50 dark:!bg-[linear-gradient(90deg,rgba(6,95,70,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
     icon: 'bg-emerald-200 dark:bg-emerald-700',
-    value: 'text-emerald-600 dark:text-emerald-400',
   },
   blue: {
     row: 'border-blue-200 bg-blue-50 dark:border-blue-500/50 dark:!bg-[linear-gradient(90deg,rgba(30,58,138,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
     icon: 'bg-blue-200 dark:bg-blue-700',
-    value: 'text-blue-600 dark:text-blue-400',
   },
   red: {
     row: 'border-red-200 bg-red-50 dark:border-red-500/50 dark:!bg-[linear-gradient(90deg,rgba(127,29,29,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
     icon: 'bg-red-200 dark:bg-red-700',
-    value: 'text-red-600 dark:text-red-400',
   },
 };
 
 function MetricRow({
   copy,
   value,
+  valueClassName,
   icon,
   accent,
 }: {
   copy: MetricCopy;
   value: string;
+  valueClassName: string;
   icon: string;
   accent: Accent;
 }) {
@@ -103,7 +101,7 @@ function MetricRow({
         </div>
       </div>
       <div
-        className={`shrink-0 text-right text-base font-bold tabular-nums sm:text-lg ${colors.value}`}
+        className={`shrink-0 text-right text-base font-bold tabular-nums sm:text-lg ${valueClassName}`}
       >
         {value}
       </div>
@@ -149,6 +147,12 @@ export function ExpectedReturnDashboard({
     if (!present || value == null || !Number.isFinite(value)) return '—';
     const prefix = signed ? (value > 0 ? '+' : value < 0 ? '-' : '') : '';
     return `${prefix}${Math.abs(value).toFixed(2)}%`;
+  };
+  const valueClassName = (value: number | null) => {
+    if (!present || value == null || !Number.isFinite(value)) return 'text-muted-foreground';
+    if (value > 0) return 'text-emerald-600 dark:text-emerald-400';
+    if (value < 0) return 'text-red-600 dark:text-red-400';
+    return 'text-foreground';
   };
 
   const accountReturn = projectedPct(slice, seed, entryRatio, leverage);
@@ -238,7 +242,7 @@ export function ExpectedReturnDashboard({
           <div className="mt-0.5 text-xs text-slate-400">
             {present && averageWinAccountPct != null && averageLossAccountPct != null
               ? language === 'ko'
-                ? `수익 ${formatPercent(averageWinAccountPct)} : 손실 ${formatPercent(averageLossAccountPct)}`
+                ? `평균수익 ${formatPercent(averageWinAccountPct)} : 평균손실 ${formatPercent(averageLossAccountPct)}`
                 : `Avg win ${formatPercent(averageWinAccountPct)} : avg loss ${formatPercent(averageLossAccountPct)}`
               : '—'}
           </div>
@@ -250,24 +254,30 @@ export function ExpectedReturnDashboard({
           <MetricRow
             copy={copy.accountReturn}
             value={formatPercent(accountReturn, true)}
+            valueClassName={valueClassName(accountReturn)}
             icon="account-return.png"
             accent="purple"
           />
           <MetricRow
             copy={avgWinRateCopy}
             value={formatPercent(averageWinAccountPct, true)}
+            valueClassName={valueClassName(averageWinAccountPct)}
             icon="average-win-rate.png"
             accent="green"
           />
           <MetricRow
             copy={copy.avgWin}
             value={formatMoney(averageWinRate == null ? null : averageWinRate * positionNotional)}
+            valueClassName={valueClassName(
+              averageWinRate == null ? null : averageWinRate * positionNotional
+            )}
             icon="average-win.png"
             accent="blue"
           />
           <MetricRow
             copy={copy.maxWin}
             value={formatMoney(maxWin)}
+            valueClassName={valueClassName(maxWin)}
             icon="max-win.png"
             accent="purple"
           />
@@ -276,6 +286,7 @@ export function ExpectedReturnDashboard({
           <MetricRow
             copy={copy.accountProfit}
             value={formatMoney(accountProfit)}
+            valueClassName={valueClassName(accountProfit)}
             icon="account-profit.png"
             accent="blue"
           />
@@ -285,6 +296,9 @@ export function ExpectedReturnDashboard({
               averageLossAccountPct == null ? null : -averageLossAccountPct,
               true
             )}
+            valueClassName={valueClassName(
+              averageLossAccountPct == null ? null : -averageLossAccountPct
+            )}
             icon="average-loss-rate.png"
             accent="red"
           />
@@ -293,12 +307,16 @@ export function ExpectedReturnDashboard({
             value={formatMoney(
               averageLossRate == null ? null : -averageLossRate * positionNotional
             )}
+            valueClassName={valueClassName(
+              averageLossRate == null ? null : -averageLossRate * positionNotional
+            )}
             icon="average-loss.png"
             accent="red"
           />
           <MetricRow
             copy={copy.maxLoss}
             value={formatMoney(maxLoss)}
+            valueClassName={valueClassName(maxLoss)}
             icon="max-loss.png"
             accent="red"
           />
