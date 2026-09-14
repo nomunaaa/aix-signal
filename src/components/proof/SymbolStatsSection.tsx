@@ -9,17 +9,12 @@ import type {
 } from '@/lib/mock/proof-mock';
 import type { TradingCategory } from '@/lib/trading-category';
 import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
-import { FavoriteScopeControls } from '@/views/signals/pulse/components/FavoriteScopeControls';
-import { getSymbolsFromEnv } from '@/config/symbols';
 import { AssetSymbolCell, HistoricalMoneyCell, HistoricalPctCell } from './ProofStatCells';
 import { HistoryEntryCountLink } from './HistoryEntryCountLink';
 import { SortableTh, TableHeaderLabel, type SymbolStatsSortKey } from './SortableTh';
 import { formatHoldSec, formatRatio, type ProofLanguage } from './proofFormat';
 import type { ProofCopy } from './proofCopy';
-import {
-  meetsQualityThresholdsForPeriod,
-  type ProofQualityPeriod,
-} from './symbolQuality';
+import { meetsQualityThresholdsForPeriod, type ProofQualityPeriod } from './symbolQuality';
 
 function symbolStatsSortValue(row: ProofSymbolStatsRow, key: SymbolStatsSortKey): number {
   if (key === 'symbol') return 0;
@@ -97,7 +92,6 @@ export function SymbolStatsSection({
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
-  const favoriteSymbols = useMemo(() => getSymbolsFromEnv(), []);
   const [sortKey, setSortKey] = useState<SymbolStatsSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const handleSort = (key: SymbolStatsSortKey) => {
@@ -149,7 +143,6 @@ export function SymbolStatsSection({
         <h2 className="text-xl font-semibold tracking-tight text-foreground">
           {copy.sections.symbol.title}
         </h2>
-        <FavoriteScopeControls symbols={favoriteSymbols} className="flex-wrap" />
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
