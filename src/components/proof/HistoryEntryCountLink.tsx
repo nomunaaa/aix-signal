@@ -39,7 +39,9 @@ function signalBoardHistoryHref({
     historySort: 'recent_closed',
     historyFocus: '1',
   });
-  const exactRange = exactHistoryPeriodRange(period, asOfIso);
+  const historyPeriod = period === 'all' ? '30d' : period;
+  params.set('historyPeriod', historyPeriod);
+  const exactRange = exactHistoryPeriodRange(historyPeriod, asOfIso);
 
   if (exactRange) {
     if (exactRange.fromIso) {

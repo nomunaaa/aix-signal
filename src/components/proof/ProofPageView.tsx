@@ -116,12 +116,7 @@ export function ProofPageView() {
       const values = streamRows
         .filter((row) => qualifiedSymbolSet.has(row.symbol))
         .map((row) => {
-          const slice =
-            qualityPeriod === 'last30d'
-              ? row.recent30Combined
-              : qualityPeriod === 'last3mo'
-                ? row.recent3moCombined
-                : row.combined;
+          const slice = qualityPeriod === 'last30d' ? row.recent30Combined : row.recent3moCombined;
           return slice.cycleCount > 0 ? slice.winRate * 100 : null;
         })
         .filter((value): value is number => value !== null);

@@ -134,11 +134,11 @@ function readTradingCategoryFiltersFromStorage(): TradingCategory[] {
 
 function readHistoryDatePeriodFromStorage(): HistoryDatePeriod {
   const saved = readPulseStorageItem(HISTORY_DATE_PERIOD_STORAGE_KEY);
-  if (saved === 'all' || saved === '90d') return saved;
+  if (saved === '90d') return saved;
   return '30d';
 }
 
-export type QualityPeriod = 'last30d' | 'last3mo' | 'all';
+export type QualityPeriod = 'last30d' | 'last3mo';
 
 function clampQualityNumber(value: unknown, min: number, max: number, fallback: number): number {
   const numeric = Number(value);
@@ -173,10 +173,7 @@ function readQualityFiltersFromStorage(): {
         5,
         DEFAULT_QUALITY_RISK_REWARD_THRESHOLD
       ),
-      qualityPeriod:
-        parsed.qualityPeriod === 'all' || parsed.qualityPeriod === 'last3mo'
-          ? parsed.qualityPeriod
-          : 'last30d',
+      qualityPeriod: parsed.qualityPeriod === 'last3mo' ? parsed.qualityPeriod : 'last30d',
     };
   } catch {
     return fallback;

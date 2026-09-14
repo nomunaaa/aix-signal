@@ -30,9 +30,8 @@ function finiteNumber(value: number | string | null): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function proofTimeinterval(period: HistoryDatePeriod): 'last_30d' | 'last_3mo' | 'all_time' {
+function proofTimeinterval(period: HistoryDatePeriod): 'last_30d' | 'last_3mo' {
   if (period === '90d') return 'last_3mo';
-  if (period === 'all') return 'all_time';
   return 'last_30d';
 }
 

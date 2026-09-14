@@ -57,7 +57,6 @@ import {
   PULSE_MOCK_STATS_7D,
   PULSE_MOCK_STATS_30D_BY_STRATEGY,
   PULSE_MOCK_STATS_30D_BY_STREAM,
-  PULSE_MOCK_STRATEGY_STATS_LIST,
 } from '@/lib/mock/pulse-strategy-source';
 
 const AUTO_REFRESH_MS = 10_000;
@@ -69,7 +68,7 @@ type TrendV8PageContentProps = {
 type TrendFrontLanguage = 'ko' | 'en';
 type TrendClass = 'trend' | 'counter' | 'nontrend';
 type VolatilityDot = 1 | 2 | 3;
-type TrendQualityPeriod = 'last30d' | 'last3mo' | 'all';
+type TrendQualityPeriod = 'last30d' | 'last3mo';
 type SymbolSortDirection = 'asc' | 'desc' | null;
 
 type SignalQualityMetrics = {
@@ -631,10 +630,6 @@ function strategyWinRateFallback(
   if (!category) return null;
   const strategy = TRADING_CATEGORY_TO_STRATEGY[category];
 
-  if (period === 'all') {
-    return PULSE_MOCK_STRATEGY_STATS_LIST.find((item) => item.id === strategy)?.winRate ?? null;
-  }
-
   return PULSE_MOCK_STATS_30D_BY_STRATEGY[engine][strategy]?.winRate ?? null;
 }
 
@@ -737,7 +732,6 @@ function resolveStreamQuality(
   return {
     last30d: resolveStreamQualityForPeriod(openCycle, row, engine, tradingCategory, 'last30d'),
     last3mo: resolveStreamQualityForPeriod(openCycle, row, engine, tradingCategory, 'last3mo'),
-    all: resolveStreamQualityForPeriod(openCycle, row, engine, tradingCategory, 'all'),
   };
 }
 
@@ -1052,7 +1046,6 @@ function trendQualityCopy(language: TrendFrontLanguage) {
         searchSymbol: 'Search symbol',
         last30d: 'Last 30 days',
         last3mo: 'Last 3 months',
-        all: 'All time',
       }
     : {
         title: '승률/손익비 필터',
@@ -1062,7 +1055,6 @@ function trendQualityCopy(language: TrendFrontLanguage) {
         searchSymbol: '종목 검색',
         last30d: '최근 30일',
         last3mo: '최근 3개월',
-        all: '전체 기간',
       };
 }
 
@@ -1210,7 +1202,7 @@ function TrendBoardFilterPanel({
               ? qualityCopy.last30d
               : period === 'last3mo'
                 ? qualityCopy.last3mo
-                : qualityCopy.all}
+                : qualityCopy.last3mo}
             <span className="text-muted-foreground">
               {' · '}
               {qualityCopy.winRate} {formatWinRatePct(winRateThreshold)}
@@ -1232,7 +1224,6 @@ function TrendBoardFilterPanel({
           <SelectContent>
             <SelectItem value="last30d">{qualityCopy.last30d}</SelectItem>
             <SelectItem value="last3mo">{qualityCopy.last3mo}</SelectItem>
-            <SelectItem value="all">{qualityCopy.all}</SelectItem>
           </SelectContent>
         </Select>
         <div className="hidden flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5 sm:flex">
@@ -1278,8 +1269,8 @@ function TrendBoardFilterPanel({
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 {qualityCopy.periodGroup}
               </p>
-              <div className="grid grid-cols-3 gap-2">
-                {(['last30d', 'last3mo', 'all'] as TrendQualityPeriod[]).map((key) => (
+              <div className="grid grid-cols-2 gap-2">
+                {(['last30d', 'last3mo'] as TrendQualityPeriod[]).map((key) => (
                   <button
                     key={key}
                     type="button"
@@ -1295,7 +1286,7 @@ function TrendBoardFilterPanel({
                       ? qualityCopy.last30d
                       : key === 'last3mo'
                         ? qualityCopy.last3mo
-                        : qualityCopy.all}
+                        : qualityCopy.last3mo}
                   </button>
                 ))}
               </div>

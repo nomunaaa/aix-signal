@@ -7,15 +7,11 @@ import {
 import type { ProofQualityPeriod } from './symbolQuality';
 
 function proofPeriodToSignalPeriod(period: ProofQualityPeriod): SignalDatePeriod {
-  if (period === 'last30d') return '30d';
-  if (period === 'last3mo') return '90d';
-  return 'all';
+  return period === 'last30d' ? '30d' : '90d';
 }
 
 function signalPeriodToProofPeriod(period: SignalDatePeriod): ProofQualityPeriod {
-  if (period === '30d') return 'last30d';
-  if (period === '90d') return 'last3mo';
-  return 'all';
+  return period === '30d' ? 'last30d' : 'last3mo';
 }
 
 export function ProofToolbar({

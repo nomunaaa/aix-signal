@@ -1,6 +1,6 @@
 import type { ProofCycleStatsSlice, ProofSymbolStatsRow } from '@/lib/mock/proof-mock';
 
-export type ProofQualityPeriod = 'last30d' | 'last3mo' | 'all';
+export type ProofQualityPeriod = 'last30d' | 'last3mo';
 
 function meetsQualityThresholds(
   slice: ProofCycleStatsSlice,
@@ -19,9 +19,7 @@ function qualitySliceForPeriod(
   row: ProofSymbolStatsRow,
   period: ProofQualityPeriod
 ): ProofCycleStatsSlice {
-  if (period === 'last30d') return row.recent30Combined;
-  if (period === 'last3mo') return row.recent3moCombined;
-  return row.combined;
+  return period === 'last30d' ? row.recent30Combined : row.recent3moCombined;
 }
 
 /** Keep a symbol only when the selected period satisfies both quality thresholds. */

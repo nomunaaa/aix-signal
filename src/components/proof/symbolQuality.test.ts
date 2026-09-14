@@ -40,7 +40,6 @@ describe('proof symbol quality filter', () => {
   it('filters against only the selected period', () => {
     expect(meetsQualityThresholdsForPeriod(row(), 60, 1, 'last30d')).toBe(false);
     expect(meetsQualityThresholdsForPeriod(row(), 60, 1, 'last3mo')).toBe(true);
-    expect(meetsQualityThresholdsForPeriod(row(), 60, 1, 'all')).toBe(true);
   });
 
   it('requires win rate and P/L ratio to pass in the same period', () => {
@@ -50,7 +49,6 @@ describe('proof symbol quality filter', () => {
     });
 
     expect(meetsQualityThresholdsForPeriod(mixedPeriods, 60, 1, 'last3mo')).toBe(false);
-    expect(meetsQualityThresholdsForPeriod(mixedPeriods, 60, 1, 'all')).toBe(false);
   });
 
   it('does not treat a missing P/L ratio as a qualifying zero', () => {
@@ -58,8 +56,6 @@ describe('proof symbol quality filter', () => {
       recent3moDiscounted: slice({ winRate: 0.7, winLossRatio: null }),
       discounted: slice({ winRate: 0.7, winLossRatio: null }),
     });
-
-    expect(meetsQualityThresholdsForPeriod(missingRatios, 60, 0, 'all')).toBe(false);
   });
 
   it('returns the same qualifying symbol set used by the pinned aggregate', () => {

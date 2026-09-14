@@ -196,15 +196,6 @@ function defaultHistoryFilter(
   const exactDateFromIso = normalizeIsoTimestamp(exactRange?.fromIso);
   const exactDateToIso = normalizeIsoTimestamp(exactRange?.toIso);
 
-  if (period === 'all') {
-    return {
-      ...INITIAL_FILTER,
-      symbol,
-      exactDateFromIso,
-      exactDateToIso,
-    };
-  }
-
   const end = exactDateToIso ? new Date(exactDateToIso) : new Date();
   const start = exactDateFromIso ? new Date(exactDateFromIso) : new Date(end);
   if (!exactDateFromIso) {

@@ -82,7 +82,7 @@ const BASE_COLUMN_IDS = new Set([
   'pnlPercent',
 ]);
 
-export type SignalDatePeriod = '30d' | '90d' | 'all';
+export type SignalDatePeriod = '30d' | '90d';
 
 interface TableControlBarProps {
   /** Active table/section ID for column picker context */
@@ -199,16 +199,10 @@ export function TableControlBar({
       ? language === 'ko'
         ? '3개월'
         : '3mo'
-      : datePeriod === 'all'
-        ? language === 'ko'
-          ? '누적'
-          : 'All'
-        : language === 'ko'
-          ? '30일'
-          : '30d';
-  const mobileFilterSummary = datePeriod
-    ? `${streamSummary} · ${periodSummary}`
-    : streamSummary;
+      : language === 'ko'
+        ? '30일'
+        : '30d';
+  const mobileFilterSummary = datePeriod ? `${streamSummary} · ${periodSummary}` : streamSummary;
 
   const sectionId = activeTableId ?? 'default';
   const sectionOverrides = sectionColumnVisibility[sectionId] ?? {};
@@ -349,7 +343,6 @@ export function TableControlBar({
           </button>
         )}
       </div>
-
 
       {/* ── 모바일(<sm) 필터 진입점 ──────────────────────────────────────────
           375px에서 이 바의 컨트롤 5그룹을 flex-wrap으로 늘어놓으면 제각각 너비로
@@ -561,7 +554,7 @@ export function TableControlBar({
           <Select
             value={datePeriod}
             onValueChange={(value) => {
-              if (value === '30d' || value === '90d' || value === 'all') {
+              if (value === '30d' || value === '90d') {
                 onDatePeriodChange(value);
               }
             }}
@@ -576,7 +569,6 @@ export function TableControlBar({
               <SelectItem value="90d">
                 {language === 'ko' ? '최근 3개월' : 'Last 3 months'}
               </SelectItem>
-              <SelectItem value="all">{language === 'ko' ? '누적' : 'All time'}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -827,8 +819,8 @@ export function TableControlBar({
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
                   {language === 'ko' ? '기간' : 'Period'}
                 </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['30d', '90d', 'all'] as SignalDatePeriod[]).map((period) => (
+                <div className="grid grid-cols-2 gap-2">
+                  {(['30d', '90d'] as SignalDatePeriod[]).map((period) => (
                     <button
                       key={period}
                       type="button"
@@ -844,13 +836,9 @@ export function TableControlBar({
                         ? language === 'ko'
                           ? '최근 30일'
                           : 'Last 30d'
-                        : period === '90d'
-                          ? language === 'ko'
-                            ? '최근 3개월'
-                            : 'Last 3mo'
-                          : language === 'ko'
-                            ? '누적'
-                            : 'All time'}
+                        : language === 'ko'
+                          ? '최근 3개월'
+                          : 'Last 3mo'}
                     </button>
                   ))}
                 </div>
@@ -963,18 +951,17 @@ export function TableControlBar({
                 <RadioGroup
                   value={datePeriod}
                   onValueChange={(value) => {
-                    if (value === '30d' || value === '90d' || value === 'all') {
+                    if (value === '30d' || value === '90d') {
                       onDatePeriodChange(value);
                     }
                   }}
-                  className="grid grid-cols-3 gap-2"
+                  className="grid grid-cols-2 gap-2"
                   aria-label={language === 'ko' ? '히스토리 기간' : 'History date range'}
                 >
                   {(
                     [
                       ['30d', language === 'ko' ? '최근 30일' : '30D'],
                       ['90d', language === 'ko' ? '최근 3개월' : '3M'],
-                      ['all', language === 'ko' ? '누적' : 'All'],
                     ] as const
                   ).map(([value, label]) => (
                     <label
