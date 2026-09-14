@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowUp, ArrowUpDown, Filter, Search, Star } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -69,7 +69,20 @@ type TrendFrontLanguage = 'ko' | 'en';
 type TrendClass = 'trend' | 'counter' | 'nontrend';
 type VolatilityDot = 1 | 2 | 3;
 type TrendQualityPeriod = 'last30d' | 'last3mo';
-type SymbolSortDirection = 'asc' | 'desc' | null;
+type TrendTableSortKey =
+  | 'symbol'
+  | 'pulseWinRate'
+  | 'pulseRiskReward'
+  | 'pulseElapsed'
+  | 'waveWinRate'
+  | 'waveRiskReward'
+  | 'waveElapsed'
+  | 'point';
+type TrendTableSortDirection = 'asc' | 'desc';
+type TrendTableSort = {
+  key: TrendTableSortKey;
+  direction: TrendTableSortDirection;
+};
 
 type SignalQualityMetrics = {
   winRatePct: number | null;
@@ -119,6 +132,10 @@ type RankedTrendViewRow = {
   qualityMatched: boolean;
   winRatePct: number;
   riskRewardRatio: number;
+  pulseWinRatePct: number;
+  pulseRiskRewardRatio: number;
+  waveWinRatePct: number;
+  waveRiskRewardRatio: number;
 };
 
 type GroupedRankedTrendViewRow = RankedTrendViewRow & {
@@ -305,15 +322,15 @@ function symbolPairLabel(symbol: string): string {
   return symbol.endsWith('USDT') ? `${base}/USDT` : symbol;
 }
 
-function SortableTrendSymbolHeader({
+function SortableTrendHeader({
   label,
   count,
   direction,
   onClick,
 }: {
-  label: string;
-  count: number;
-  direction: SymbolSortDirection;
+  label: ReactNode;
+  count?: number;
+  direction: TrendTableSortDirection | null;
   onClick: () => void;
 }) {
   const Icon = direction === 'asc' ? ArrowUp : direction === 'desc' ? ArrowDown : ArrowUpDown;
@@ -323,10 +340,11 @@ function SortableTrendSymbolHeader({
       type="button"
       className="trend-front-sortable-head"
       onClick={onClick}
-      aria-label={`${label} sort`}
+      aria-label="Sort table column"
     >
       <span>
-        {label}({count})
+        {label}
+        {count != null ? `(${count})` : null}
       </span>
       <Icon className={!direction ? 'trend-front-sortable-head-muted' : undefined} aria-hidden />
     </button>
@@ -1482,8 +1500,7 @@ function bestRowQuality(
   const matched = qualities.filter((quality) =>
     qualityMatchesThreshold(quality, winRateThreshold, riskRewardThreshold)
   );
-  const candidates = matched.length > 0 ? matched : qualities;
-  const best = bestSignalQuality(candidates);
+  const best = bestSignalQuality(qualities);
 
   return {
     qualityMatched: matched.length > 0,
@@ -1559,30 +1576,45 @@ function signalCycleForCategory(
   return cycles.find((cycle) => signalCycleCategory(cycle) === category) ?? null;
 }
 
-function compareRankedTrendRows(a: RankedTrendViewRow, b: RankedTrendViewRow): number {
-  if (a.qualityMatched !== b.qualityMatched) return a.qualityMatched ? -1 : 1;
+function compareRankedTrendRows(
+  a: RankedTrendViewRow,
+  b: RankedTrendViewRow,
+  sort: TrendTableSort
+): number {
+  const multiplier = sort.direction === 'asc' ? 1 : -1;
+  const symbolDelta = baseSymbol(a.row.symbol).localeCompare(baseSymbol(b.row.symbol));
+  const numericDelta = (left: number, right: number) => left - right;
+  const pulseElapsedA = a.row.pulse.elapsedSec ?? Number.POSITIVE_INFINITY;
+  const pulseElapsedB = b.row.pulse.elapsedSec ?? Number.POSITIVE_INFINITY;
+  const waveElapsedA = a.row.wave.elapsedSec ?? Number.POSITIVE_INFINITY;
+  const waveElapsedB = b.row.wave.elapsedSec ?? Number.POSITIVE_INFINITY;
+  const primaryDelta =
+    sort.key === 'symbol'
+      ? symbolDelta
+      : sort.key === 'pulseWinRate'
+        ? numericDelta(a.pulseWinRatePct, b.pulseWinRatePct)
+        : sort.key === 'pulseRiskReward'
+          ? numericDelta(a.pulseRiskRewardRatio, b.pulseRiskRewardRatio)
+          : sort.key === 'pulseElapsed'
+            ? numericDelta(pulseElapsedA, pulseElapsedB)
+            : sort.key === 'waveWinRate'
+              ? numericDelta(a.waveWinRatePct, b.waveWinRatePct)
+              : sort.key === 'waveRiskReward'
+                ? numericDelta(a.waveRiskRewardRatio, b.waveRiskRewardRatio)
+                : sort.key === 'waveElapsed'
+                  ? numericDelta(waveElapsedA, waveElapsedB)
+                  : numericDelta(a.row.sortPoint, b.row.sortPoint);
+  if (primaryDelta !== 0) return primaryDelta * multiplier;
 
   const pointDelta = b.row.sortPoint - a.row.sortPoint;
   if (pointDelta !== 0) return pointDelta;
-
-  const signalDelta = b.row.signalOpenCount - a.row.signalOpenCount;
-  if (signalDelta !== 0) return signalDelta;
-
-  const winRateDelta = b.winRatePct - a.winRatePct;
-  if (winRateDelta !== 0) return winRateDelta;
-
-  const riskRewardDelta = b.riskRewardRatio - a.riskRewardRatio;
-  if (riskRewardDelta !== 0) return riskRewardDelta;
-
-  const symbolDelta = baseSymbol(a.row.symbol).localeCompare(baseSymbol(b.row.symbol));
   if (symbolDelta !== 0) return symbolDelta;
-
   return categorySortIndex(a.row.tradingCategory) - categorySortIndex(b.row.tradingCategory);
 }
 
 function groupRankedRowsBySymbol(
   rows: readonly RankedTrendViewRow[],
-  symbolSortDirection: SymbolSortDirection = null
+  sort: TrendTableSort
 ): GroupedRankedTrendViewRow[] {
   const groups = new Map<string, RankedTrendViewRow[]>();
   for (const ranked of rows) {
@@ -1592,20 +1624,12 @@ function groupRankedRowsBySymbol(
   }
 
   return [...groups.values()]
-    .map((group) => [...group].sort(compareRankedTrendRows))
+    .map((group) => [...group].sort((a, b) => compareRankedTrendRows(a, b, sort)))
     .sort((a, b) => {
       const firstA = a[0];
       const firstB = b[0];
       if (!firstA || !firstB) return a.length - b.length;
-      if (symbolSortDirection) {
-        const symbolDelta = baseSymbol(firstA.row.symbol).localeCompare(
-          baseSymbol(firstB.row.symbol)
-        );
-        if (symbolDelta !== 0) {
-          return symbolSortDirection === 'asc' ? symbolDelta : -symbolDelta;
-        }
-      }
-      return compareRankedTrendRows(firstA, firstB);
+      return compareRankedTrendRows(firstA, firstB, sort);
     })
     .flatMap((group) =>
       group.map((ranked, index) => ({
@@ -1626,7 +1650,7 @@ function _trendFilterLabels(
 
 export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps) {
   const [renderTick, setRenderTick] = useState(() => Date.now());
-  const [symbolSortDirection, setSymbolSortDirection] = useState<SymbolSortDirection>(null);
+  const [tableSort, setTableSort] = useState<TrendTableSort>({ key: 'point', direction: 'desc' });
   const storedWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const storedRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
   const winRateThreshold = Math.max(35, storedWinRateThreshold);
@@ -1675,8 +1699,17 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
   const setWinRateThreshold = usePulseStore((state) => state.setQualityWinRateThreshold);
   const setRiskRewardThreshold = usePulseStore((state) => state.setQualityRiskRewardThreshold);
   const setQualityPeriod = usePulseStore((state) => state.setQualityPeriod);
-  const toggleSymbolSort = useCallback(() => {
-    setSymbolSortDirection((current) => (current === 'asc' ? 'desc' : 'asc'));
+  const toggleTableSort = useCallback((key: TrendTableSortKey) => {
+    setTableSort((current) => {
+      if (current.key === key) {
+        return { key, direction: current.direction === 'asc' ? 'desc' : 'asc' };
+      }
+      return {
+        key,
+        direction:
+          key === 'symbol' || key === 'pulseElapsed' || key === 'waveElapsed' ? 'asc' : 'desc',
+      };
+    });
   }, []);
 
   const pulseSourceRows = useMock ? trendV8PageMock.symbols : livePulseBoard.rows;
@@ -1778,24 +1811,42 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
   const rankedDisplayRows = useMemo(
     () =>
       groupRankedRowsBySymbol(
-        displayRows.map((row): RankedTrendViewRow => ({
-          row,
-          ...bestRowQuality(
+        displayRows.map((row): RankedTrendViewRow => {
+          const pulseQuality = displayQualityForView(
             row,
+            'pulse',
             qualityPeriod,
-            winRateThreshold,
-            riskRewardThreshold,
             qualityFilterContext
-          ),
-        })),
-        symbolSortDirection
+          );
+          const waveQuality = displayQualityForView(
+            row,
+            'wave',
+            qualityPeriod,
+            qualityFilterContext
+          );
+          return {
+            row,
+            ...bestRowQuality(
+              row,
+              qualityPeriod,
+              winRateThreshold,
+              riskRewardThreshold,
+              qualityFilterContext
+            ),
+            pulseWinRatePct: pulseQuality?.winRatePct ?? -1,
+            pulseRiskRewardRatio: pulseQuality?.riskRewardRatio ?? -1,
+            waveWinRatePct: waveQuality?.winRatePct ?? -1,
+            waveRiskRewardRatio: waveQuality?.riskRewardRatio ?? -1,
+          };
+        }),
+        tableSort
       ),
     [
       displayRows,
       qualityFilterContext,
       qualityPeriod,
       riskRewardThreshold,
-      symbolSortDirection,
+      tableSort,
       winRateThreshold,
     ]
   );
@@ -1887,11 +1938,15 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
             <colgroup>
               <col className="trend-front-col-symbol" />
               <col className="trend-front-col-signal" />
+              <col className="trend-front-col-quality" />
+              <col className="trend-front-col-quality" />
               <col className="trend-front-col-elapsed" />
+              <col className="trend-front-col-trend" />
+              <col className="trend-front-col-trend" />
               <col className="trend-front-col-signal" />
+              <col className="trend-front-col-quality" />
+              <col className="trend-front-col-quality" />
               <col className="trend-front-col-elapsed" />
-              <col className="trend-front-col-trend" />
-              <col className="trend-front-col-trend" />
               <col className="trend-front-col-trend" />
               <col className="trend-front-col-trend" />
               <col className="trend-front-col-point" />
@@ -1899,36 +1954,124 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
             <thead>
               <tr>
                 <th
-                  aria-sort={
-                    symbolSortDirection === 'asc'
-                      ? 'ascending'
-                      : symbolSortDirection === 'desc'
-                        ? 'descending'
-                        : 'none'
-                  }
+                  rowSpan={2}
+                  aria-sort={tableSort.key === 'symbol' ? `${tableSort.direction}ending` : 'none'}
                 >
-                  <SortableTrendSymbolHeader
+                  <SortableTrendHeader
                     label={trendTableHeader('symbol', activeLanguage)}
                     count={visibleSymbolCount}
-                    direction={symbolSortDirection}
-                    onClick={toggleSymbolSort}
+                    direction={tableSort.key === 'symbol' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('symbol')}
                   />
                 </th>
-                <th>{trendTableHeader('pulse', activeLanguage)}</th>
-                <th>{trendTableHeader('pulseElapsed', activeLanguage)}</th>
-                <th>{trendTableHeader('wave', activeLanguage)}</th>
-                <th>{trendTableHeader('waveElapsed', activeLanguage)}</th>
-                <th>{trendTableHeader('pulseShortTrend', activeLanguage)}</th>
-                <th>{trendTableHeader('pulseLongTrend', activeLanguage)}</th>
-                <th>{trendTableHeader('waveShortTrend', activeLanguage)}</th>
-                <th>{trendTableHeader('waveLongTrend', activeLanguage)}</th>
-                <th>{trendTableHeader('point', activeLanguage)}</th>
+                <th colSpan={6} className="trend-front-stream-head trend-front-stream-head-pulse">
+                  {trendTableHeader('pulse', activeLanguage)}
+                </th>
+                <th colSpan={6} className="trend-front-stream-head trend-front-stream-head-wave">
+                  {trendTableHeader('wave', activeLanguage)}
+                </th>
+                <th
+                  rowSpan={2}
+                  aria-sort={tableSort.key === 'point' ? `${tableSort.direction}ending` : 'none'}
+                >
+                  <SortableTrendHeader
+                    label={trendTableHeader('point', activeLanguage)}
+                    direction={tableSort.key === 'point' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('point')}
+                  />
+                </th>
+              </tr>
+              <tr>
+                <th>Signal</th>
+                <th
+                  aria-sort={
+                    tableSort.key === 'pulseWinRate' ? `${tableSort.direction}ending` : 'none'
+                  }
+                >
+                  <SortableTrendHeader
+                    label="Win Rate"
+                    direction={tableSort.key === 'pulseWinRate' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('pulseWinRate')}
+                  />
+                </th>
+                <th
+                  aria-sort={
+                    tableSort.key === 'pulseRiskReward' ? `${tableSort.direction}ending` : 'none'
+                  }
+                >
+                  <SortableTrendHeader
+                    label={
+                      <>
+                        Risk
+                        <br />
+                        Reward
+                      </>
+                    }
+                    direction={tableSort.key === 'pulseRiskReward' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('pulseRiskReward')}
+                  />
+                </th>
+                <th
+                  aria-sort={
+                    tableSort.key === 'pulseElapsed' ? `${tableSort.direction}ending` : 'none'
+                  }
+                >
+                  <SortableTrendHeader
+                    label="Elapsed"
+                    direction={tableSort.key === 'pulseElapsed' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('pulseElapsed')}
+                  />
+                </th>
+                <th>Short trend</th>
+                <th>Long trend</th>
+                <th>Signal</th>
+                <th
+                  aria-sort={
+                    tableSort.key === 'waveWinRate' ? `${tableSort.direction}ending` : 'none'
+                  }
+                >
+                  <SortableTrendHeader
+                    label="Win Rate"
+                    direction={tableSort.key === 'waveWinRate' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('waveWinRate')}
+                  />
+                </th>
+                <th
+                  aria-sort={
+                    tableSort.key === 'waveRiskReward' ? `${tableSort.direction}ending` : 'none'
+                  }
+                >
+                  <SortableTrendHeader
+                    label={
+                      <>
+                        Risk
+                        <br />
+                        Reward
+                      </>
+                    }
+                    direction={tableSort.key === 'waveRiskReward' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('waveRiskReward')}
+                  />
+                </th>
+                <th
+                  aria-sort={
+                    tableSort.key === 'waveElapsed' ? `${tableSort.direction}ending` : 'none'
+                  }
+                >
+                  <SortableTrendHeader
+                    label="Elapsed"
+                    direction={tableSort.key === 'waveElapsed' ? tableSort.direction : null}
+                    onClick={() => toggleTableSort('waveElapsed')}
+                  />
+                </th>
+                <th>Short trend</th>
+                <th>Long trend</th>
               </tr>
             </thead>
             <tbody>
               {isSymbolLocked ? (
                 <tr>
-                  <td colSpan={10}>
+                  <td colSpan={14}>
                     <div className="trend-front-empty">
                       <p>{copy.upgradeTitle}</p>
                       <span>{copy.upgradeDescription}</span>
@@ -1937,13 +2080,13 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                 </tr>
               ) : showLoading ? (
                 <tr>
-                  <td colSpan={10} aria-busy="true">
+                  <td colSpan={14} aria-busy="true">
                     <div className="trend-front-loading" />
                   </td>
                 </tr>
               ) : rankedDisplayRows.length === 0 ? (
                 <tr>
-                  <td colSpan={10}>
+                  <td colSpan={14}>
                     <div className="trend-front-empty">
                       <p>{copy.emptyRows}</p>
                     </div>
@@ -2059,13 +2202,18 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                           <StreamSignalBadge
                             view={viewRow.pulse}
                             language={activeLanguage}
-                            quality={pulseQuality}
                             muted={pulseMuted}
                             onClick={() =>
                               handleNavigateSignalBoard('pulse', viewRow.pulse.tradingCategory)
                             }
                           />
                         </div>
+                      </td>
+                      <td className={cn(pulseQualityMatched && 'trend-front-cell-quality-match')}>
+                        {formatWinRatePct(pulseQuality?.winRatePct ?? null)}
+                      </td>
+                      <td className={cn(pulseQualityMatched && 'trend-front-cell-quality-match')}>
+                        {formatRiskRewardRatio(pulseQuality?.riskRewardRatio ?? null)}
                       </td>
                       <td
                         className={cn(
@@ -2074,27 +2222,6 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                         )}
                       >
                         {formatElapsed(viewRow.pulse.elapsedSec, activeLanguage)}
-                      </td>
-                      <td className={cn(waveQualityMatched && 'trend-front-cell-quality-match')}>
-                        <div className="trend-front-signal-cell">
-                          <StreamSignalBadge
-                            view={viewRow.wave}
-                            language={activeLanguage}
-                            quality={waveQuality}
-                            muted={waveMuted}
-                            onClick={() =>
-                              handleNavigateSignalBoard('wave', viewRow.wave.tradingCategory)
-                            }
-                          />
-                        </div>
-                      </td>
-                      <td
-                        className={cn(
-                          'trend-front-muted',
-                          waveQualityMatched && 'trend-front-cell-quality-match'
-                        )}
-                      >
-                        {formatElapsed(viewRow.wave.elapsedSec, activeLanguage)}
                       </td>
                       {isFirstInSymbolGroup ? (
                         <>
@@ -2116,6 +2243,36 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
                           >
                             {trendValueLabel(viewRow.pulse.longTrend, activeLanguage)}
                           </td>
+                        </>
+                      ) : null}
+                      <td className={cn(waveQualityMatched && 'trend-front-cell-quality-match')}>
+                        <div className="trend-front-signal-cell">
+                          <StreamSignalBadge
+                            view={viewRow.wave}
+                            language={activeLanguage}
+                            muted={waveMuted}
+                            onClick={() =>
+                              handleNavigateSignalBoard('wave', viewRow.wave.tradingCategory)
+                            }
+                          />
+                        </div>
+                      </td>
+                      <td className={cn(waveQualityMatched && 'trend-front-cell-quality-match')}>
+                        {formatWinRatePct(waveQuality?.winRatePct ?? null)}
+                      </td>
+                      <td className={cn(waveQualityMatched && 'trend-front-cell-quality-match')}>
+                        {formatRiskRewardRatio(waveQuality?.riskRewardRatio ?? null)}
+                      </td>
+                      <td
+                        className={cn(
+                          'trend-front-muted',
+                          waveQualityMatched && 'trend-front-cell-quality-match'
+                        )}
+                      >
+                        {formatElapsed(viewRow.wave.elapsedSec, activeLanguage)}
+                      </td>
+                      {isFirstInSymbolGroup ? (
+                        <>
                           <td
                             rowSpan={symbolGroupSize}
                             className={cn(
@@ -2243,12 +2400,13 @@ const TREND_FRONT_STYLES = `
   .trend-front-error { color: var(--tf-red); }
   .trend-front-tbl-wrap { overflow-x: auto; border: 1px solid var(--tf-border); border-radius: 12px; background: var(--tf-panel); }
   table.trend-front-dt { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12.5px; min-width: 1180px; }
-  .trend-front-col-symbol { width: 12%; }
+  .trend-front-col-symbol { width: 11%; }
   .trend-front-col-strategy { width: 6%; }
-  .trend-front-col-signal { width: 15%; }
+  .trend-front-col-signal { width: 10%; }
   .trend-front-col-elapsed { width: 4.5%; }
-  .trend-front-col-trend { width: 7.5%; }
-  .trend-front-col-point { width: 7%; }
+  .trend-front-col-quality { width: 6%; }
+  .trend-front-col-trend { width: 7%; }
+  .trend-front-col-point { width: 6%; }
   .trend-front-dt th, .trend-front-dt td { padding: 9px 8px; border-bottom: 1px solid var(--tf-border); text-align: center; vertical-align: middle; }
   .trend-front-dt thead th { background: var(--tf-head); color: var(--tf-muted); font-weight: 600; white-space: normal; line-height: 1.2; }
   .trend-front-sortable-head { display: inline-flex; width: 100%; min-width: 0; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: inherit; cursor: pointer; }
