@@ -27,7 +27,7 @@
  * grid, so the sizing stays uniform.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Plus, SlidersHorizontal, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -50,8 +50,14 @@ import { SimulatorSettingsPanel } from '@/components/chart-workspace/SimulatorSe
 import { MockTradeEntryPanel } from '@/components/chart-workspace/MockTradeEntryPanel';
 import { MockTradePositionCard } from '@/components/chart-workspace/MockTradePositionCard';
 import { MockTradeHelp } from '@/components/chart-workspace/MockTradeHelp';
+import { MockPositionsTable } from '@/components/chart-workspace/MockPositionsTable';
 import { useSharedSimulationInput } from '@/hooks/useSharedSimulationInput';
+import { useMockTradePositions } from '@/hooks/useMockTradePositions';
+import { useOtherPositionPrices } from '@/hooks/useOtherPositionPrices';
+import { useAuth } from '@/contexts/AuthContext';
 import { mockMarginFromPct } from '@/lib/mockTradeCapital';
+import { closeMyPosition } from '@/lib/my/close-position';
+import { toast } from '@/hooks/use-toast';
 import type { ChartTradingCategoryFilter, ChartTrendMode } from '@/views/Multiplecharts/types';
 
 const DEFAULT_SYMBOLS = VOLUME_TOP5_SYMBOLS.slice(0, 4);
@@ -156,6 +162,69 @@ export default function MultiChartGrid() {
     selectedSnapshot.mockOpen &&
     selectedSnapshot.mockPhase === 'exit' &&
     !selectedSnapshot.mockExitLocked;
+
+  // 진입/종료 포지션 목록은 특정 타일이 아니라 로그인 사용자 전체 기준(다른 페이지에서
+  // 연 포지션 포함) — 타일 mock 상태가 바뀔 때마다(진입/청산/추가진입) 다시 불러온다.
+  const { user } = useAuth();
+  const isAuthenticated = !!user;
+  const mockRefreshKey = useMemo(
+    () =>
+      tiles
+        .map((t) => {
+          const s = mockSnapshots[t.id];
+          return `${t.id}:${s?.mockOpen}:${s?.mockPhase}:${s?.mockExitLocked}:${s?.remainingPct}`;
+        })
+        .join('|'),
+    [tiles, mockSnapshots]
+  );
+  const mockPositions = useMockTradePositions(isAuthenticated, mockRefreshKey);
+
+  // 열려 있는 타일과 같은 종목이면 그 타일의 실시간가를 그대로 쓰고, 타일로 안 열려
+  // 있는 종목만 별도로 시세를 폴링한다(/chart1m의 otherPositionSymbols와 동일한 패턴).
+  const tileLivePriceBySymbol = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const tile of tiles) {
+      const snap = mockSnapshots[tile.id];
+      if (snap?.lastPrice != null) map[tile.symbol.trim().toUpperCase()] = snap.lastPrice;
+    }
+    return map;
+  }, [tiles, mockSnapshots]);
+  const otherPositionSymbols = useMemo(
+    () =>
+      Array.from(new Set(mockPositions.open.map((p) => p.symbol.trim().toUpperCase()))).filter(
+        (symbol) => !(symbol in tileLivePriceBySymbol)
+      ),
+    [mockPositions.open, tileLivePriceBySymbol]
+  );
+  const otherLivePrices = useOtherPositionPrices(otherPositionSymbols);
+  const livePriceMap = useMemo(
+    () => ({ ...otherLivePrices, ...tileLivePriceBySymbol }),
+    [otherLivePrices, tileLivePriceBySymbol]
+  );
+
+  const [closingAllMock, setClosingAllMock] = useState(false);
+  const handleCloseAllMockPositions = async () => {
+    if (closingAllMock || mockPositions.open.length === 0) return;
+    setClosingAllMock(true);
+    try {
+      await Promise.all(
+        mockPositions.open.map((p) =>
+          closeMyPosition(p.id, livePriceMap[p.symbol.trim().toUpperCase()] ?? p.entryPrice)
+        )
+      );
+      await mockPositions.reload();
+      toast({ description: '전체종목 청산 완료' });
+    } finally {
+      setClosingAllMock(false);
+    }
+  };
+
+  const handleMockPositionSymbolClick = (symbol: string) => {
+    const match = tiles.find(
+      (t) => t.symbol.trim().toUpperCase() === symbol.trim().toUpperCase()
+    );
+    if (match) setSelectedId(match.id);
+  };
 
   /** 공통 컨트롤 — 데스크톱 인라인과 모바일 시트가 같은 소스를 쓴다. */
   const streamSelect = (
@@ -421,6 +490,25 @@ export default function MultiChartGrid() {
                   }
                 />
               )}
+
+              <MockPositionsTable
+                title="진입 중인 모의매매 포지션"
+                hint="청산 시 아래 종료 내역에 순차 기록됩니다."
+                rows={mockPositions.open}
+                emptyLabel="진입 중인 포지션이 없습니다."
+                livePrices={livePriceMap}
+                onSymbolClick={handleMockPositionSymbolClick}
+                activeSymbol={selectedSnapshot.symbol}
+                onCloseAll={handleCloseAllMockPositions}
+                closingAll={closingAllMock}
+              />
+              <MockPositionsTable
+                title="종료된 모의매매 포지션"
+                hint="최근 종료 순으로 기록됩니다."
+                rows={mockPositions.closed}
+                emptyLabel="종료된 포지션이 없습니다."
+                onSymbolClick={handleMockPositionSymbolClick}
+              />
 
               <MockTradeHelp />
             </>
