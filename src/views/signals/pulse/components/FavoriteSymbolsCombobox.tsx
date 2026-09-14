@@ -1,28 +1,36 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Check, ChevronsUpDown, Search, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { sortFavoritesFirst } from '@/lib/favorite-symbol-order';
+import { keepElementInPlace } from '@/lib/keepElementInPlace';
 import { usePulseStore } from '../stores/pulseStore';
 import { usePulseCopy } from '../utils/pulseTranslations';
 
 interface FavoriteSymbolsComboboxProps {
   readonly symbols: readonly string[];
   readonly className?: string;
+  readonly onSelectAll?: () => void;
 }
 
 function normalizeSymbols(symbols: readonly string[]): string[] {
   return Array.from(new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)));
 }
 
-export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsComboboxProps) {
-  const { language } = usePulseCopy();
+export function FavoriteSymbolsCombobox({
+  symbols,
+  className,
+  onSelectAll,
+}: FavoriteSymbolsComboboxProps) {
+  const { language, copy } = usePulseCopy();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const favorites = usePulseStore((s) => s.favorites);
   const toggleFavorite = usePulseStore((s) => s.toggleFavorite);
+  const setShowFavoritesOnly = usePulseStore((s) => s.setShowFavoritesOnly);
   // 즐겨찾기 스코프(FavoriteScopeControls)가 '즐겨찾기'일 때만 이 버튼도 같이 노란색으로
   // 강조한다 — '전체(종목)'일 때는 즐겨찾기 개수와 무관하게 항상 빈 별 아이콘으로 보인다.
   const showFavoritesOnly = usePulseStore((s) => s.showFavoritesOnly);
@@ -40,9 +48,7 @@ export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsC
     // 클로저에 잡힌 favorites가 아니라 store의 최신 값을 읽는다 — 닫자마자 다시 열어
     // 리렌더가 끼어들지 않은 경우에도 방금 토글한 즐겨찾기가 반영되도록.
     if (next) {
-      setOrderedSymbols(
-        sortFavoritesFirst(normalizedSymbols, usePulseStore.getState().favorites)
-      );
+      setOrderedSymbols(sortFavoritesFirst(normalizedSymbols, usePulseStore.getState().favorites));
     }
     setOpen(next);
   };
@@ -63,6 +69,7 @@ export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsC
   );
   const highlighted = showFavoritesOnly;
   const favoritesLabel = language === 'ko' ? '즐겨찾기' : 'Favorites';
+  const scopeLabel = showFavoritesOnly ? favoritesLabel : copy.tableControls.allSymbols;
   const searchLabel = language === 'ko' ? '즐겨찾기 종목 검색' : 'Search favorite symbols';
   const emptyLabel = language === 'ko' ? '종목 없음' : 'No symbols';
 
@@ -70,6 +77,7 @@ export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsC
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           type="button"
           variant="outline"
           className={cn(
@@ -79,7 +87,7 @@ export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsC
               : 'text-muted-foreground hover:bg-muted/40',
             className
           )}
-          aria-label={favoritesLabel}
+          aria-label={scopeLabel}
           aria-expanded={open}
           role="combobox"
         >
@@ -88,7 +96,7 @@ export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsC
               className={cn('h-3.5 w-3.5 shrink-0', highlighted && 'fill-current')}
               aria-hidden
             />
-            <span className="truncate">{favoritesLabel}</span>
+            <span className="truncate">{scopeLabel}</span>
             <span className="font-mono text-[11px] text-muted-foreground">
               {favoriteCount}/{normalizedSymbols.length}
             </span>
@@ -99,6 +107,40 @@ export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsC
 
       <PopoverContent align="start" className="w-[min(100vw-2rem,18rem)] p-2">
         <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-1" role="group" aria-label={favoritesLabel}>
+            <button
+              type="button"
+              onClick={() => {
+                keepElementInPlace(triggerRef.current);
+                setShowFavoritesOnly(false);
+                onSelectAll?.();
+              }}
+              className={cn(
+                'h-8 rounded-md px-2 text-xs font-medium transition-colors',
+                !showFavoritesOnly
+                  ? 'bg-primary/10 text-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              {copy.tableControls.allSymbols}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                keepElementInPlace(triggerRef.current);
+                setShowFavoritesOnly(true);
+              }}
+              className={cn(
+                'h-8 rounded-md px-2 text-xs font-medium transition-colors',
+                showFavoritesOnly
+                  ? 'bg-yellow-400/12 text-yellow-700 dark:text-yellow-300'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+              )}
+            >
+              {favoritesLabel}
+            </button>
+          </div>
+          <div className="border-t border-border" role="separator" />
           <div className="relative">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -110,11 +152,7 @@ export function FavoriteSymbolsCombobox({ symbols, className }: FavoriteSymbolsC
             />
           </div>
 
-          <div
-            className="max-h-72 overflow-y-auto pr-1"
-            role="listbox"
-            aria-label={favoritesLabel}
-          >
+          <div className="max-h-72 overflow-y-auto pr-1" role="listbox" aria-label={favoritesLabel}>
             {filteredSymbols.length > 0 ? (
               filteredSymbols.map((symbol) => {
                 const selected = favorites.has(symbol);
