@@ -1319,7 +1319,7 @@ const Chart10m: React.FC = () => {
           <div className="hidden md:flex items-center pointer-events-auto">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
-                차트 :
+                시그널 :
               </span>
               <ChartIntervalSelect active="10m" />
               <ChartSymbolSelect

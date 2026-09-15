@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ALL_SYMBOLS, VOLUME_TOP5_SYMBOLS } from '@/config/symbols';
+import { ChartSymbolSelect } from '@/components/chart/chart-symbol-select';
 import {
   MultiChartTile,
   MULTICHART_TF_KEYS,
@@ -229,7 +230,7 @@ export default function MultiChartGrid() {
   /** 공통 컨트롤 — 데스크톱 인라인과 모바일 시트가 같은 소스를 쓴다. */
   const streamSelect = (
     <Select value={barInterval} onValueChange={setBarInterval}>
-      <SelectTrigger className="h-8 w-full text-xs sm:h-7 sm:w-[116px]">
+      <SelectTrigger className="h-8 w-[92px] shrink-0 text-xs">
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -265,12 +266,7 @@ export default function MultiChartGrid() {
           </span>
         </button>
 
-        {/* 데스크톱: 인라인 컨트롤 */}
-        <label className="hidden items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-          차트
-          {streamSelect}
-        </label>
-
+        {/* 데스크톱: 인라인 컨트롤 — Pulse/Wave는 이제 타일마다 종목 검색 옆에 있다. */}
         <div className="hidden items-center gap-1 rounded-md border border-border bg-card/50 p-0.5 sm:flex">
           {MULTICHART_TF_KEYS.map((tf) => (
             <button
@@ -311,11 +307,6 @@ export default function MultiChartGrid() {
           </SheetHeader>
 
           <div className="mt-4 space-y-4">
-            <div>
-              <p className="mb-1.5 text-xs font-medium text-muted-foreground">차트</p>
-              {streamSelect}
-            </div>
-
             <div>
               <p className="mb-1.5 text-xs font-medium text-muted-foreground">기간</p>
               <div className="grid grid-cols-4 gap-2">
@@ -372,18 +363,13 @@ export default function MultiChartGrid() {
               className="flex h-[360px] flex-col rounded-lg border border-border bg-card p-2"
             >
               <div className="flex shrink-0 items-center gap-1.5">
-                <Select value={tile.symbol} onValueChange={(v) => setSymbolFor(tile.id, v)}>
-                  <SelectTrigger className="h-8 w-full text-xs">
-                    <SelectValue>{tile.symbol}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ALL_SYMBOLS.map((s) => (
-                      <SelectItem key={s} value={s} className="text-xs">
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ChartSymbolSelect
+                  symbols={ALL_SYMBOLS}
+                  value={tile.symbol}
+                  onValueChange={(v) => setSymbolFor(tile.id, v)}
+                  className="w-full flex-1"
+                />
+                {streamSelect}
                 {tiles.length > MIN_TILES ? (
                   <button
                     type="button"
