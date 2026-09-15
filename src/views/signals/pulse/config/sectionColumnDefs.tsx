@@ -28,7 +28,6 @@ import {
   getFreshness,
   formatMinutesSince,
 } from '../utils/formatters';
-import { tradingCategoryColor } from '../utils/tradingCategoryVisuals';
 import type { TradingCategory } from '@/lib/trading-category';
 import {
   formatPrice as formatPriceBase,
@@ -82,6 +81,11 @@ import {
 } from './waitingExtendedRenderers';
 import { calculateOpenSignalPnl } from '../utils/historyPnl';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
+import {
+  optionIdForSignal,
+  SIGNAL_OPTION_BADGE_CLASS,
+  signalOptionTone,
+} from '../utils/streamSelector';
 
 // ─── Shared Row Types ────────────────────────────────────────────────
 
@@ -347,7 +351,6 @@ export function SymbolWithIconRenderer(params: ICellRendererParams) {
   if (!data) return null;
   const pairLabel = formatSymbolPair(data.symbol);
   const baseLabel = pairLabel.endsWith('/USDT') ? pairLabel.slice(0, -5) : pairLabel;
-  const categoryColor = tradingCategoryColor(data.tradingCategory);
   return (
     <div className="flex w-full min-w-0 items-center justify-start gap-1">
       <CoinIcon symbol={data.symbol} size={16} className="shrink-0" />
@@ -357,14 +360,6 @@ export function SymbolWithIconRenderer(params: ICellRendererParams) {
       >
         {baseLabel}
       </span>
-      {categoryColor ? (
-        <span
-          className="h-2 w-2 shrink-0 rounded-full"
-          style={{ backgroundColor: categoryColor }}
-          title={String(data.tradingCategory)}
-          aria-label={String(data.tradingCategory)}
-        />
-      ) : null}
     </div>
   );
 }
@@ -1004,12 +999,19 @@ export function StreamConfidenceRenderer(params: ICellRendererParams) {
 export function SignalStreamRenderer(params: ICellRendererParams) {
   const data = params.data as Partial<OpenRowData> | undefined;
   const stream = data?.stream ?? (data?._raw?.barinterval === '10m' ? 'wave' : 'pulse');
-  const label = stream === 'wave' ? 'Wave' : 'Pulse';
+  const trendMode = data?._raw
+    ? resolveSignalTrendModeFromEntryTrends({
+        direction: data._raw.direction,
+        shortTrend: data._raw.entryTrendShort,
+        longTrend: data._raw.entryTrendLong,
+      })
+    : null;
+  const label = trendMode ? optionIdForSignal(stream, trendMode) : stream === 'wave' ? 'W' : 'P';
   return (
     <span
       className={cn(
-        'inline-flex max-w-full items-center justify-center truncate text-xs font-semibold leading-none',
-        stream === 'wave' ? 'text-sky-300' : 'text-primary'
+        'inline-flex max-w-full items-center justify-center rounded px-1.5 py-0.5 text-xs font-semibold leading-none text-white',
+        SIGNAL_OPTION_BADGE_CLASS[signalOptionTone(label)]
       )}
       title={label}
     >

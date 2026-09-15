@@ -6,6 +6,7 @@ import type {
   ClosedSignal,
   HistoryQueryState,
   SignalStreamId,
+  SignalStreamOptionFilter,
   SignalTrendMode,
   SignalTrendModeFilter,
 } from '../types/pulse.types';
@@ -27,6 +28,7 @@ type UseClosedSignalHistoryPageOptions = {
   symbols: readonly string[];
   streamFilter: StreamFilterState;
   trendModeFilter: SignalTrendModeFilter;
+  streamOptionFilter?: SignalStreamOptionFilter;
   tradingCategories: readonly TradingCategory[];
   queryState: HistoryQueryState | null;
   searchQuery: string;
@@ -118,11 +120,41 @@ export function postgrestTrendModeOrFilter(trendModeFilter: SignalTrendModeFilte
   return clauses.length > 0 ? clauses.join(',') : null;
 }
 
+export function postgrestStreamOptionOrFilter(
+  optionFilter: SignalStreamOptionFilter
+): string | null {
+  const clauses: string[] = [];
+  const options = [
+    ['P1', '1m', 'reversal'],
+    ['P2', '1m', 'trend'],
+    ['P3', '1m', 'nonTrend'],
+    ['W1', '10m', 'reversal'],
+    ['W2', '10m', 'trend'],
+    ['W3', '10m', 'nonTrend'],
+  ] as const;
+
+  for (const [optionId, barinterval, mode] of options) {
+    if (!optionFilter[optionId]) continue;
+    for (const pair of HISTORY_TREND_MODE_PAIRS[mode]) {
+      const shortTrendFilter =
+        pair.shortTrend === 'NEUTRAL'
+          ? 'or(entry_trend_short.eq.NEUTRAL,entry_trend_short.is.null)'
+          : `entry_trend_short.eq.${pair.shortTrend}`;
+      clauses.push(
+        `and(barinterval.eq.${barinterval},entry_trend_long.eq.${pair.longTrend},${shortTrendFilter})`
+      );
+    }
+  }
+
+  return clauses.length > 0 ? clauses.join(',') : null;
+}
+
 export function useClosedSignalHistoryPage({
   enabled,
   symbols,
   streamFilter,
   trendModeFilter,
+  streamOptionFilter,
   tradingCategories,
   queryState,
   searchQuery,
@@ -141,6 +173,7 @@ export function useClosedSignalHistoryPage({
   const trendModeKey = `${trendModeFilter.trend ? 'trend' : ''}|${
     trendModeFilter.nonTrend ? 'nonTrend' : ''
   }|${trendModeFilter.reversal ? 'reversal' : ''}`;
+  const streamOptionKey = streamOptionFilter ? JSON.stringify(streamOptionFilter) : '';
 
   const fetchAll = useCallback(
     async (queryState: HistoryQueryState): Promise<ClosedSignal[]> => {
@@ -153,7 +186,9 @@ export function useClosedSignalHistoryPage({
       const selectedCategories = TRADING_CATEGORY_ORDER.filter((category) =>
         tradingCategories.includes(category)
       );
-      const trendModeOrFilter = postgrestTrendModeOrFilter(trendModeFilter);
+      const trendModeOrFilter = streamOptionFilter
+        ? postgrestStreamOptionOrFilter(streamOptionFilter)
+        : postgrestTrendModeOrFilter(trendModeFilter);
       const scopedSymbols = queryState.showFavoritesOnly
         ? normalizedSymbols.filter((symbol) => normalizedFavorites.has(symbol))
         : normalizedSymbols;
@@ -225,6 +260,7 @@ export function useClosedSignalHistoryPage({
       symbolsKey,
       tradingCategories,
       trendModeFilter,
+      streamOptionKey,
     ]
   );
 
@@ -240,7 +276,9 @@ export function useClosedSignalHistoryPage({
     const selectedCategories = TRADING_CATEGORY_ORDER.filter((category) =>
       tradingCategories.includes(category)
     );
-    const trendModeOrFilter = postgrestTrendModeOrFilter(trendModeFilter);
+    const trendModeOrFilter = streamOptionFilter
+      ? postgrestStreamOptionOrFilter(streamOptionFilter)
+      : postgrestTrendModeOrFilter(trendModeFilter);
 
     if (
       !enabled ||
@@ -375,6 +413,7 @@ export function useClosedSignalHistoryPage({
     streamFilter.pulse,
     streamFilter.wave,
     streamKey,
+    streamOptionKey,
     symbolsKey,
     trendModeFilter,
     trendModeKey,

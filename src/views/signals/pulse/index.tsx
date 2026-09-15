@@ -262,7 +262,7 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
     minWinRate: qualityWinRateThreshold,
     minRiskReward: qualityRiskRewardThreshold,
   });
-  // Open signals are governed by the client scope (E2X2 + entry-snapshot Reversal).
+  // Open signals are governed by the E2X2 scope; stream/trend pairs are selected in the board.
   // Historical WR/RR qualification is still used by History, but must not hide a
   // valid live cycle merely because the symbol has insufficient proof history.
   const { filtered: filteredOpen, showDiscount, showLocked } = useSignalFilter(openWithLivePrices);

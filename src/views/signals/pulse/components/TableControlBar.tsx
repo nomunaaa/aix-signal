@@ -38,6 +38,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ColumnPicker, type ColumnConfig } from './ColumnPicker';
 import { FavoriteScopeControls } from './FavoriteScopeControls';
 import { SimulationEditorBody } from './SimulationEditorBody';
+import { StreamSelector } from './StreamSelector';
 import { useSimulation } from '../hooks/useSimulation';
 import { formatSimulationUsd } from '../utils/formatSimulationSummary';
 import { COLUMN_LABELS } from '../config/columnLabels';
@@ -112,6 +113,8 @@ interface TableControlBarProps {
   favoriteSymbols?: readonly string[];
   streamWinRates?: Partial<Record<SignalStreamId, number>>;
   simulationHistorySignals?: ClosedSignal[];
+  /** Enables the P1-P3/B1-B3/W1-W3 selector on /signals. */
+  useStreamOptionSelector?: boolean;
 }
 
 function parseCombinedFilterValue(v: string): {
@@ -147,6 +150,7 @@ export function TableControlBar({
   favoriteSymbols = [],
   streamWinRates = {},
   simulationHistorySignals,
+  useStreamOptionSelector = false,
 }: TableControlBarProps) {
   const { language, copy } = usePulseCopy();
   const searchQuery = usePulseStore((s) => s.searchQuery);
@@ -165,6 +169,7 @@ export function TableControlBar({
   const toggleSectionColumn = usePulseStore((s) => s.toggleSectionColumn);
   const signalStateFilter = usePulseStore((s) => s.signalStateFilter);
   const setSignalStateFilter = usePulseStore((s) => s.setSignalStateFilter);
+  const streamOptionFilter = usePulseStore((s) => s.streamOptionFilter);
   const streamFilter = usePulseStore((s) => s.streamFilter);
   const toggleStreamFilter = usePulseStore((s) => s.toggleStreamFilter);
   const qualityWinRateThreshold = usePulseStore((s) => s.qualityWinRateThreshold);
@@ -185,15 +190,15 @@ export function TableControlBar({
   }, [lastUpdate]);
 
   /** 모바일 요약 버튼 라벨 — 현재 스트림과 기간을 한 줄로 압축해 보여준다. */
-  const activeStreams = (['pulse', 'wave'] as SignalStreamId[]).filter((st) => streamFilter[st]);
-  const streamSummary =
-    activeStreams.length === 2
-      ? 'PULSE+WAVE'
-      : activeStreams.length === 1
-        ? activeStreams[0].toUpperCase()
-        : language === 'ko'
-          ? '스트림 없음'
-          : 'No stream';
+  const streamSummary = useStreamOptionSelector
+    ? Object.entries(streamOptionFilter)
+        .filter(([, selected]) => selected)
+        .map(([id]) => id)
+        .join('+')
+    : (['pulse', 'wave'] as SignalStreamId[])
+        .filter((stream) => streamFilter[stream])
+        .map((stream) => stream.toUpperCase())
+        .join('+');
   const periodSummary =
     datePeriod === '90d'
       ? language === 'ko'
@@ -507,46 +512,31 @@ export function TableControlBar({
           (이 그룹은 375px에서 520px를 차지해 화면 밖으로 잘렸다: shrink-0라 줄바꿈도 안 된다.) */}
       <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
         <FavoriteScopeControls symbols={favoriteSymbols} />
-        <div
-          className="flex min-w-[10rem] shrink-0 items-stretch gap-0 overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5"
-          role="group"
-          aria-label="Pulse Wave filter"
-        >
-          {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
-            <button
-              key={stream}
-              type="button"
-              onClick={() => toggleStreamFilter(stream)}
-              role="checkbox"
-              aria-checked={streamFilter[stream]}
-              className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold leading-none tracking-wide transition-colors hover:bg-muted/35 active:bg-muted/50"
-            >
-              <span
+        {useStreamOptionSelector ? (
+          <StreamSelector />
+        ) : (
+          <div className="flex overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5">
+            {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
+              <button
+                key={stream}
+                type="button"
+                onClick={() => toggleStreamFilter(stream)}
+                aria-pressed={streamFilter[stream]}
                 className={cn(
-                  'flex h-4 w-4 shrink-0 items-center justify-center rounded-[5px] border transition-colors',
-                  streamFilter[stream]
-                    ? 'border-foreground bg-foreground text-background shadow-sm'
-                    : 'border-muted-foreground/55 bg-background text-transparent'
+                  'px-2.5 py-1.5 text-xs font-semibold',
+                  streamFilter[stream] ? 'bg-foreground text-background' : 'text-muted-foreground'
                 )}
               >
-                ✓
-              </span>
-              <span
-                className={cn(
-                  'whitespace-nowrap',
-                  streamFilter[stream] ? 'text-foreground' : 'text-muted-foreground'
-                )}
-              >
-                {stream === 'pulse' ? 'PULSE' : 'WAVE'}
-              </span>
-              <span className="ml-1 whitespace-nowrap font-mono text-[11px] font-semibold text-muted-foreground">
-                {typeof streamWinRates[stream] === 'number'
-                  ? `${streamWinRates[stream]!.toFixed(0)}%`
-                  : '—'}
-              </span>
-            </button>
-          ))}
-        </div>
+                {stream.toUpperCase()}
+                <span className="ml-1 font-mono text-[10px] opacity-70">
+                  {typeof streamWinRates[stream] === 'number'
+                    ? `${streamWinRates[stream]!.toFixed(0)}%`
+                    : '—'}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {datePeriod && onDatePeriodChange ? (
@@ -776,32 +766,33 @@ export function TableControlBar({
               <p className="mb-2 text-xs font-medium text-muted-foreground">
                 {language === 'ko' ? '스트림' : 'Stream'}
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => {
-                  const on = streamFilter[stream];
-                  const rate = streamWinRates[stream];
-                  return (
+              {useStreamOptionSelector ? (
+                <StreamSelector className="w-full" />
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
                     <button
                       key={stream}
                       type="button"
                       onClick={() => toggleStreamFilter(stream)}
-                      role="checkbox"
-                      aria-checked={on}
+                      aria-pressed={streamFilter[stream]}
                       className={cn(
-                        'flex h-11 items-center justify-center gap-1.5 rounded-md border text-xs font-semibold transition-colors',
-                        on
+                        'h-11 rounded-md border text-xs font-semibold',
+                        streamFilter[stream]
                           ? 'border-primary/50 bg-primary/10 text-foreground'
-                          : 'border-border bg-muted/30 text-muted-foreground'
+                          : 'border-border text-muted-foreground'
                       )}
                     >
-                      {stream === 'pulse' ? 'PULSE' : 'WAVE'}
-                      <span className="font-mono text-[11px] text-muted-foreground">
-                        {typeof rate === 'number' ? `${rate.toFixed(0)}%` : '—'}
+                      {stream.toUpperCase()}
+                      <span className="ml-1 font-mono text-[10px] opacity-70">
+                        {typeof streamWinRates[stream] === 'number'
+                          ? `${streamWinRates[stream]!.toFixed(0)}%`
+                          : '—'}
                       </span>
                     </button>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>

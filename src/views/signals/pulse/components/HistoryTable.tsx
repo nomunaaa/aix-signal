@@ -90,7 +90,12 @@ import {
   type PulseLanguage,
 } from '../utils/pulseTranslations';
 import { usePulseStore } from '../stores/pulseStore';
-import { tradingCategoryColor } from '../utils/tradingCategoryVisuals';
+import {
+  optionIdForSignal,
+  SIGNAL_OPTION_BADGE_CLASS,
+  signalOptionTone,
+} from '../utils/streamSelector';
+import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
 import {
   dateInputEndExclusiveMs,
   dateInputStartMs,
@@ -440,26 +445,25 @@ function SymbolRenderer(params: ICellRendererParams<ClosedSignal>) {
 function StreamBadgeRenderer(params: ICellRendererParams<ClosedSignal>) {
   if (!params.data) return null;
   const isWave = params.data.barinterval === '10m';
-  const categoryColor = tradingCategoryColor(params.data.tradingCategory);
+  const trendMode = resolveSignalTrendModeFromEntryTrends({
+    direction: params.data.direction,
+    shortTrend: params.data.entryTrendShort,
+    longTrend: params.data.entryTrendLong,
+  });
+  const streamCode = trendMode
+    ? optionIdForSignal(isWave ? 'wave' : 'pulse', trendMode)
+    : isWave
+      ? 'W'
+      : 'P';
   return (
-    <span className="flex items-center gap-1.5">
-      <span
-        className={cn(
-          'inline-flex h-4 items-center justify-center rounded px-1 text-[10px] font-semibold leading-none',
-          isWave ? 'bg-purple-500/15 text-purple-400' : 'bg-cyan-500/15 text-cyan-400'
-        )}
-        title={isWave ? 'Wave' : 'Pulse'}
-      >
-        {isWave ? 'W' : 'P'}
-      </span>
-      {categoryColor ? (
-        <span
-          className="h-2 w-2 rounded-full"
-          style={{ backgroundColor: categoryColor }}
-          title={params.data.tradingCategory}
-          aria-label={params.data.tradingCategory}
-        />
-      ) : null}
+    <span
+      className={cn(
+        'inline-flex h-5 items-center justify-center rounded px-1.5 text-[10px] font-semibold leading-none text-white',
+        SIGNAL_OPTION_BADGE_CLASS[signalOptionTone(streamCode)]
+      )}
+      title={isWave ? 'Wave' : 'Pulse'}
+    >
+      {streamCode}
     </span>
   );
 }
@@ -663,7 +667,7 @@ const HISTORY_COLUMN_DEFS: ColDef<ClosedSignal>[] = [
   },
   {
     field: 'direction',
-    headerName: 'Stream',
+    headerName: '시그널',
     colId: 'histStream',
     width: 76,
     minWidth: 76,

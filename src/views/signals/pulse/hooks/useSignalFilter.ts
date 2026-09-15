@@ -1,15 +1,8 @@
 import { useMemo } from 'react';
 import { usePulseStore } from '../stores/pulseStore';
 import { sortSignals } from '../utils/strategyEngine';
-import {
-  STRATEGY_CONFIGS,
-  type Signal,
-  type StrategyId,
-} from '../types/pulse.types';
-import {
-  isAllSignalTrendModesSelected,
-  resolveSignalTrendModeFromEntryTrends,
-} from '@/lib/signal-trend-mode';
+import { STRATEGY_CONFIGS, type Signal, type StrategyId } from '../types/pulse.types';
+import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
 import {
   normalizeTradingCategory,
   TRADING_CATEGORY_ORDER,
@@ -26,7 +19,9 @@ function isAllTradingCategoriesSelected(filters: readonly TradingCategory[]): bo
 }
 
 function strategyHasFeature(strategyId: StrategyId, feature: 'discount' | 'locked'): boolean {
-  return STRATEGY_CONFIGS.find((strategy) => strategy.id === strategyId)?.features[feature] ?? false;
+  return (
+    STRATEGY_CONFIGS.find((strategy) => strategy.id === strategyId)?.features[feature] ?? false
+  );
 }
 
 function tradingCategoryHasFeature(
@@ -51,7 +46,6 @@ export function useSignalFilter<T extends Signal>(signals: T[]): UseSignalFilter
   const sortBy = usePulseStore((s) => s.sortBy);
   const sortDir = usePulseStore((s) => s.sortDir);
   const tableFilterPreset = usePulseStore((s) => s.tableFilterPreset);
-  const trendModeFilter = usePulseStore((s) => s.trendModeFilter);
   const tradingCategoryFilters = usePulseStore((s) => s.tradingCategoryFilters);
   const favorites = usePulseStore((s) => s.favorites);
   const showFavoritesOnly = usePulseStore((s) => s.showFavoritesOnly);
@@ -64,16 +58,9 @@ export function useSignalFilter<T extends Signal>(signals: T[]): UseSignalFilter
   );
 
   const filtered = useMemo(() => {
-    // Signal Board is intentionally scoped to the E2X2 reversal strategy only.
+    // Signal Board is scoped to E2X2; trend-mode selection is applied by the stream selector.
     let result = signals.filter((signal) => {
-      if (normalizeTradingCategory(signal.tradingCategory) !== 'E2X2') return false;
-      return (
-        resolveSignalTrendModeFromEntryTrends({
-          direction: signal.direction,
-          shortTrend: signal.entryTrendShort,
-          longTrend: signal.entryTrendLong,
-        }) === 'reversal'
-      );
+      return normalizeTradingCategory(signal.tradingCategory) === 'E2X2';
     });
 
     if (!isAllTradingCategoriesSelected(tradingCategoryFilters)) {
@@ -140,17 +127,6 @@ export function useSignalFilter<T extends Signal>(signals: T[]): UseSignalFilter
       result = result.filter((s) => s.direction === directionFilter);
     }
 
-    if (!isAllSignalTrendModesSelected(trendModeFilter)) {
-      result = result.filter((s) => {
-        const mode = resolveSignalTrendModeFromEntryTrends({
-          direction: s.direction,
-          shortTrend: s.entryTrendShort,
-          longTrend: s.entryTrendLong,
-        });
-        return mode == null ? false : trendModeFilter[mode];
-      });
-    }
-
     // 4. Temporal filter (TableFilterPreset)
     if (tableFilterPreset !== 'all') {
       const now = Date.now();
@@ -211,7 +187,6 @@ export function useSignalFilter<T extends Signal>(signals: T[]): UseSignalFilter
     sortDir,
     favorites,
     tableFilterPreset,
-    trendModeFilter,
     showFavoritesOnly,
   ]);
 
@@ -219,7 +194,6 @@ export function useSignalFilter<T extends Signal>(signals: T[]): UseSignalFilter
     filterPreset !== 'action',
     searchQuery.trim().length > 0,
     directionFilter !== 'all',
-    !isAllSignalTrendModesSelected(trendModeFilter),
     !isAllTradingCategoriesSelected(tradingCategoryFilters),
     tableFilterPreset !== 'all',
     showFavoritesOnly,

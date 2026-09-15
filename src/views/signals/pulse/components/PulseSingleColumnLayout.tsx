@@ -28,7 +28,6 @@ import {
   type FilterPresetId,
   type SignalStreamId,
   type SignalTrendMode,
-  type SignalTrendModeFilter,
   type HistoryQueryState,
 } from '../types/pulse.types';
 import { usePulseStore } from '../stores/pulseStore';
@@ -54,14 +53,13 @@ import {
   type OpenRowData,
 } from '../config/sectionColumnDefs';
 import { localizePulseColumnDefs, usePulseCopy } from '../utils/pulseTranslations';
+import {
+  baseStreamFilterFromOptions,
+  streamOptionMatchesSignal,
+  trendModeFilterFromOptions,
+} from '../utils/streamSelector';
 
-type StreamFilterState = Record<SignalStreamId, boolean>;
 const DEFAULT_HISTORY_PAGE_SIZE = 10;
-const E2X2_REVERSAL_TREND_FILTER: SignalTrendModeFilter = {
-  trend: false,
-  nonTrend: false,
-  reversal: true,
-};
 const E2X2_ONLY_CATEGORIES: TradingCategory[] = ['E2X2'];
 
 type SummaryBucketKey =
@@ -114,10 +112,6 @@ function streamFromOpenSignal(signal: OpenSignal): SignalStreamId {
 
 function streamFromClosedSignal(signal: ClosedSignal): SignalStreamId {
   return streamFromBarinterval(signal.barinterval);
-}
-
-function matchesStreamFilter(stream: SignalStreamId, filter: StreamFilterState): boolean {
-  return filter[stream];
 }
 
 function trendModeFromOpenSignal(signal: OpenSignal): SignalTrendMode | null {
@@ -278,10 +272,16 @@ export function PulseSingleColumnLayout({
   const sortBy = usePulseStore((s) => s.sortBy);
   const sortDir = usePulseStore((s) => s.sortDir);
   const favorites = usePulseStore((s) => s.favorites);
-  const streamFilter = usePulseStore((s) => s.streamFilter);
+  const streamOptionFilter = usePulseStore((s) => s.streamOptionFilter);
   const isSymbolLocked = allowedSymbols.length === 0;
-  const historyStreamFilter = streamFilter;
-  const historyTrendModeFilter = E2X2_REVERSAL_TREND_FILTER;
+  const historyStreamFilter = useMemo(
+    () => baseStreamFilterFromOptions(streamOptionFilter),
+    [streamOptionFilter]
+  );
+  const historyTrendModeFilter = useMemo(
+    () => trendModeFilterFromOptions(streamOptionFilter),
+    [streamOptionFilter]
+  );
   const historyTradingCategories = E2X2_ONLY_CATEGORIES;
   const effectiveHistoryDatePeriod = historyPeriodFromUrl ?? datePeriod;
   const qualityScopedSymbols = useMemo(
@@ -346,10 +346,13 @@ export function PulseSingleColumnLayout({
     () =>
       closedSignals.filter(
         (signal) =>
-          matchesStreamFilter(streamFromClosedSignal(signal), historyStreamFilter) &&
-          qualityQualifiedSymbols.has(favoriteSymbolKey(signal.symbol))
+          streamOptionMatchesSignal(
+            streamOptionFilter,
+            streamFromClosedSignal(signal),
+            trendModeFromClosedSignal(signal)
+          ) && qualityQualifiedSymbols.has(favoriteSymbolKey(signal.symbol))
       ),
-    [closedSignals, historyStreamFilter, qualityQualifiedSymbols]
+    [closedSignals, streamOptionFilter, qualityQualifiedSymbols]
   );
 
   const closedForActiveTradingCategories = useMemo(
@@ -360,12 +363,7 @@ export function PulseSingleColumnLayout({
     [closedForActiveStreams]
   );
 
-  const closedForActiveTrendModes = useMemo(() => {
-    return closedForActiveTradingCategories.filter((signal) => {
-      const mode = trendModeFromClosedSignal(signal);
-      return mode === 'reversal';
-    });
-  }, [closedForActiveTradingCategories]);
+  const closedForActiveTrendModes = closedForActiveTradingCategories;
 
   const closedForActivePeriod = useMemo(
     () =>
@@ -439,12 +437,14 @@ export function PulseSingleColumnLayout({
     !isSymbolLocked &&
     historyQueryState !== null &&
     !hasUnsupportedHistoryServerFilter &&
+    (historyStreamFilter.pulse || historyStreamFilter.wave) &&
     deferredHistorySymbols.length > 0;
   const serverHistoryPage = useClosedSignalHistoryPage({
     enabled: canUseHistoryServerPagination,
     symbols: deferredHistorySymbols,
     streamFilter: historyStreamFilter,
     trendModeFilter: historyTrendModeFilter,
+    streamOptionFilter,
     tradingCategories: historyTradingCategories,
     queryState: historyQueryState,
     searchQuery: debouncedSearchQuery,
@@ -479,8 +479,7 @@ export function PulseSingleColumnLayout({
     effectiveHistoryDatePeriod,
     historyFromIso,
     historyToIso,
-    historyStreamFilter.pulse,
-    historyStreamFilter.wave,
+    streamOptionFilter,
     historyTrendModeFilter.trend,
     historyTrendModeFilter.nonTrend,
     historyTrendModeFilter.reversal,
@@ -530,7 +529,13 @@ export function PulseSingleColumnLayout({
 
   const summaryRows = useMemo(() => {
     const rows = (openSignals as OpenSignal[])
-      .filter((signal) => matchesStreamFilter(streamFromOpenSignal(signal), streamFilter))
+      .filter((signal) =>
+        streamOptionMatchesSignal(
+          streamOptionFilter,
+          streamFromOpenSignal(signal),
+          trendModeFromOpenSignal(signal)
+        )
+      )
       .map((signal) => {
         const row = buildOpenRowData(signal, simulationInput);
         return {
@@ -545,7 +550,7 @@ export function PulseSingleColumnLayout({
     simulationInput.capitalRatio,
     simulationInput.leverage,
     sortFavFirst,
-    streamFilter,
+    streamOptionFilter,
   ]);
 
   const summaryBuckets = useMemo<SummaryBuckets>(() => {
@@ -808,6 +813,7 @@ export function PulseSingleColumnLayout({
               favoriteSymbols={favoriteSymbols}
               streamWinRates={streamWinRates}
               simulationHistorySignals={historySimulationSignals ?? sortedClosed}
+              useStreamOptionSelector
             />
           </div>
         </div>

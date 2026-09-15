@@ -13,6 +13,10 @@ export type StrategyId = 'oneshot' | 'safe' | 'deep' | 'full';
 /** 시그널 스트림 — 펄스(1m) / 웨이브(10m) */
 export type SignalStreamId = 'pulse' | 'wave';
 
+/** Signal Board stream + E2X2 trend-mode choices. Beat is UI-only until its feed is defined. */
+export type SignalStreamOptionId = 'P1' | 'P2' | 'P3' | 'B1' | 'B2' | 'B3' | 'W1' | 'W2' | 'W3';
+export type SignalStreamOptionFilter = Record<SignalStreamOptionId, boolean>;
+
 /** 게이트·요약 카드용 최근 30일 KPI (모킹 → 추후 API) */
 export interface GateKpi30d {
   winRate: number;
@@ -354,24 +358,11 @@ export interface TickerEvent {
 
 // Filter presets for signal table
 export type FilterPreset =
-  | 'action'
-  | 'new'
-  | 'discount'
-  | 'tp'
-  | 'nontrend'
-  | 'closed'
-  | 'favorites';
+  'action' | 'new' | 'discount' | 'tp' | 'nontrend' | 'closed' | 'favorites';
 
 /** Filter preset IDs for column configurations */
 export type FilterPresetId =
-  | 'active'
-  | 'new'
-  | 'discount'
-  | 'tp'
-  | 'nontrend_st'
-  | 'nontrend_lt'
-  | 'waiting'
-  | 'history';
+  'active' | 'new' | 'discount' | 'tp' | 'nontrend_st' | 'nontrend_lt' | 'waiting' | 'history';
 
 /** Temporal filter presets for TableControlBar */
 export type TableFilterPreset = 'all' | 'latest' | 'changing' | 'fixed';

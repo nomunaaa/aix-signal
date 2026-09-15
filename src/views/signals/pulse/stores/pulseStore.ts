@@ -9,6 +9,8 @@ import type {
   PulseSortBy,
   SignalStateFilter,
   SignalTrendModeFilter,
+  SignalStreamOptionFilter,
+  SignalStreamOptionId,
 } from '../types/pulse.types';
 import { readSignalsEntryCookie, writeSignalsEntryCookie } from '../utils/signalsEntryCookie';
 import { useStreamStore } from '@/stores/streamStore';
@@ -25,11 +27,16 @@ import {
   hasAnySignalTrendModeSelected,
   isAllSignalTrendModesSelected,
 } from '@/lib/signal-trend-mode';
+import {
+  DEFAULT_SIGNAL_STREAM_OPTION_FILTER,
+  SIGNAL_STREAM_OPTION_IDS,
+} from '../utils/streamSelector';
 
 const KAIROS_OPT_KEY = 'pulse:kairos-optimization';
 const FAVORITES_STORAGE_KEY = 'pulse:favorites';
 const FAVORITES_ONLY_STORAGE_KEY = 'pulse:show-favorites-only';
 const STREAM_FILTER_STORAGE_KEY = 'pulse:stream-filter';
+const STREAM_OPTION_FILTER_STORAGE_KEY = 'pulse:stream-option-filter';
 const TREND_MODE_FILTER_STORAGE_KEY = 'pulse:trend-mode-filter';
 const TRADING_CATEGORY_FILTERS_STORAGE_KEY = 'pulse:trading-category-filters';
 // Trend Board가 기존에 쓰던 키를 그대로 재사용 — 이미 저장된 사용자의 threshold 값이
@@ -91,6 +98,21 @@ function readStreamFilterFromStorage(): Record<SignalStreamId, boolean> {
     const pulse = parsed?.pulse === true;
     const wave = parsed?.wave === true;
     return pulse || wave ? { pulse, wave } : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function readStreamOptionFilterFromStorage(): SignalStreamOptionFilter {
+  const fallback = { ...DEFAULT_SIGNAL_STREAM_OPTION_FILTER };
+  const raw = readPulseStorageItem(STREAM_OPTION_FILTER_STORAGE_KEY);
+  if (!raw) return fallback;
+  try {
+    const parsed = JSON.parse(raw) as Partial<Record<SignalStreamOptionId, unknown>>;
+    const next = Object.fromEntries(
+      SIGNAL_STREAM_OPTION_IDS.map((id) => [id, parsed[id] === true])
+    ) as SignalStreamOptionFilter;
+    return SIGNAL_STREAM_OPTION_IDS.some((id) => next[id]) ? next : fallback;
   } catch {
     return fallback;
   }
@@ -226,6 +248,7 @@ export interface PulseStoreState {
   historyDatePeriod: HistoryDatePeriod;
   /** PULSE/WAVE 동시 다중선택 필터 — 즐겨찾기·시뮬레이터처럼 페이지 간 공유되는 소스 오브 트루스 */
   streamFilter: Record<SignalStreamId, boolean>;
+  streamOptionFilter: SignalStreamOptionFilter;
   sortBy: PulseSortBy;
   sortDir: 'asc' | 'desc';
   /** 테이블에서 즐겨찾기 심볼만 표시 */
@@ -262,6 +285,7 @@ export interface PulseStoreActions {
   toggleTradingCategoryFilter: (category: TradingCategory) => void;
   setTradingCategoryFilters: (categories: TradingCategory[]) => void;
   toggleStreamFilter: (stream: SignalStreamId) => void;
+  toggleStreamOptionFilter: (option: SignalStreamOptionId) => void;
   setSortBy: (sortBy: PulseSortBy) => void;
   setSortDir: (sortDir: 'asc' | 'desc') => void;
   setShowFavoritesOnly: (only: boolean) => void;
@@ -299,6 +323,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   tradingCategoryFilters: readTradingCategoryFiltersFromStorage(),
   historyDatePeriod: readHistoryDatePeriodFromStorage(),
   streamFilter: readStreamFilterFromStorage(),
+  streamOptionFilter: readStreamOptionFilterFromStorage(),
   sortBy: 'time',
   sortDir: 'desc',
   showFavoritesOnly: readBooleanFromStorage(FAVORITES_ONLY_STORAGE_KEY, false),
@@ -389,6 +414,16 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
       const nextFilter = { ...state.streamFilter, [stream]: next };
       writePulseStorageItem(STREAM_FILTER_STORAGE_KEY, JSON.stringify(nextFilter));
       return { streamFilter: nextFilter };
+    }),
+  toggleStreamOptionFilter: (option) =>
+    set((state) => {
+      const nextFilter = {
+        ...state.streamOptionFilter,
+        [option]: !state.streamOptionFilter[option],
+      };
+      if (!SIGNAL_STREAM_OPTION_IDS.some((id) => nextFilter[id])) return {};
+      writePulseStorageItem(STREAM_OPTION_FILTER_STORAGE_KEY, JSON.stringify(nextFilter));
+      return { streamOptionFilter: nextFilter };
     }),
   setSortBy: (sortBy) =>
     set({
