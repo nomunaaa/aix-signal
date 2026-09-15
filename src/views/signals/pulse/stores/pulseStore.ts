@@ -286,6 +286,7 @@ export interface PulseStoreActions {
   setTradingCategoryFilters: (categories: TradingCategory[]) => void;
   toggleStreamFilter: (stream: SignalStreamId) => void;
   toggleStreamOptionFilter: (option: SignalStreamOptionId) => void;
+  toggleStreamOptionGroup: (options: readonly SignalStreamOptionId[]) => void;
   setSortBy: (sortBy: PulseSortBy) => void;
   setSortDir: (sortDir: 'asc' | 'desc') => void;
   setShowFavoritesOnly: (only: boolean) => void;
@@ -421,7 +422,14 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         ...state.streamOptionFilter,
         [option]: !state.streamOptionFilter[option],
       };
-      if (!SIGNAL_STREAM_OPTION_IDS.some((id) => nextFilter[id])) return {};
+      writePulseStorageItem(STREAM_OPTION_FILTER_STORAGE_KEY, JSON.stringify(nextFilter));
+      return { streamOptionFilter: nextFilter };
+    }),
+  toggleStreamOptionGroup: (options) =>
+    set((state) => {
+      const nextFilter = { ...state.streamOptionFilter };
+      const allSelected = options.every((option) => state.streamOptionFilter[option]);
+      for (const option of options) nextFilter[option] = !allSelected;
       writePulseStorageItem(STREAM_OPTION_FILTER_STORAGE_KEY, JSON.stringify(nextFilter));
       return { streamOptionFilter: nextFilter };
     }),

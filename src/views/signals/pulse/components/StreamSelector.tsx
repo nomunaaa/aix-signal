@@ -9,6 +9,7 @@ import {
   signalOptionTone,
 } from '../utils/streamSelector';
 import { usePulseCopy } from '../utils/pulseTranslations';
+import { useNavigate } from '@/lib/navigation-compat';
 
 const GROUPS = [
   { name: 'Pulse', interval: '1m', options: ['P1', 'P2', 'P3'] as const, tone: 'red' },
@@ -39,8 +40,10 @@ const TONES = {
 
 export function StreamSelector({ className }: { className?: string }) {
   const { language } = usePulseCopy();
+  const navigate = useNavigate();
   const filter = usePulseStore((state) => state.streamOptionFilter);
   const toggle = usePulseStore((state) => state.toggleStreamOptionFilter);
+  const toggleGroup = usePulseStore((state) => state.toggleStreamOptionGroup);
   const selected = SIGNAL_STREAM_OPTION_IDS.filter((id) => filter[id]);
   const labels: Record<SignalStreamOptionId, string> =
     language === 'ko'
@@ -73,7 +76,7 @@ export function StreamSelector({ className }: { className?: string }) {
         <button
           type="button"
           className={cn(
-            'flex min-h-9 w-[16rem] items-center justify-between gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-left shadow-sm hover:bg-muted/30',
+            'flex min-h-9 w-[20rem] items-center justify-between gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5 text-left shadow-sm hover:bg-muted/30',
             className
           )}
           aria-label="Select signal streams"
@@ -96,7 +99,7 @@ export function StreamSelector({ className }: { className?: string }) {
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[min(36rem,calc(100vw-1rem))] p-2">
+      <PopoverContent align="start" className="w-[min(28rem,calc(100vw-1rem))] p-2">
         <div className="space-y-1">
           {GROUPS.map((group) => {
             const tone = TONES[group.tone];
@@ -108,22 +111,39 @@ export function StreamSelector({ className }: { className?: string }) {
                   tone.row
                 )}
               >
-                <span
+                {group.name === 'Beat' ? (
+                  <span
+                    className={cn(
+                      'flex h-8 items-center justify-center rounded border text-xs font-semibold',
+                      tone.interval
+                    )}
+                  >
+                    {group.interval}
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigate(group.name === 'Pulse' ? '/chart1m' : '/chart10m')}
+                    className={cn(
+                      'flex h-8 items-center justify-center rounded border text-xs font-semibold transition-opacity hover:opacity-75',
+                      tone.interval
+                    )}
+                    aria-label={`Open ${group.name} chart`}
+                  >
+                    {group.interval}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(group.options)}
                   className={cn(
-                    'flex h-8 items-center justify-center rounded border text-xs font-semibold',
-                    tone.interval
-                  )}
-                >
-                  {group.interval}
-                </span>
-                <span
-                  className={cn(
-                    'flex h-8 items-center justify-center rounded text-xs font-semibold',
+                    'flex h-8 items-center justify-center rounded text-xs font-semibold transition-opacity hover:opacity-80',
                     tone.name
                   )}
+                  aria-label={`Toggle all ${group.name} signals`}
                 >
                   {group.name}
-                </span>
+                </button>
                 <div className="grid min-w-0 grid-cols-3 gap-1.5">
                   {group.options.map((id) => (
                     <button
