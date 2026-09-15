@@ -14,7 +14,7 @@ import {
 } from './proofFormat';
 
 export function AssetSymbolCell({ symbol }: { symbol: string }) {
-  const label = formatSymbolPair(symbol);
+  const label = formatSymbolPair(symbol).replace(/\s*\/\s*USDT$/i, '');
 
   return (
     <div className="flex w-full min-w-0 items-center justify-start gap-1">

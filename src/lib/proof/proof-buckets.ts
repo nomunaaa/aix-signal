@@ -78,6 +78,11 @@ export interface ProofBuckets {
   bySymbolRecent3mo: Record<string, ProofBucketMap>;
 }
 
+export interface ProofStatsSelection {
+  stream: ProofStatsStream;
+  trendMode: ProofStatsTrendMode;
+}
+
 const RECENT_30D_MS = 30 * 86_400_000;
 
 function bucketKey(
@@ -449,9 +454,19 @@ function combinedAcc(
   map: ProofBucketMap,
   streams: readonly ProofStatsStream[],
   trendModes: readonly ProofStatsTrendMode[],
-  categoryKeys: readonly CategoryKey[]
+  categoryKeys: readonly CategoryKey[],
+  selections?: readonly ProofStatsSelection[]
 ): ProofBucketAccumulator {
   let acc = emptyAcc();
+  if (selections) {
+    for (const { stream, trendMode } of selections) {
+      for (const category of categoryKeys) {
+        const found = map[bucketKey(stream, trendMode, category)];
+        if (found) acc = mergeAcc(acc, found);
+      }
+    }
+    return acc;
+  }
   for (const stream of streams) {
     for (const mode of trendModes) {
       for (const category of categoryKeys) {
@@ -471,31 +486,56 @@ function finalizeSlice(
 
   const isDiscounted = variant === 'discounted';
   const isCombined = variant === 'combined';
-  const winCount = isCombined ? acc.winCount + acc.discWinCount : isDiscounted ? acc.discWinCount : acc.winCount;
-  const lossCount = isCombined ? acc.lossCount + acc.discLossCount : isDiscounted ? acc.discLossCount : acc.lossCount;
-  const winsRateSum =
-    isCombined
-      ? acc.winsPerEntryNotionalRateSum + acc.discWinsPerEntryNotionalRateSum
-      : isDiscounted
+  const winCount = isCombined
+    ? acc.winCount + acc.discWinCount
+    : isDiscounted
+      ? acc.discWinCount
+      : acc.winCount;
+  const lossCount = isCombined
+    ? acc.lossCount + acc.discLossCount
+    : isDiscounted
+      ? acc.discLossCount
+      : acc.lossCount;
+  const winsRateSum = isCombined
+    ? acc.winsPerEntryNotionalRateSum + acc.discWinsPerEntryNotionalRateSum
+    : isDiscounted
       ? acc.discWinsPerEntryNotionalRateSum
       : acc.winsPerEntryNotionalRateSum;
-  const lossesRateAbsSum =
-    isCombined
-      ? acc.lossesPerEntryNotionalRateAbsSum + acc.discLossesPerEntryNotionalRateAbsSum
-      : isDiscounted
+  const lossesRateAbsSum = isCombined
+    ? acc.lossesPerEntryNotionalRateAbsSum + acc.discLossesPerEntryNotionalRateAbsSum
+    : isDiscounted
       ? acc.discLossesPerEntryNotionalRateAbsSum
       : acc.lossesPerEntryNotionalRateAbsSum;
-  const pnlSum = isCombined ? acc.pnlSum + acc.discPnlSum : isDiscounted ? acc.discPnlSum : acc.pnlSum;
-  const pnlRateSum =
-    isCombined
-      ? acc.pnlPerEntryNotionalRateSum + acc.discPnlPerEntryNotionalRateSum
-      : isDiscounted ? acc.discPnlPerEntryNotionalRateSum : acc.pnlPerEntryNotionalRateSum;
-  const maxPnl = isCombined ? Math.max(acc.maxPnl, acc.discMaxPnl) : isDiscounted ? acc.discMaxPnl : acc.maxPnl;
-  const minPnl = isCombined ? Math.min(acc.minPnl, acc.discMinPnl) : isDiscounted ? acc.discMinPnl : acc.minPnl;
-  const maxPnlRate =
-    isCombined ? Math.max(acc.maxPnlPerEntryNotionalRate, acc.discMaxPnlPerEntryNotionalRate) : isDiscounted ? acc.discMaxPnlPerEntryNotionalRate : acc.maxPnlPerEntryNotionalRate;
-  const minPnlRate =
-    isCombined ? Math.min(acc.minPnlPerEntryNotionalRate, acc.discMinPnlPerEntryNotionalRate) : isDiscounted ? acc.discMinPnlPerEntryNotionalRate : acc.minPnlPerEntryNotionalRate;
+  const pnlSum = isCombined
+    ? acc.pnlSum + acc.discPnlSum
+    : isDiscounted
+      ? acc.discPnlSum
+      : acc.pnlSum;
+  const pnlRateSum = isCombined
+    ? acc.pnlPerEntryNotionalRateSum + acc.discPnlPerEntryNotionalRateSum
+    : isDiscounted
+      ? acc.discPnlPerEntryNotionalRateSum
+      : acc.pnlPerEntryNotionalRateSum;
+  const maxPnl = isCombined
+    ? Math.max(acc.maxPnl, acc.discMaxPnl)
+    : isDiscounted
+      ? acc.discMaxPnl
+      : acc.maxPnl;
+  const minPnl = isCombined
+    ? Math.min(acc.minPnl, acc.discMinPnl)
+    : isDiscounted
+      ? acc.discMinPnl
+      : acc.minPnl;
+  const maxPnlRate = isCombined
+    ? Math.max(acc.maxPnlPerEntryNotionalRate, acc.discMaxPnlPerEntryNotionalRate)
+    : isDiscounted
+      ? acc.discMaxPnlPerEntryNotionalRate
+      : acc.maxPnlPerEntryNotionalRate;
+  const minPnlRate = isCombined
+    ? Math.min(acc.minPnlPerEntryNotionalRate, acc.discMinPnlPerEntryNotionalRate)
+    : isDiscounted
+      ? acc.discMinPnlPerEntryNotionalRate
+      : acc.minPnlPerEntryNotionalRate;
   const avgWin = winCount > 0 ? winsRateSum / winCount : 0;
   const avgLossAbs = lossCount > 0 ? lossesRateAbsSum / lossCount : 0;
 
@@ -519,12 +559,19 @@ export function reconstructTotalStats(
   buckets: ProofBuckets,
   streams: readonly ProofStatsStream[],
   trendModes: readonly ProofStatsTrendMode[],
-  tradingCategories: readonly TradingCategory[]
+  tradingCategories: readonly TradingCategory[],
+  selections?: readonly ProofStatsSelection[]
 ): [ProofTotalStatsRow, ProofTotalStatsRow] {
   const categoryKeys = categoryKeysForSelection(tradingCategories);
-  const totalAcc = combinedAcc(buckets.total, streams, trendModes, categoryKeys);
-  const recent30Acc = combinedAcc(buckets.recent30, streams, trendModes, categoryKeys);
-  const recent3moAcc = combinedAcc(buckets.recent3mo, streams, trendModes, categoryKeys);
+  const totalAcc = combinedAcc(buckets.total, streams, trendModes, categoryKeys, selections);
+  const recent30Acc = combinedAcc(buckets.recent30, streams, trendModes, categoryKeys, selections);
+  const recent3moAcc = combinedAcc(
+    buckets.recent3mo,
+    streams,
+    trendModes,
+    categoryKeys,
+    selections
+  );
 
   return [
     {
@@ -550,7 +597,8 @@ export function reconstructTotalStatsForSymbols(
   symbols: readonly string[],
   streams: readonly ProofStatsStream[],
   trendModes: readonly ProofStatsTrendMode[],
-  tradingCategories: readonly TradingCategory[]
+  tradingCategories: readonly TradingCategory[],
+  selections?: readonly ProofStatsSelection[]
 ): [ProofTotalStatsRow, ProofTotalStatsRow] {
   const categoryKeys = categoryKeysForSelection(tradingCategories);
   let totalAcc = emptyAcc();
@@ -559,15 +607,33 @@ export function reconstructTotalStatsForSymbols(
   for (const symbol of symbols) {
     totalAcc = mergeAcc(
       totalAcc,
-      combinedAcc(buckets.bySymbolTotal[symbol] ?? {}, streams, trendModes, categoryKeys)
+      combinedAcc(
+        buckets.bySymbolTotal[symbol] ?? {},
+        streams,
+        trendModes,
+        categoryKeys,
+        selections
+      )
     );
     recent30Acc = mergeAcc(
       recent30Acc,
-      combinedAcc(buckets.bySymbolRecent30[symbol] ?? {}, streams, trendModes, categoryKeys)
+      combinedAcc(
+        buckets.bySymbolRecent30[symbol] ?? {},
+        streams,
+        trendModes,
+        categoryKeys,
+        selections
+      )
     );
     recent3moAcc = mergeAcc(
       recent3moAcc,
-      combinedAcc(buckets.bySymbolRecent3mo[symbol] ?? {}, streams, trendModes, categoryKeys)
+      combinedAcc(
+        buckets.bySymbolRecent3mo[symbol] ?? {},
+        streams,
+        trendModes,
+        categoryKeys,
+        selections
+      )
     );
   }
 
@@ -593,7 +659,8 @@ export function reconstructSymbolStats(
   buckets: ProofBuckets,
   streams: readonly ProofStatsStream[],
   trendModes: readonly ProofStatsTrendMode[],
-  tradingCategories: readonly TradingCategory[]
+  tradingCategories: readonly TradingCategory[],
+  selections?: readonly ProofStatsSelection[]
 ): ProofSymbolStatsRow[] {
   const categoryKeys = categoryKeysForSelection(tradingCategories);
   const symbols = new Set([
@@ -608,19 +675,22 @@ export function reconstructSymbolStats(
       buckets.bySymbolTotal[symbol] ?? {},
       streams,
       trendModes,
-      categoryKeys
+      categoryKeys,
+      selections
     );
     const recent30Acc = combinedAcc(
       buckets.bySymbolRecent30[symbol] ?? {},
       streams,
       trendModes,
-      categoryKeys
+      categoryKeys,
+      selections
     );
     const recent3moAcc = combinedAcc(
       buckets.bySymbolRecent3mo[symbol] ?? {},
       streams,
       trendModes,
-      categoryKeys
+      categoryKeys,
+      selections
     );
     if (totalAcc.count === 0 && recent30Acc.count === 0 && recent3moAcc.count === 0) continue;
 

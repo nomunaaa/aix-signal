@@ -21,7 +21,7 @@ export function ProofSimulatorCard({
   const [, discounted] = rows;
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
       <ExpectedReturnDashboard
         language={language}
         period={copy.simulator.basisRecent30}
@@ -34,6 +34,14 @@ export function ProofSimulatorCard({
         language={language}
         period={copy.simulator.basisRecent3mo}
         slice={discounted.recent3mo}
+        seed={seed}
+        entryRatio={entryRatio}
+        leverage={leverage}
+      />
+      <ExpectedReturnDashboard
+        language={language}
+        period={copy.simulator.basisTotal}
+        slice={discounted.total}
         seed={seed}
         entryRatio={entryRatio}
         leverage={leverage}

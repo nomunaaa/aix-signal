@@ -1,7 +1,15 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { formatWinRate } from '@/lib/proof/format-proof';
+import { emptyStatsSlice } from '@/lib/proof/proof-stats';
+import {
+  reconstructSymbolStats,
+  type ProofBuckets,
+  type ProofStatsSelection,
+} from '@/lib/proof/proof-buckets';
 import type {
   ProofStatsStream,
   ProofStatsTrendMode,
@@ -15,6 +23,11 @@ import { SortableTh, TableHeaderLabel, type SymbolStatsSortKey } from './Sortabl
 import { formatHoldSec, formatRatio, type ProofLanguage } from './proofFormat';
 import type { ProofCopy } from './proofCopy';
 import { meetsQualityThresholdsForPeriod, type ProofQualityPeriod } from './symbolQuality';
+import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
+import {
+  SIGNAL_OPTION_BADGE_CLASS,
+  signalOptionTone,
+} from '@/views/signals/pulse/utils/streamSelector';
 
 function symbolStatsSortValue(row: ProofSymbolStatsRow, key: SymbolStatsSortKey): number {
   if (key === 'symbol') return 0;
@@ -64,6 +77,92 @@ const METRIC_CELL_CLASS =
   'min-w-0 truncate px-1 py-3 text-right font-mono font-semibold tabular-nums text-foreground';
 const BORDERED_METRIC_CELL_CLASS = `${METRIC_CELL_CLASS} border-l border-border/60`;
 const VALUE_CELL_CLASS = 'min-w-0 px-1 py-3 text-right';
+const EMPTY_SLICE = emptyStatsSlice();
+const SIGNAL_CHILDREN: readonly {
+  id: SignalStreamOptionId;
+  selection?: ProofStatsSelection;
+}[] = [
+  { id: 'P1', selection: { stream: 'PULSE', trendMode: 'reversal' } },
+  { id: 'P2', selection: { stream: 'PULSE', trendMode: 'trend' } },
+  { id: 'P3', selection: { stream: 'PULSE', trendMode: 'nonTrend' } },
+  { id: 'B1' },
+  { id: 'B2' },
+  { id: 'B3' },
+  { id: 'W1', selection: { stream: 'WAVE', trendMode: 'reversal' } },
+  { id: 'W2', selection: { stream: 'WAVE', trendMode: 'trend' } },
+  { id: 'W3', selection: { stream: 'WAVE', trendMode: 'nonTrend' } },
+];
+
+function SymbolMetricCells({
+  row,
+  symbol,
+  seed,
+  entryRatio,
+  leverage,
+  streams,
+  trendModes,
+  tradingCategories,
+  signalOptions,
+  language,
+}: {
+  row?: ProofSymbolStatsRow;
+  symbol: string;
+  seed: number;
+  entryRatio: number;
+  leverage: number;
+  streams: readonly ProofStatsStream[];
+  trendModes: readonly ProofStatsTrendMode[];
+  tradingCategories: readonly TradingCategory[];
+  signalOptions: readonly SignalStreamOptionId[];
+  language: ProofLanguage;
+}) {
+  const periods = [
+    { period: '30d' as const, slice: row?.recent30Total ?? EMPTY_SLICE },
+    { period: '90d' as const, slice: row?.recent3moTotal ?? EMPTY_SLICE },
+    { period: 'all' as const, slice: row?.standard ?? EMPTY_SLICE },
+  ];
+
+  return periods.map(({ period, slice }) => {
+    const present = slice.cycleCount > 0;
+    return (
+      <Fragment key={period}>
+        <td className={BORDERED_METRIC_CELL_CLASS}>
+          <HistoryEntryCountLink
+            symbol={symbol}
+            count={slice.cycleCount}
+            period={period}
+            asOfIso={slice.asOfIso}
+            streams={streams}
+            trendModes={trendModes}
+            tradingCategories={tradingCategories}
+            signalOptions={signalOptions}
+          />
+        </td>
+        <td className={VALUE_CELL_CLASS}>
+          <HistoricalPctCell
+            slice={slice}
+            seed={seed}
+            entryRatio={entryRatio}
+            leverage={leverage}
+            tone="standard"
+          />
+        </td>
+        <td className={VALUE_CELL_CLASS}>
+          <HistoricalMoneyCell
+            slice={slice}
+            seed={seed}
+            entryRatio={entryRatio}
+            leverage={leverage}
+            tone="standard"
+          />
+        </td>
+        <td className={METRIC_CELL_CLASS}>{present ? formatWinRate(slice.winRate) : '—'}</td>
+        <td className={METRIC_CELL_CLASS}>{formatRatio(slice.winLossRatio, present)}</td>
+        <td className={METRIC_CELL_CLASS}>{formatHoldSec(slice.avgHoldSec, present, language)}</td>
+      </Fragment>
+    );
+  });
+}
 
 export function SymbolStatsSection({
   rows,
@@ -76,6 +175,8 @@ export function SymbolStatsSection({
   copy,
   language,
   qualityPeriod,
+  buckets,
+  selectedOptionIds,
 }: {
   rows: ProofSymbolStatsRow[];
   seed: number;
@@ -87,6 +188,8 @@ export function SymbolStatsSection({
   copy: ProofCopy;
   language: ProofLanguage;
   qualityPeriod: ProofQualityPeriod;
+  buckets: ProofBuckets;
+  selectedOptionIds: readonly SignalStreamOptionId[];
 }) {
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
@@ -94,6 +197,33 @@ export function SymbolStatsSection({
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
   const [sortKey, setSortKey] = useState<SymbolStatsSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [expandedSymbols, setExpandedSymbols] = useState<Set<string>>(() => new Set());
+  const childRowsByOption = useMemo(() => {
+    const result = new Map<SignalStreamOptionId, Map<string, ProofSymbolStatsRow>>();
+    for (const child of SIGNAL_CHILDREN) {
+      if (!child.selection) {
+        result.set(child.id, new Map());
+        continue;
+      }
+      const childRows = reconstructSymbolStats(
+        buckets,
+        [child.selection.stream],
+        [child.selection.trendMode],
+        tradingCategories,
+        [child.selection]
+      );
+      result.set(child.id, new Map(childRows.map((row) => [row.symbol, row])));
+    }
+    return result;
+  }, [buckets, tradingCategories]);
+  const toggleExpanded = (symbol: string) => {
+    setExpandedSymbols((current) => {
+      const next = new Set(current);
+      if (next.has(symbol)) next.delete(symbol);
+      else next.add(symbol);
+      return next;
+    });
+  };
   const handleSort = (key: SymbolStatsSortKey) => {
     if (sortKey === key) {
       setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'));
@@ -145,10 +275,16 @@ export function SymbolStatsSection({
         </h2>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full min-w-[1180px] table-fixed border-collapse text-xs xl:min-w-0">
+      <div className="rounded-lg border border-border bg-card">
+        <table className="w-full table-fixed border-collapse text-[10px] xl:text-xs">
           <colgroup>
             <col className="w-[9%]" />
+            <col className="w-[4.5%]" />
+            <col className="w-[5.5%]" />
+            <col className="w-[6%]" />
+            <col className="w-[4.5%]" />
+            <col className="w-[4.5%]" />
+            <col className="w-[5%]" />
             <col className="w-[4.5%]" />
             <col className="w-[5.5%]" />
             <col className="w-[6%]" />
@@ -172,6 +308,9 @@ export function SymbolStatsSection({
               </th>
               <th colSpan={6} className={`${GROUP_HEADER_CLASS} border-l border-border/60`}>
                 {copy.table.recent3mo}
+              </th>
+              <th colSpan={6} className={`${GROUP_HEADER_CLASS} border-l border-border/60`}>
+                {copy.table.cumulative}
               </th>
             </tr>
             <tr>
@@ -279,101 +418,139 @@ export function SymbolStatsSection({
                 onSort={handleSort}
                 className={METRIC_HEADER_CLASS}
               />
+              <SortableTh
+                label={copy.table.entries}
+                sortKey="total:entries"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+                className={BORDERED_METRIC_HEADER_CLASS}
+              />
+              <SortableTh
+                label={copy.table.accountReturn}
+                sortKey="total:pnl"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+                className={METRIC_HEADER_CLASS}
+              />
+              <SortableTh
+                label={copy.table.accountProfit}
+                sortKey="total:pnl"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+                className={METRIC_HEADER_CLASS}
+              />
+              <SortableTh
+                label={copy.table.avgWinRate}
+                sortKey="total:winRate"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+                className={METRIC_HEADER_CLASS}
+              />
+              <SortableTh
+                label={copy.table.avgRatio}
+                sortKey="total:avgRatio"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+                className={METRIC_HEADER_CLASS}
+              />
+              <SortableTh
+                label={copy.table.avgHoldTime}
+                sortKey="total:holdTime"
+                activeKey={sortKey}
+                direction={sortDirection}
+                onSort={handleSort}
+                className={METRIC_HEADER_CLASS}
+              />
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
             {visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={13} className="px-2 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={19} className="px-2 py-8 text-center text-sm text-muted-foreground">
                   {copy.table.empty}
                 </td>
               </tr>
             ) : (
               visibleRows.map((row) => {
-                const recent30Present = row.recent30Total.cycleCount > 0;
-                const recent3moPresent = row.recent3moTotal.cycleCount > 0;
+                const expanded = expandedSymbols.has(row.symbol);
                 return (
-                  <tr key={row.symbol} className="hover:bg-muted/30">
-                    <td className={SYMBOL_CELL_CLASS}>
-                      <AssetSymbolCell symbol={row.symbol} />
-                    </td>
-                    <td className={BORDERED_METRIC_CELL_CLASS}>
-                      <HistoryEntryCountLink
+                  <Fragment key={row.symbol}>
+                    <tr className="hover:bg-muted/30">
+                      <td className={SYMBOL_CELL_CLASS}>
+                        <div className="flex w-full min-w-0 items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => toggleExpanded(row.symbol)}
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded hover:bg-muted hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-expanded={expanded}
+                            aria-label={`${expanded ? 'Collapse' : 'Expand'} ${row.symbol} signal stats`}
+                          >
+                            {expanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
+                          <AssetSymbolCell symbol={row.symbol} />
+                        </div>
+                      </td>
+                      <SymbolMetricCells
+                        row={row}
                         symbol={row.symbol}
-                        count={row.recent30Total.cycleCount}
-                        period="30d"
-                        asOfIso={row.recent30Total.asOfIso}
+                        seed={seed}
+                        entryRatio={entryRatio}
+                        leverage={leverage}
                         streams={streams}
                         trendModes={trendModes}
                         tradingCategories={tradingCategories}
+                        signalOptions={selectedOptionIds}
+                        language={language}
                       />
-                    </td>
-                    <td className={VALUE_CELL_CLASS}>
-                      <HistoricalPctCell
-                        slice={row.recent30Total}
-                        seed={seed}
-                        entryRatio={entryRatio}
-                        leverage={leverage}
-                        tone="standard"
-                      />
-                    </td>
-                    <td className={VALUE_CELL_CLASS}>
-                      <HistoricalMoneyCell
-                        slice={row.recent30Total}
-                        seed={seed}
-                        entryRatio={entryRatio}
-                        leverage={leverage}
-                        tone="standard"
-                      />
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {recent30Present ? formatWinRate(row.recent30Total.winRate) : '—'}
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {formatRatio(row.recent30Total.winLossRatio, recent30Present)}
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {formatHoldSec(row.recent30Total.avgHoldSec, recent30Present, language)}
-                    </td>
-                    <td className={BORDERED_METRIC_CELL_CLASS}>
-                      <HistoryEntryCountLink
-                        symbol={row.symbol}
-                        count={row.recent3moTotal.cycleCount}
-                        period="90d"
-                        asOfIso={row.recent3moTotal.asOfIso}
-                        streams={streams}
-                        trendModes={trendModes}
-                        tradingCategories={tradingCategories}
-                      />
-                    </td>
-                    <td className={VALUE_CELL_CLASS}>
-                      <HistoricalPctCell
-                        slice={row.recent3moTotal}
-                        seed={seed}
-                        entryRatio={entryRatio}
-                        leverage={leverage}
-                        tone="standard"
-                      />
-                    </td>
-                    <td className={VALUE_CELL_CLASS}>
-                      <HistoricalMoneyCell
-                        slice={row.recent3moTotal}
-                        seed={seed}
-                        entryRatio={entryRatio}
-                        leverage={leverage}
-                        tone="standard"
-                      />
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {recent3moPresent ? formatWinRate(row.recent3moTotal.winRate) : '—'}
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {formatRatio(row.recent3moTotal.winLossRatio, recent3moPresent)}
-                    </td>
-                    <td className={METRIC_CELL_CLASS}>
-                      {formatHoldSec(row.recent3moTotal.avgHoldSec, recent3moPresent, language)}
-                    </td>
-                  </tr>
+                    </tr>
+                    {expanded
+                      ? SIGNAL_CHILDREN.map((child) => {
+                          const childRow = childRowsByOption.get(child.id)?.get(row.symbol);
+                          const childStreams = child.selection ? [child.selection.stream] : [];
+                          const childTrendModes = child.selection
+                            ? [child.selection.trendMode]
+                            : [];
+                          return (
+                            <tr
+                              key={`${row.symbol}-${child.id}`}
+                              className="bg-muted/15 hover:bg-muted/30"
+                            >
+                              <td className="px-1 py-2.5 pl-8 text-left">
+                                <span
+                                  className={cn(
+                                    'inline-flex min-w-8 justify-center rounded px-1.5 py-0.5 text-[10px] font-bold',
+                                    SIGNAL_OPTION_BADGE_CLASS[signalOptionTone(child.id)]
+                                  )}
+                                >
+                                  {child.id}
+                                </span>
+                              </td>
+                              <SymbolMetricCells
+                                row={childRow}
+                                symbol={row.symbol}
+                                seed={seed}
+                                entryRatio={entryRatio}
+                                leverage={leverage}
+                                streams={childStreams}
+                                trendModes={childTrendModes}
+                                tradingCategories={tradingCategories}
+                                signalOptions={[child.id]}
+                                language={language}
+                              />
+                            </tr>
+                          );
+                        })
+                      : null}
+                  </Fragment>
                 );
               })
             )}

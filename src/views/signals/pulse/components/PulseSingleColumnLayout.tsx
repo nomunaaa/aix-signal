@@ -29,6 +29,8 @@ import {
   type SignalStreamId,
   type SignalTrendMode,
   type HistoryQueryState,
+  type SignalStreamOptionFilter,
+  type SignalStreamOptionId,
 } from '../types/pulse.types';
 import { usePulseStore } from '../stores/pulseStore';
 import { useSimulation } from '../hooks/useSimulation';
@@ -100,6 +102,16 @@ function parseHistoryLimitParam(value: string | null): number | null {
 
 function parseHistoryPeriodParam(value: string | null): SignalDatePeriod | null {
   return value === '30d' || value === '90d' || value === 'all' ? value : null;
+}
+
+function parseHistoryStreamOptionsParam(value: string | null): SignalStreamOptionFilter | null {
+  if (!value) return null;
+  const requested = new Set(value.split(','));
+  const validIds: SignalStreamOptionId[] = ['P1', 'P2', 'P3', 'B1', 'B2', 'B3', 'W1', 'W2', 'W3'];
+  if (!validIds.some((id) => requested.has(id))) return null;
+  return Object.fromEntries(
+    validIds.map((id) => [id, requested.has(id)])
+  ) as SignalStreamOptionFilter;
 }
 
 function streamFromBarinterval(barinterval?: '1m' | '10m'): SignalStreamId {
@@ -235,6 +247,10 @@ export function PulseSingleColumnLayout({
       );
   const historyLimit = parseHistoryLimitParam(searchParams.get('historyLimit'));
   const historyPeriodFromUrl = parseHistoryPeriodParam(searchParams.get('historyPeriod'));
+  const historyStreamOptionsFromUrl = useMemo(
+    () => parseHistoryStreamOptionsParam(searchParams.get('historyStreamOptions')),
+    [searchParams]
+  );
   const historyFromIso = normalizeIsoTimestamp(searchParams.get('historyFromIso'));
   const historyToIso = normalizeIsoTimestamp(searchParams.get('historyToIso'));
   const exactHistoryDateRange = useMemo(
@@ -273,14 +289,15 @@ export function PulseSingleColumnLayout({
   const sortDir = usePulseStore((s) => s.sortDir);
   const favorites = usePulseStore((s) => s.favorites);
   const streamOptionFilter = usePulseStore((s) => s.streamOptionFilter);
+  const effectiveHistoryStreamOptionFilter = historyStreamOptionsFromUrl ?? streamOptionFilter;
   const isSymbolLocked = allowedSymbols.length === 0;
   const historyStreamFilter = useMemo(
-    () => baseStreamFilterFromOptions(streamOptionFilter),
-    [streamOptionFilter]
+    () => baseStreamFilterFromOptions(effectiveHistoryStreamOptionFilter),
+    [effectiveHistoryStreamOptionFilter]
   );
   const historyTrendModeFilter = useMemo(
-    () => trendModeFilterFromOptions(streamOptionFilter),
-    [streamOptionFilter]
+    () => trendModeFilterFromOptions(effectiveHistoryStreamOptionFilter),
+    [effectiveHistoryStreamOptionFilter]
   );
   const historyTradingCategories = E2X2_ONLY_CATEGORIES;
   const effectiveHistoryDatePeriod = historyPeriodFromUrl ?? datePeriod;
@@ -347,12 +364,12 @@ export function PulseSingleColumnLayout({
       closedSignals.filter(
         (signal) =>
           streamOptionMatchesSignal(
-            streamOptionFilter,
+            effectiveHistoryStreamOptionFilter,
             streamFromClosedSignal(signal),
             trendModeFromClosedSignal(signal)
           ) && qualityQualifiedSymbols.has(favoriteSymbolKey(signal.symbol))
       ),
-    [closedSignals, streamOptionFilter, qualityQualifiedSymbols]
+    [closedSignals, effectiveHistoryStreamOptionFilter, qualityQualifiedSymbols]
   );
 
   const closedForActiveTradingCategories = useMemo(
@@ -444,7 +461,7 @@ export function PulseSingleColumnLayout({
     symbols: deferredHistorySymbols,
     streamFilter: historyStreamFilter,
     trendModeFilter: historyTrendModeFilter,
-    streamOptionFilter,
+    streamOptionFilter: effectiveHistoryStreamOptionFilter,
     tradingCategories: historyTradingCategories,
     queryState: historyQueryState,
     searchQuery: debouncedSearchQuery,
@@ -479,7 +496,7 @@ export function PulseSingleColumnLayout({
     effectiveHistoryDatePeriod,
     historyFromIso,
     historyToIso,
-    streamOptionFilter,
+    effectiveHistoryStreamOptionFilter,
     historyTrendModeFilter.trend,
     historyTrendModeFilter.nonTrend,
     historyTrendModeFilter.reversal,

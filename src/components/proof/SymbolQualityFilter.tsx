@@ -65,6 +65,7 @@ export function SymbolQualityFilter({
       >
         <option value="last30d">{copy.quality.last30d}</option>
         <option value="last3mo">{copy.quality.last3mo}</option>
+        <option value="all">{copy.quality.all}</option>
       </select>
 
       <span className="hidden h-6 w-px shrink-0 bg-border sm:block" aria-hidden />

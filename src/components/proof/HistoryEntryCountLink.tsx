@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import type { ProofStatsStream, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
 import { TRADING_CATEGORY_ORDER, type TradingCategory } from '@/lib/trading-category';
 import { exactHistoryPeriodRange } from '@/views/signals/pulse/utils/historyDateRange';
+import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 
 export const ALL_STREAMS: ProofStatsStream[] = ['PULSE', 'WAVE'];
 export const ALL_TREND_MODES: ProofStatsTrendMode[] = ['trend', 'nonTrend', 'reversal'];
@@ -21,6 +22,7 @@ function signalBoardHistoryHref({
   streams,
   trendModes,
   tradingCategories,
+  signalOptions,
 }: {
   symbol: string;
   count: number;
@@ -29,6 +31,7 @@ function signalBoardHistoryHref({
   streams: readonly ProofStatsStream[];
   trendModes: readonly ProofStatsTrendMode[];
   tradingCategories: readonly TradingCategory[];
+  signalOptions?: readonly SignalStreamOptionId[];
 }): string {
   const historyStreams = streams.map((stream) => PROOF_STREAM_TO_HISTORY_STREAM[stream]);
   const params = new URLSearchParams({
@@ -42,6 +45,10 @@ function signalBoardHistoryHref({
   const historyPeriod = period;
   params.set('historyPeriod', historyPeriod);
   const exactRange = exactHistoryPeriodRange(historyPeriod, asOfIso);
+
+  if (signalOptions?.length) {
+    params.set('historyStreamOptions', signalOptions.join(','));
+  }
 
   if (exactRange) {
     if (exactRange.fromIso) {
@@ -69,6 +76,7 @@ export function HistoryEntryCountLink({
   streams,
   trendModes,
   tradingCategories,
+  signalOptions,
   className,
 }: {
   symbol: string;
@@ -78,6 +86,7 @@ export function HistoryEntryCountLink({
   streams: readonly ProofStatsStream[];
   trendModes: readonly ProofStatsTrendMode[];
   tradingCategories: readonly TradingCategory[];
+  signalOptions?: readonly SignalStreamOptionId[];
   className?: string;
 }) {
   if (count <= 0) return <span>0</span>;
@@ -92,6 +101,7 @@ export function HistoryEntryCountLink({
         streams,
         trendModes,
         tradingCategories,
+        signalOptions,
       })}
       className={cn(
         'inline-flex min-w-0 max-w-full items-center justify-end gap-0.5 rounded px-1 py-0.5 text-right font-mono font-semibold tabular-nums text-foreground underline-offset-2 hover:bg-muted/60 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',

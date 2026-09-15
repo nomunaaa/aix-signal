@@ -85,23 +85,25 @@ function MetricRow({
   const colors = ACCENTS[accent];
   return (
     <div
-      className={`proof-performance-metric proof-performance-metric-${accent} flex min-h-[58px] items-center justify-between gap-3 rounded-lg border px-3 py-2.5 sm:px-[15px] ${colors.row}`}
+      className={`proof-performance-metric proof-performance-metric-${accent} relative flex h-[72px] min-w-0 items-start gap-2 overflow-hidden rounded-lg border px-2 py-2 sm:px-[8px] ${colors.row}`}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-2">
         <div
           className={`flex size-8 shrink-0 items-center justify-center rounded-md ${colors.icon}`}
         >
-          <Image src={`/proof/expected-return/${icon}`} alt="" width={18} height={18} />
+          <Image src={`/proof/expected-return/${icon}`} alt="" width={20} height={20} />
         </div>
         <div className="min-w-0">
-          <div className="text-[13px] font-bold text-foreground dark:text-white">{copy[0]}</div>
-          <div className="text-[11px] leading-4 text-muted-foreground dark:text-slate-400">
+          <div className="truncate text-[12px] font-bold text-foreground dark:text-white sm:text-[13px]">
+            {copy[0]}
+          </div>
+          <div className="hidden truncate text-[11px] leading-4 text-muted-foreground dark:text-slate-400 sm:block">
             {copy[1]}
           </div>
         </div>
       </div>
       <div
-        className={`shrink-0 text-right text-base font-bold tabular-nums sm:text-lg ${valueClassName}`}
+        className={`absolute bottom-1 right-3 whitespace-nowrap text-right text-sm font-bold tabular-nums sm:right-[15px] sm:text-base ${valueClassName}`}
       >
         {value}
       </div>
@@ -189,138 +191,141 @@ export function ExpectedReturnDashboard({
         </div>
       </div>
 
-      <div className="mb-[15px] grid grid-cols-1 gap-[15px] md:grid-cols-3">
-        <div className="proof-performance-summary proof-performance-summary-blue rounded-lg border border-blue-200 bg-blue-50 p-[15px] dark:border-blue-500 dark:!bg-[linear-gradient(135deg,rgba(30,58,138,0.4),rgba(15,23,42,0.8))]">
-          <div className="mb-2.5 flex items-center gap-2">
-            <div className="flex size-[30px] items-center justify-center rounded-md bg-blue-600">
-              <Image src="/proof/expected-return/entries.png" alt="" width={18} height={18} />
+      <div className="mb-[15px] flex flex-col gap-2">
+        <div className="proof-performance-summary proof-performance-summary-blue flex min-h-[58px] items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-500 dark:!bg-[linear-gradient(135deg,rgba(30,58,138,0.4),rgba(15,23,42,0.8))]">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-[35px] items-center justify-center rounded-md bg-blue-600">
+              <Image src="/proof/expected-return/entries.png" alt="" width={20} height={20} />
             </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-300">{copy.entries[0]}</div>
-              <div className="text-[11px] text-slate-400">{copy.entries[1]}</div>
+            <div className="min-w-0">
+              <div className="truncate text-[16px] font-bold text-slate-300">{copy.entries[0]}</div>
+              <div className="hidden truncate text-[12px] text-slate-400 sm:block">
+                {copy.entries[1]}
+              </div>
             </div>
           </div>
-          <div className="mt-1 text-[26px] font-bold tabular-nums">
+          <div className="shrink-0 whitespace-nowrap text-right text-xl font-bold tabular-nums sm:text-2xl">
             {present ? entries.toLocaleString('en-US') : '—'}{' '}
             <span className="text-sm font-normal">{copy.times}</span>
           </div>
         </div>
-        <div className="proof-performance-summary proof-performance-summary-green rounded-lg border border-emerald-200 bg-emerald-50 p-[15px] dark:border-emerald-500 dark:!bg-[linear-gradient(135deg,rgba(6,95,70,0.4),rgba(15,23,42,0.8))]">
-          <div className="mb-2.5 flex items-center gap-2">
-            <div className="flex size-[30px] items-center justify-center rounded-md bg-emerald-600">
-              <Image src="/proof/expected-return/win-rate.png" alt="" width={18} height={18} />
+        <div className="proof-performance-summary proof-performance-summary-green grid min-h-[58px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-500 dark:!bg-[linear-gradient(135deg,rgba(6,95,70,0.4),rgba(15,23,42,0.8))]">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-[35px] items-center justify-center rounded-md bg-emerald-600">
+              <Image src="/proof/expected-return/win-rate.png" alt="" width={20} height={20} />
             </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-300">{copy.winRate[0]}</div>
-              <div className="text-[11px] text-slate-400">{copy.winRate[1]}</div>
+            <div className="min-w-0">
+              <div className="truncate text-[16px] font-bold text-slate-300">{copy.winRate[0]}</div>
+              <div className="hidden truncate text-[12px] text-slate-400 sm:block">
+                {copy.winRate[1]}
+              </div>
             </div>
           </div>
-          <div className="mt-1 text-[26px] font-bold tabular-nums text-emerald-400">
-            {present ? `${(slice.winRate * 100).toFixed(1)}%` : '—'}
-          </div>
-          <div className="mt-0.5 text-xs text-slate-400">
-            {present
-              ? language === 'ko'
-                ? `${wins.toLocaleString('en-US')}승 / ${entries.toLocaleString('en-US')}회`
-                : `${wins.toLocaleString('en-US')} won / ${entries.toLocaleString('en-US')} total`
-              : '—'}
+          <div>
+            <div className="shrink-0 whitespace-nowrap text-right text-xl font-bold tabular-nums text-emerald-400 sm:text-2xl">
+              {present ? `${(slice.winRate * 100).toFixed(1)}%` : '—'}
+            </div>
+            <div className="col-start-2 hidden whitespace-nowrap text-right text-[11px] text-slate-400 2xl:block">
+              {present
+                ? language === 'ko'
+                  ? `${wins.toLocaleString('en-US')}승 / ${entries.toLocaleString('en-US')}회`
+                  : `${wins.toLocaleString('en-US')} won / ${entries.toLocaleString('en-US')} total`
+                : '—'}
+            </div>
           </div>
         </div>
-        <div className="proof-performance-summary proof-performance-summary-amber rounded-lg border border-amber-200 bg-amber-50 p-[15px] dark:border-yellow-500 dark:!bg-[linear-gradient(135deg,rgba(113,63,18,0.4),rgba(15,23,42,0.8))]">
-          <div className="mb-2.5 flex items-center gap-2">
-            <div className="flex size-[30px] items-center justify-center rounded-md bg-amber-600">
-              <Image src="/proof/expected-return/risk-reward.png" alt="" width={18} height={18} />
+        <div className="proof-performance-summary proof-performance-summary-amber grid min-h-[58px] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-yellow-500 dark:!bg-[linear-gradient(135deg,rgba(113,63,18,0.4),rgba(15,23,42,0.8))]">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="flex size-[35px] items-center justify-center rounded-md bg-amber-600">
+              <Image src="/proof/expected-return/risk-reward.png" alt="" width={20} height={20} />
             </div>
-            <div>
-              <div className="text-[13px] font-bold text-slate-300">{copy.riskReward[0]}</div>
-              <div className="text-[11px] text-slate-400">{copy.riskReward[1]}</div>
+            <div className="min-w-0">
+              <div className="truncate text-[16px] font-bold text-slate-300">
+                {copy.riskReward[0]}
+              </div>
+              <div className="hidden truncate text-[12px] text-slate-400 sm:block">
+                {copy.riskReward[1]}
+              </div>
             </div>
           </div>
-          <div className="mt-1 text-[26px] font-bold tabular-nums text-yellow-400">
-            {present && ratio != null ? ratio.toFixed(2) : '—'}
-          </div>
-          <div className="mt-0.5 text-xs text-slate-400">
-            {present && averageWinAccountPct != null && averageLossAccountPct != null
-              ? language === 'ko'
-                ? `평균수익 ${formatPercent(averageWinAccountPct)} : 평균손실 ${formatPercent(averageLossAccountPct)}`
-                : `Avg win ${formatPercent(averageWinAccountPct)} : avg loss ${formatPercent(averageLossAccountPct)}`
-              : '—'}
+          <div>
+            <div className="shrink-0 whitespace-nowrap text-right text-xl font-bold tabular-nums text-yellow-400 sm:text-2xl">
+              {present && ratio != null ? ratio.toFixed(2) : '—'}
+            </div>
+            <div className="col-start-2 hidden whitespace-nowrap text-right text-[11px] text-slate-400 2xl:block">
+              {present && averageWinAccountPct != null && averageLossAccountPct != null
+                ? language === 'ko'
+                  ? `평균수익 ${formatPercent(averageWinAccountPct)} : 평균손실 ${formatPercent(averageLossAccountPct)}`
+                  : `Avg win ${formatPercent(averageWinAccountPct)} : avg loss ${formatPercent(averageLossAccountPct)}`
+                : '—'}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mb-[15px] grid grid-cols-1 gap-[15px] md:grid-cols-2">
-        <div className="flex flex-col gap-2.5">
-          <MetricRow
-            copy={copy.accountReturn}
-            value={formatPercent(accountReturn, true)}
-            valueClassName={valueClassName(accountReturn)}
-            icon="account-return.png"
-            accent="purple"
-          />
-          <MetricRow
-            copy={avgWinRateCopy}
-            value={formatPercent(averageWinAccountPct, true)}
-            valueClassName={valueClassName(averageWinAccountPct)}
-            icon="average-win-rate.png"
-            accent="green"
-          />
-          <MetricRow
-            copy={copy.avgWin}
-            value={formatMoney(averageWinRate == null ? null : averageWinRate * positionNotional)}
-            valueClassName={valueClassName(
-              averageWinRate == null ? null : averageWinRate * positionNotional
-            )}
-            icon="average-win.png"
-            accent="blue"
-          />
-          <MetricRow
-            copy={copy.maxWin}
-            value={formatMoney(maxWin)}
-            valueClassName={valueClassName(maxWin)}
-            icon="max-win.png"
-            accent="purple"
-          />
-        </div>
-        <div className="flex flex-col gap-2.5">
-          <MetricRow
-            copy={copy.accountProfit}
-            value={formatMoney(accountProfit)}
-            valueClassName={valueClassName(accountProfit)}
-            icon="account-profit.png"
-            accent="blue"
-          />
-          <MetricRow
-            copy={avgLossRateCopy}
-            value={formatPercent(
-              averageLossAccountPct == null ? null : -averageLossAccountPct,
-              true
-            )}
-            valueClassName={valueClassName(
-              averageLossAccountPct == null ? null : -averageLossAccountPct
-            )}
-            icon="average-loss-rate.png"
-            accent="red"
-          />
-          <MetricRow
-            copy={copy.avgLoss}
-            value={formatMoney(
-              averageLossRate == null ? null : -averageLossRate * positionNotional
-            )}
-            valueClassName={valueClassName(
-              averageLossRate == null ? null : -averageLossRate * positionNotional
-            )}
-            icon="average-loss.png"
-            accent="red"
-          />
-          <MetricRow
-            copy={copy.maxLoss}
-            value={formatMoney(maxLoss)}
-            valueClassName={valueClassName(maxLoss)}
-            icon="max-loss.png"
-            accent="red"
-          />
-        </div>
+      <div className="mb-[10px] grid grid-cols-1 gap-2 sm:grid-flow-col sm:grid-cols-2 sm:grid-rows-4">
+        <MetricRow
+          copy={copy.accountReturn}
+          value={formatPercent(accountReturn, true)}
+          valueClassName={valueClassName(accountReturn)}
+          icon="account-return.png"
+          accent="purple"
+        />
+        <MetricRow
+          copy={avgWinRateCopy}
+          value={formatPercent(averageWinAccountPct, true)}
+          valueClassName={valueClassName(averageWinAccountPct)}
+          icon="average-win-rate.png"
+          accent="green"
+        />
+        <MetricRow
+          copy={copy.avgWin}
+          value={formatMoney(averageWinRate == null ? null : averageWinRate * positionNotional)}
+          valueClassName={valueClassName(
+            averageWinRate == null ? null : averageWinRate * positionNotional
+          )}
+          icon="average-win.png"
+          accent="blue"
+        />
+        <MetricRow
+          copy={copy.maxWin}
+          value={formatMoney(maxWin)}
+          valueClassName={valueClassName(maxWin)}
+          icon="max-win.png"
+          accent="purple"
+        />
+        <MetricRow
+          copy={copy.accountProfit}
+          value={formatMoney(accountProfit)}
+          valueClassName={valueClassName(accountProfit)}
+          icon="account-profit.png"
+          accent="blue"
+        />
+        <MetricRow
+          copy={avgLossRateCopy}
+          value={formatPercent(averageLossAccountPct == null ? null : -averageLossAccountPct, true)}
+          valueClassName={valueClassName(
+            averageLossAccountPct == null ? null : -averageLossAccountPct
+          )}
+          icon="average-loss-rate.png"
+          accent="red"
+        />
+        <MetricRow
+          copy={copy.avgLoss}
+          value={formatMoney(averageLossRate == null ? null : -averageLossRate * positionNotional)}
+          valueClassName={valueClassName(
+            averageLossRate == null ? null : -averageLossRate * positionNotional
+          )}
+          icon="average-loss.png"
+          accent="red"
+        />
+        <MetricRow
+          copy={copy.maxLoss}
+          value={formatMoney(maxLoss)}
+          valueClassName={valueClassName(maxLoss)}
+          icon="max-loss.png"
+          accent="red"
+        />
       </div>
 
       <div className="flex flex-col gap-1 border-t border-border pt-2.5 text-[11px] text-muted-foreground dark:border-white/10 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">

@@ -30,6 +30,7 @@ const HISTORY_QUERY_PARAM_KEYS = [
   'historyToIso',
   'historyStreams',
   'historyTrendMode',
+  'historyStreamOptions',
   'historyCategories',
   'historySort',
   'historyFocus',

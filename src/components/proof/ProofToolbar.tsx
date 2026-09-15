@@ -7,11 +7,11 @@ import {
 import type { ProofQualityPeriod } from './symbolQuality';
 
 function proofPeriodToSignalPeriod(period: ProofQualityPeriod): SignalDatePeriod {
-  return period === 'last30d' ? '30d' : '90d';
+  return period === 'last30d' ? '30d' : period === 'last3mo' ? '90d' : 'all';
 }
 
 function signalPeriodToProofPeriod(period: SignalDatePeriod): ProofQualityPeriod {
-  return period === '30d' ? 'last30d' : 'last3mo';
+  return period === '30d' ? 'last30d' : period === '90d' ? 'last3mo' : 'all';
 }
 
 export function ProofToolbar({
@@ -37,11 +37,12 @@ export function ProofToolbar({
         className="mx-auto w-full max-w-[1400px]"
         datePeriod={proofPeriodToSignalPeriod(qualityPeriod)}
         onDatePeriodChange={(period) => onQualityPeriodChange(signalPeriodToProofPeriod(period))}
-        datePeriods={['30d', '90d']}
+        datePeriods={['30d', '90d', 'all']}
         showSignalStateFilter={false}
         showStatusSummary={false}
         favoriteSymbols={favoriteSymbols}
         streamWinRates={streamWinRates}
+        useStreamOptionSelector
       />
     </div>
   );

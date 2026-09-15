@@ -22,7 +22,7 @@ function StatLabel({ label }: { label: string }) {
   const parts = STAT_LABEL_PARTS[label] ?? [label];
 
   return (
-    <span className="flex min-w-0 flex-col text-[10px] font-medium leading-tight text-muted-foreground">
+    <span className="flex min-w-0 flex-1 flex-col overflow-hidden text-[10px] font-medium leading-tight text-muted-foreground">
       {parts.map((part) => (
         <span key={part} className="truncate">
           {part}
@@ -34,11 +34,11 @@ function StatLabel({ label }: { label: string }) {
 
 function StatItem({ label, value, tone }: { label: string; value: string; tone?: 'pos' | 'neg' }) {
   return (
-    <span className="flex min-w-0 flex-col gap-0.5 px-1.5">
+    <span className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden px-1.5">
       <StatLabel label={label} />
       <span
         className={cn(
-          'whitespace-nowrap font-mono text-sm font-extrabold tabular-nums',
+          'truncate whitespace-nowrap font-mono text-xs font-extrabold tabular-nums sm:text-sm',
           tone === 'pos' && 'text-emerald-500',
           tone === 'neg' && 'text-rose-400'
         )}
@@ -174,7 +174,7 @@ export function ProofStatBar({
       className="sticky z-30 -mx-4 border-b border-border bg-background/95 px-4 py-2 shadow-md backdrop-blur duration-200 animate-in fade-in slide-in-from-top-1 md:-mx-5 md:px-5"
       style={{ top: `calc(var(--header-height) + ${stickyTopOffsetPx}px)` }}
     >
-      <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-2 xl:grid-cols-3">
         <StatColumn
           title={copy.table.recent30}
           rows={rows}
@@ -188,6 +188,15 @@ export function ProofStatBar({
           title={copy.table.recent3mo}
           rows={rows}
           slicePicker={(row) => row.recent3mo}
+          seed={seed}
+          entryRatio={entryRatio}
+          leverage={leverage}
+          copy={copy}
+        />
+        <StatColumn
+          title={copy.table.cumulative}
+          rows={rows}
+          slicePicker={(row) => row.total}
           seed={seed}
           entryRatio={entryRatio}
           leverage={leverage}
