@@ -203,7 +203,8 @@ function defaultHistoryFilter(
 
   const end = exactDateToIso ? new Date(exactDateToIso) : new Date();
   const start = exactDateFromIso ? new Date(exactDateFromIso) : new Date(end);
-  if (!exactDateFromIso) {
+  const hasPresetStart = period !== 'all';
+  if (!exactDateFromIso && hasPresetStart) {
     if (period === '90d') start.setMonth(start.getMonth() - 3);
     else start.setDate(start.getDate() - 30);
   }
@@ -212,7 +213,9 @@ function defaultHistoryFilter(
     symbol,
     dateFrom: exactDateFromIso
       ? formatDateInputFromIso(exactDateFromIso)
-      : formatDateInputValue(start),
+      : hasPresetStart
+        ? formatDateInputValue(start)
+        : '',
     dateTo: exactDateToIso ? formatDateInputFromIso(exactDateToIso) : formatDateInputValue(end),
     exactDateFromIso,
     exactDateToIso,

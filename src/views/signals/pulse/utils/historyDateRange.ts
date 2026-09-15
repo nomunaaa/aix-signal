@@ -1,4 +1,5 @@
-export type HistoryDatePeriod = '30d' | '90d';
+/** `all` intentionally has no lower date bound. */
+export type HistoryDatePeriod = '30d' | '90d' | 'all';
 
 const DAY_MS = 86_400_000;
 
@@ -47,6 +48,9 @@ export function exactHistoryPeriodRange(
   const normalizedAsOf = normalizeIsoTimestamp(asOfIso);
   if (!normalizedAsOf) return null;
   const asOf = new Date(normalizedAsOf);
+  if (period === 'all') {
+    return { fromIso: null, toIso: normalizedAsOf };
+  }
   const from =
     period === '90d' ? subtractUtcMonths(asOf, 3) : new Date(asOf.getTime() - 30 * DAY_MS);
 
@@ -56,7 +60,8 @@ export function exactHistoryPeriodRange(
   };
 }
 
-export function historyPeriodStartMs(period: HistoryDatePeriod, now = new Date()): number {
+export function historyPeriodStartMs(period: HistoryDatePeriod, now = new Date()): number | null {
+  if (period === 'all') return null;
   const start = new Date(now);
   if (period === '90d') start.setMonth(start.getMonth() - 3);
   else start.setDate(start.getDate() - 30);
@@ -70,6 +75,7 @@ export function matchesHistoryDatePeriod(
   now = new Date()
 ): boolean {
   const startMs = historyPeriodStartMs(period, now);
+  if (startMs === null) return true;
   return closedAtMs(closedAt) >= startMs;
 }
 

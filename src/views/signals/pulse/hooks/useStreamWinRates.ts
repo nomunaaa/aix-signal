@@ -15,7 +15,8 @@ type StreamStatsRow = {
 
 const proofStatsClient = supabase as unknown as SupabaseClient;
 
-function periodToProofInterval(period: HistoryDatePeriod): 'last_30d' | 'last_3mo' {
+function periodToProofInterval(period: HistoryDatePeriod): 'last_30d' | 'last_3mo' | 'all_time' {
+  if (period === 'all') return 'all_time';
   if (period === '90d') return 'last_3mo';
   return 'last_30d';
 }

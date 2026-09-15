@@ -37,6 +37,7 @@ export function ProofToolbar({
         className="mx-auto w-full max-w-[1400px]"
         datePeriod={proofPeriodToSignalPeriod(qualityPeriod)}
         onDatePeriodChange={(period) => onQualityPeriodChange(signalPeriodToProofPeriod(period))}
+        datePeriods={['30d', '90d']}
         showSignalStateFilter={false}
         showStatusSummary={false}
         favoriteSymbols={favoriteSymbols}

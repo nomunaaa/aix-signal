@@ -83,7 +83,22 @@ const BASE_COLUMN_IDS = new Set([
   'pnlPercent',
 ]);
 
-export type SignalDatePeriod = '30d' | '90d';
+export type SignalDatePeriod = '30d' | '90d' | 'all';
+const SIGNAL_DATE_PERIODS: readonly SignalDatePeriod[] = ['30d', '90d', 'all'];
+
+function datePeriodLabel(period: SignalDatePeriod, language: string, compact = false): string {
+  if (period === 'all')
+    return language === 'ko' ? (compact ? '전체' : '전체 기간') : compact ? 'All' : 'All time';
+  if (period === '90d')
+    return language === 'ko'
+      ? compact
+        ? '3개월'
+        : '최근 3개월'
+      : compact
+        ? '3M'
+        : 'Last 3 months';
+  return language === 'ko' ? (compact ? '30일' : '최근 30일') : compact ? '30D' : 'Last 30 days';
+}
 
 interface TableControlBarProps {
   /** Active table/section ID for column picker context */
@@ -109,6 +124,8 @@ interface TableControlBarProps {
   showStatusSummary?: boolean;
   datePeriod?: SignalDatePeriod;
   onDatePeriodChange?: (period: SignalDatePeriod) => void;
+  /** Limits date presets for pages whose underlying aggregates do not support all-time data. */
+  datePeriods?: readonly SignalDatePeriod[];
   showSignalStateFilter?: boolean;
   favoriteSymbols?: readonly string[];
   streamWinRates?: Partial<Record<SignalStreamId, number>>;
@@ -146,6 +163,7 @@ export function TableControlBar({
   showStatusSummary = true,
   datePeriod,
   onDatePeriodChange,
+  datePeriods = SIGNAL_DATE_PERIODS,
   showSignalStateFilter = true,
   favoriteSymbols = [],
   streamWinRates = {},
@@ -199,14 +217,7 @@ export function TableControlBar({
         .filter((stream) => streamFilter[stream])
         .map((stream) => stream.toUpperCase())
         .join('+');
-  const periodSummary =
-    datePeriod === '90d'
-      ? language === 'ko'
-        ? '3개월'
-        : '3mo'
-      : language === 'ko'
-        ? '30일'
-        : '30d';
+  const periodSummary = datePeriod ? datePeriodLabel(datePeriod, language, true) : '';
   const mobileFilterSummary = datePeriod ? `${streamSummary} · ${periodSummary}` : streamSummary;
 
   const sectionId = activeTableId ?? 'default';
@@ -544,7 +555,7 @@ export function TableControlBar({
           <Select
             value={datePeriod}
             onValueChange={(value) => {
-              if (value === '30d' || value === '90d') {
+              if (value === '30d' || value === '90d' || value === 'all') {
                 onDatePeriodChange(value);
               }
             }}
@@ -559,6 +570,9 @@ export function TableControlBar({
               <SelectItem value="90d">
                 {language === 'ko' ? '최근 3개월' : 'Last 3 months'}
               </SelectItem>
+              {datePeriods.includes('all') ? (
+                <SelectItem value="all">{datePeriodLabel('all', language)}</SelectItem>
+              ) : null}
             </SelectContent>
           </Select>
         </div>
@@ -810,8 +824,13 @@ export function TableControlBar({
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
                   {language === 'ko' ? '기간' : 'Period'}
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['30d', '90d'] as SignalDatePeriod[]).map((period) => (
+                <div
+                  className={cn(
+                    'grid gap-2',
+                    datePeriods.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+                  )}
+                >
+                  {datePeriods.map((period) => (
                     <button
                       key={period}
                       type="button"
@@ -823,13 +842,7 @@ export function TableControlBar({
                           : 'border-border bg-muted/30 text-muted-foreground'
                       )}
                     >
-                      {period === '30d'
-                        ? language === 'ko'
-                          ? '최근 30일'
-                          : 'Last 30d'
-                        : language === 'ko'
-                          ? '최근 3개월'
-                          : 'Last 3mo'}
+                      {datePeriodLabel(period, language)}
                     </button>
                   ))}
                 </div>
@@ -942,32 +955,32 @@ export function TableControlBar({
                 <RadioGroup
                   value={datePeriod}
                   onValueChange={(value) => {
-                    if (value === '30d' || value === '90d') {
+                    if (value === '30d' || value === '90d' || value === 'all') {
                       onDatePeriodChange(value);
                     }
                   }}
-                  className="grid grid-cols-2 gap-2"
+                  className={cn(
+                    'grid gap-2',
+                    datePeriods.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+                  )}
                   aria-label={language === 'ko' ? '히스토리 기간' : 'History date range'}
                 >
-                  {(
-                    [
-                      ['30d', language === 'ko' ? '최근 30일' : '30D'],
-                      ['90d', language === 'ko' ? '최근 3개월' : '3M'],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <label
-                      key={value}
-                      className={cn(
-                        'flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-md border text-xs font-medium transition-colors',
-                        datePeriod === value
-                          ? 'border-primary/50 bg-primary/10 text-foreground'
-                          : 'border-border bg-muted/30 text-muted-foreground'
-                      )}
-                    >
-                      <RadioGroupItem value={value} className="sr-only" />
-                      <span>{label}</span>
-                    </label>
-                  ))}
+                  {datePeriods
+                    .map((value) => [value, datePeriodLabel(value, language, true)] as const)
+                    .map(([value, label]) => (
+                      <label
+                        key={value}
+                        className={cn(
+                          'flex h-10 cursor-pointer items-center justify-center gap-1.5 rounded-md border text-xs font-medium transition-colors',
+                          datePeriod === value
+                            ? 'border-primary/50 bg-primary/10 text-foreground'
+                            : 'border-border bg-muted/30 text-muted-foreground'
+                        )}
+                      >
+                        <RadioGroupItem value={value} className="sr-only" />
+                        <span>{label}</span>
+                      </label>
+                    ))}
                 </RadioGroup>
               </div>
             ) : null}

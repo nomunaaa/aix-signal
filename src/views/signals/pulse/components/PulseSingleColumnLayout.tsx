@@ -99,7 +99,7 @@ function parseHistoryLimitParam(value: string | null): number | null {
 }
 
 function parseHistoryPeriodParam(value: string | null): SignalDatePeriod | null {
-  return value === '30d' || value === '90d' ? value : null;
+  return value === '30d' || value === '90d' || value === 'all' ? value : null;
 }
 
 function streamFromBarinterval(barinterval?: '1m' | '10m'): SignalStreamId {
