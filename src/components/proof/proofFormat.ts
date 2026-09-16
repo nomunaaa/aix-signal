@@ -41,6 +41,59 @@ export function formatRatio(value: number | null, hasData: boolean): string {
   return value.toFixed(2);
 }
 
+/** Combine the Standard and Discounted proof scenarios for a single UI summary. */
+export function combineProofCycleStats(
+  slices: readonly ProofCycleStatsSlice[]
+): ProofCycleStatsSlice {
+  const cycleCount = slices.reduce((sum, slice) => sum + slice.cycleCount, 0);
+  const presentSlices = slices.filter((slice) => slice.cycleCount > 0);
+  const ratioWeight = slices.reduce(
+    (sum, slice) => sum + (slice.winLossRatio == null ? 0 : slice.cycleCount),
+    0
+  );
+  const timestamps = slices
+    .map((slice) => slice.asOfIso)
+    .filter((value): value is string => Boolean(value))
+    .sort();
+
+  return {
+    cycleCount,
+    asOfIso: timestamps.at(-1) ?? null,
+    pnlPctSum: slices.reduce((sum, slice) => sum + slice.pnlPctSum, 0),
+    pnlPerEntryNotionalRateSum: slices.reduce(
+      (sum, slice) => sum + slice.pnlPerEntryNotionalRateSum,
+      0
+    ),
+    entryLegCountSum: slices.reduce((sum, slice) => sum + slice.entryLegCountSum, 0),
+    maxPnlPct: presentSlices.length ? Math.max(...presentSlices.map((slice) => slice.maxPnlPct)) : 0,
+    minPnlPct: presentSlices.length ? Math.min(...presentSlices.map((slice) => slice.minPnlPct)) : 0,
+    maxPnlPerEntryNotionalRate: presentSlices.length
+      ? Math.max(...presentSlices.map((slice) => slice.maxPnlPerEntryNotionalRate))
+      : 0,
+    minPnlPerEntryNotionalRate: presentSlices.length
+      ? Math.min(...presentSlices.map((slice) => slice.minPnlPerEntryNotionalRate))
+      : 0,
+    winRate:
+      cycleCount > 0
+        ? slices.reduce((sum, slice) => sum + slice.winRate * slice.cycleCount, 0) / cycleCount
+        : 0,
+    winLossRatio:
+      ratioWeight > 0
+        ? slices.reduce(
+            (sum, slice) => sum + (slice.winLossRatio ?? 0) * slice.cycleCount,
+            0
+          ) / ratioWeight
+        : null,
+    avgHoldSec:
+      cycleCount > 0
+        ? Math.round(
+            slices.reduce((sum, slice) => sum + (slice.avgHoldSec ?? 0) * slice.cycleCount, 0) /
+              cycleCount
+          )
+        : null,
+  };
+}
+
 function singleEntryNotional(seed: number, entryRatio: number, leverage: number): number {
   return seed * (entryRatio / 100) * leverage;
 }

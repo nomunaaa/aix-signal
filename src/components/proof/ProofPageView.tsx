@@ -228,9 +228,6 @@ export function ProofPageView() {
 
       <ProofStatBar
         rows={activeStats.totalStats}
-        seed={seed}
-        entryRatio={entryRatio}
-        leverage={leverage}
         copy={copy}
         stickyTopOffsetPx={toolbarHeight}
       />

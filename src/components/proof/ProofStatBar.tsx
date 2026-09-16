@@ -3,49 +3,22 @@ import { cn } from '@/lib/utils';
 import type { ProofCycleStatsSlice, ProofTotalStatsRow } from '@/lib/mock/proof-mock';
 import { formatWinRate } from '@/lib/proof/format-proof';
 import type { ProofCopy } from './proofCopy';
-import {
-  formatPct,
-  formatRatio,
-  formatSignedUsd,
-  hasData,
-  projectedCycleUsd,
-  projectedPct,
-  projectedUsd,
-} from './proofFormat';
+import { combineProofCycleStats, formatRatio } from './proofFormat';
 
-const STAT_LABEL_PARTS: Record<string, string[]> = {
-  'Account Profit': ['Account', 'Profit'],
-  'Account P/L Ratio': ['Account', 'P/L Ratio'],
-};
-
-function StatLabel({ label }: { label: string }) {
-  const parts = STAT_LABEL_PARTS[label] ?? [label];
-
+function StatItem({ label, value, tone }: { label: string; value: string; tone?: 'pos' | 'warn' }) {
   return (
-    <span className="flex min-w-0 flex-1 flex-col overflow-hidden text-[10px] font-medium leading-tight text-muted-foreground">
-      {parts.map((part) => (
-        <span key={part} className="truncate">
-          {part}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-function StatItem({ label, value, tone }: { label: string; value: string; tone?: 'pos' | 'neg' }) {
-  return (
-    <span className="flex min-w-0 flex-1 flex-col gap-0.5 overflow-hidden px-1.5">
-      <StatLabel label={label} />
+    <div className="flex min-w-0 flex-col gap-1 px-3 text-center">
+      <span className="truncate text-xs font-bold text-muted-foreground sm:text-sm">{label}</span>
       <span
         className={cn(
-          'truncate whitespace-nowrap font-mono text-xs font-extrabold tabular-nums sm:text-sm',
+          'truncate whitespace-nowrap font-mono text-xl font-black tabular-nums sm:text-2xl',
           tone === 'pos' && 'text-emerald-500',
-          tone === 'neg' && 'text-rose-400'
+          tone === 'warn' && 'text-amber-500'
         )}
       >
         {value}
       </span>
-    </span>
+    </div>
   );
 }
 
@@ -53,108 +26,48 @@ function StatColumn({
   title,
   rows,
   slicePicker,
-  seed,
-  entryRatio,
-  leverage,
   copy,
 }: {
   title: string;
-  rows: [ProofTotalStatsRow, ProofTotalStatsRow];
+  rows: readonly ProofTotalStatsRow[];
   slicePicker: (row: ProofTotalStatsRow) => ProofCycleStatsSlice;
-  seed: number;
-  entryRatio: number;
-  leverage: number;
   copy: ProofCopy;
 }) {
+  const slice = combineProofCycleStats(rows.map(slicePicker));
+  const present = slice.cycleCount > 0;
+
   return (
-    <div className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
-      <div className="border-b border-border bg-muted/40 px-3 py-1.5 text-center text-xs font-extrabold text-foreground">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card">
+      <div className="border-b border-border bg-muted/40 px-3 py-2 text-center text-sm font-black text-foreground">
         {title}
       </div>
-      <div className="grid grid-cols-2 divide-x divide-border">
-        {rows.map((row) => {
-          const slice = slicePicker(row);
-          const present = hasData(slice);
-          const pct = projectedPct(slice, seed, entryRatio, leverage);
-          const profit = projectedUsd(slice, seed, entryRatio, leverage);
-          const maxProfitUsd = projectedCycleUsd(
-            slice.maxPnlPerEntryNotionalRate,
-            seed,
-            entryRatio,
-            leverage
-          );
-          const maxLossUsd = projectedCycleUsd(
-            slice.minPnlPerEntryNotionalRate,
-            seed,
-            entryRatio,
-            leverage
-          );
-          const isDiscounted = row.key === 'discounted';
-          return (
-            <div key={row.key} className="min-w-0 overflow-x-auto px-2 py-2">
-              <div
-                className={cn(
-                  'mb-1.5 rounded px-1.5 py-0.5 text-center text-[11px] font-extrabold',
-                  isDiscounted
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-                )}
-              >
-                {copy.table[row.key]}
-              </div>
-              <div className="flex items-center justify-between gap-1">
-                <StatItem
-                  label={copy.metric.winRate}
-                  value={present ? formatWinRate(slice.winRate) : '—'}
-                />
-                <StatItem
-                  label={copy.metric.maxProfit}
-                  value={formatSignedUsd(maxProfitUsd, present)}
-                  tone="pos"
-                />
-                <StatItem
-                  label={copy.metric.maxLoss}
-                  value={formatSignedUsd(maxLossUsd, present)}
-                  tone="neg"
-                />
-              </div>
-              <div className="mt-1.5 flex items-center justify-between gap-1 border-t border-dashed border-border pt-1.5">
-                <StatItem
-                  label={copy.table.pnlPct}
-                  value={formatPct(pct, present)}
-                  tone={present ? (pct >= 0 ? 'pos' : 'neg') : undefined}
-                />
-                <StatItem
-                  label={copy.table.accountProfit}
-                  value={formatSignedUsd(profit, present)}
-                  tone={present ? (profit >= 0 ? 'pos' : 'neg') : undefined}
-                />
-                <StatItem
-                  label={copy.table.accountRatio}
-                  value={formatRatio(slice.winLossRatio, present)}
-                />
-              </div>
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-3 divide-x divide-border py-3">
+        <StatItem
+          label={copy.table.entries}
+          value={present ? slice.cycleCount.toLocaleString('en-US') : '—'}
+        />
+        <StatItem
+          label={copy.metric.winRate}
+          value={present ? formatWinRate(slice.winRate) : '—'}
+          tone="pos"
+        />
+        <StatItem
+          label={copy.quality.riskReward}
+          value={formatRatio(slice.winLossRatio, present)}
+          tone="warn"
+        />
       </div>
     </div>
   );
 }
 
-/** 스크롤 시 표시되는 축약형 통계 바 — 기간별 일반·할인적용 요약. */
+/** Scroll үед Standard + Discounted нийлбэрээр харуулах 3-KPI статистик бар. */
 export function ProofStatBar({
   rows,
-  seed,
-  entryRatio,
-  leverage,
   copy,
   stickyTopOffsetPx,
 }: {
   rows: [ProofTotalStatsRow, ProofTotalStatsRow];
-  seed: number;
-  entryRatio: number;
-  leverage: number;
   copy: ProofCopy;
   stickyTopOffsetPx: number;
 }) {
@@ -179,27 +92,18 @@ export function ProofStatBar({
           title={copy.table.recent30}
           rows={rows}
           slicePicker={(row) => row.recent30}
-          seed={seed}
-          entryRatio={entryRatio}
-          leverage={leverage}
           copy={copy}
         />
         <StatColumn
           title={copy.table.recent3mo}
           rows={rows}
           slicePicker={(row) => row.recent3mo}
-          seed={seed}
-          entryRatio={entryRatio}
-          leverage={leverage}
           copy={copy}
         />
         <StatColumn
           title={copy.table.cumulative}
           rows={rows}
           slicePicker={(row) => row.total}
-          seed={seed}
-          entryRatio={entryRatio}
-          leverage={leverage}
           copy={copy}
         />
       </div>
