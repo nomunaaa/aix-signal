@@ -81,8 +81,10 @@ export interface SymbolData {
   // Trend утгууд (barinterval: '1m' | '10m')
   trendShort1m: number | null; // 1m short-term trend
   trendLong1m: number | null; // 1m long-term trend
+  screenTrendLong1m: number | null; // 1m long-term trend shown in the beta UI
   trendShort10m: number | null; // 10m short-term trend
   trendLong10m: number | null; // 10m long-term trend
+  screenTrendLong10m: number | null; // 10m long-term trend shown in the beta UI
   trendTs1m: string; // 1m current trend start/update timestamp
   trendTs10m: string; // 10m current trend start/update timestamp
   trendShortTs1m?: string; // 1m short-term trend start/update timestamp
@@ -146,6 +148,11 @@ interface SymbolState {
     barinterval: '1m' | '10m',
     timeframe: 'short' | 'long'
   ) => number | null;
+  getScreenTrend: (
+    symbol: string,
+    barinterval: '1m' | '10m',
+    timeframe: 'short' | 'long'
+  ) => number | null;
   getPrevTrend: (
     symbol: string,
     barinterval: '1m' | '10m',
@@ -167,7 +174,8 @@ interface SymbolState {
     barinterval: '1m' | '10m',
     timeframe: 'short' | 'long',
     value: number,
-    timestamp?: string | number | null
+    timestamp?: string | number | null,
+    screenDirection?: number | null
   ) => void;
   updateVolatility: (symbol: string, barinterval: '1m' | '10m', value: number) => void;
   updateSignalCycle: (symbol: string, barinterval: '1m' | '10m', cycle: any) => void;
@@ -577,6 +585,7 @@ interface TrendEventRow {
   barinterval: string;
   timeframe: string;
   value: number;
+  screen_direction?: number | null;
   ts: string;
 }
 
@@ -604,10 +613,43 @@ async function fetchLatestTrendEventRows(symbols: string[]): Promise<TrendEventR
   });
 
   if (!error && Array.isArray(data)) {
+    const rpcRows = data as Array<TrendEventRow & { rn: number }>;
+    // The RPC may still expose its pre-beta return schema, so hydrate the UI-only
+    // field from the table while keeping the RPC's value field for trend logic.
+    const longRowsToHydrate = rpcRows.filter((row) => row.timeframe === 'long');
+
+    if (longRowsToHydrate.length > 0) {
+      const missingSymbols = [...new Set(longRowsToHydrate.map((row) => row.symbol))];
+      const missingTimestamps = [...new Set(longRowsToHydrate.map((row) => row.ts))];
+      const { data: screenRows, error: screenError } = await supabase
+        .from('trend_events')
+        .select('symbol, barinterval, timeframe, screen_direction, ts')
+        .in('symbol', missingSymbols)
+        .eq('timeframe', 'long')
+        .in('ts', missingTimestamps);
+
+      if (screenError) {
+        console.warn('[symbolStore] failed to hydrate long trend screen_direction:', screenError);
+      } else {
+        const screenDirectionByEvent = new Map(
+          (screenRows ?? []).map((row) => [
+            `${row.symbol}|${row.barinterval}|${row.ts}`,
+            row.screen_direction,
+          ])
+        );
+
+        for (const row of longRowsToHydrate) {
+          const key = `${row.symbol}|${row.barinterval}|${row.ts}`;
+          if (screenDirectionByEvent.has(key)) {
+            row.screen_direction = screenDirectionByEvent.get(key) ?? null;
+          }
+        }
+      }
+    }
     // rn=1 нь одоогийн trend, rn=2 нь өмнөх нь. Групп бүрийг [latest, previous]
     // дараалалтай болгож, симбол тус бүрийн хуучин хэлбэрт хөрвүүлнэ.
     const groups = new Map<string, TrendEventRow[]>();
-    for (const row of data as Array<TrendEventRow & { rn: number }>) {
+    for (const row of rpcRows) {
       const key = `${row.symbol}|${row.barinterval}|${row.timeframe}`;
       const group = groups.get(key) ?? [];
       group.push(row);
@@ -629,7 +671,7 @@ async function fetchLatestTrendEventRows(symbols: string[]): Promise<TrendEventR
         TREND_TIMEFRAMES.map((timeframe) =>
           supabase
             .from('trend_events')
-            .select('symbol, barinterval, timeframe, value, ts')
+            .select('symbol, barinterval, timeframe, value, screen_direction, ts')
             .eq('symbol', symbol)
             .eq('barinterval', barinterval)
             .eq('timeframe', timeframe)
@@ -980,7 +1022,14 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
                 ) {
                   const barinterval = event.barinterval === '1m' ? '1m' : '10m';
                   const timeframe = event.timeframe as 'short' | 'long';
-                  get().updateTrend(event.symbol, barinterval, timeframe, event.value, event.ts);
+                  get().updateTrend(
+                    event.symbol,
+                    barinterval,
+                    timeframe,
+                    event.value,
+                    event.ts,
+                    event.screen_direction
+                  );
                 }
               }
             )
@@ -1252,8 +1301,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
           priceTs: new Date().toISOString(),
           trendShort1m: null,
           trendLong1m: null,
+          screenTrendLong1m: null,
           trendShort10m: null,
           trendLong10m: null,
+          screenTrendLong10m: null,
           trendTs1m: '',
           trendTs10m: '',
           prevTrendShort1m: null,
@@ -1283,8 +1334,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
         priceTs: new Date().toISOString(),
         trendShort1m: null,
         trendLong1m: null,
+        screenTrendLong1m: null,
         trendShort10m: null,
         trendLong10m: null,
+        screenTrendLong10m: null,
         trendTs1m: '',
         trendTs10m: '',
         volatility1m: null,
@@ -1379,8 +1432,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
             priceTs: new Date().toISOString(),
             trendShort1m: null,
             trendLong1m: null,
+            screenTrendLong1m: null,
             trendShort10m: null,
             trendLong10m: null,
+            screenTrendLong10m: null,
             trendTs: '',
             volatility1m: null,
             volatility10m: null,
@@ -1535,8 +1590,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
           priceTs: '',
           trendShort1m: null,
           trendLong1m: null,
+          screenTrendLong1m: null,
           trendShort10m: null,
           trendLong10m: null,
+          screenTrendLong10m: null,
           trendTs1m: '',
           trendTs10m: '',
           prevTrendShort1m: null,
@@ -1563,6 +1620,7 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
             updated.trendShortTs1m = timestamp;
           } else {
             updated.trendLong1m = currentValue;
+            updated.screenTrendLong1m = latestTrend.screen_direction ?? currentValue;
             updated.prevTrendLong1m = prevValue;
             updated.trendLongTs1m = timestamp;
           }
@@ -1574,6 +1632,7 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
             updated.trendShortTs10m = timestamp;
           } else {
             updated.trendLong10m = currentValue;
+            updated.screenTrendLong10m = latestTrend.screen_direction ?? currentValue;
             updated.prevTrendLong10m = prevValue;
             updated.trendLongTs10m = timestamp;
           }
@@ -1613,8 +1672,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
         priceTs: '',
         trendShort1m: null,
         trendLong1m: null,
+        screenTrendLong1m: null,
         trendShort10m: null,
         trendLong10m: null,
+        screenTrendLong10m: null,
         trendTs1m: '',
         trendTs10m: '',
         prevTrendShort1m: null,
@@ -1947,7 +2008,8 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
     barinterval: '1m' | '10m',
     timeframe: 'short' | 'long',
     value: number,
-    timestamp?: string | number | null
+    timestamp?: string | number | null,
+    screenDirection?: number | null
   ) => {
     const newSymbols = new Map(get().symbols);
     const existing = newSymbols.get(symbol) || {
@@ -1958,8 +2020,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
       priceTs: '',
       trendShort1m: null,
       trendLong1m: null,
+      screenTrendLong1m: null,
       trendShort10m: null,
       trendLong10m: null,
+      screenTrendLong10m: null,
       trendTs1m: '',
       trendTs10m: '',
       prevTrendShort1m: null,
@@ -1991,6 +2055,7 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
       } else {
         updated.prevTrendLong1m = existing.trendLong1m; // Өмнөх утгыг хадгалах
         updated.trendLong1m = value; // Шинэ утга
+        updated.screenTrendLong1m = screenDirection ?? value;
         updated.trendLongTs1m = trendTimestamp;
       }
       updated.trendTs1m = newerTrendTimestamp(existing.trendTs1m, trendTimestamp);
@@ -2002,6 +2067,7 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
       } else {
         updated.prevTrendLong10m = existing.trendLong10m; // Өмнөх утгыг хадгалах
         updated.trendLong10m = value; // Шинэ утга
+        updated.screenTrendLong10m = screenDirection ?? value;
         updated.trendLongTs10m = trendTimestamp;
       }
       updated.trendTs10m = newerTrendTimestamp(existing.trendTs10m, trendTimestamp);
@@ -2048,8 +2114,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
       priceTs: '',
       trendShort1m: null,
       trendLong1m: null,
+      screenTrendLong1m: null,
       trendShort10m: null,
       trendLong10m: null,
+      screenTrendLong10m: null,
       trendTs1m: '',
       trendTs10m: '',
       prevTrendShort1m: null,
@@ -2109,8 +2177,10 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
       priceTs: '',
       trendShort1m: null,
       trendLong1m: null,
+      screenTrendLong1m: null,
       trendShort10m: null,
       trendLong10m: null,
+      screenTrendLong10m: null,
       trendTs1m: '',
       trendTs10m: '',
       prevTrendShort1m: null,
@@ -2219,6 +2289,19 @@ export const useSymbolStore = create<SymbolState>((set, get) => ({
     } else {
       return timeframe === 'short' ? data.trendShort10m : data.trendLong10m;
     }
+  },
+
+  getScreenTrend: (symbol: string, barinterval: '1m' | '10m', timeframe: 'short' | 'long') => {
+    const data = get().symbols.get(symbol);
+    if (!data) return null;
+
+    if (timeframe === 'short') {
+      return barinterval === '1m' ? data.trendShort1m : data.trendShort10m;
+    }
+
+    return barinterval === '1m'
+      ? (data.screenTrendLong1m ?? data.trendLong1m)
+      : (data.screenTrendLong10m ?? data.trendLong10m);
   },
 
   /**

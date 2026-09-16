@@ -6,10 +6,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSymbolStore } from '@/stores/symbolStore';
-import { 
-  TrendBoardCard, 
-  EngineMode, 
-  SortMode, 
+import {
+  TrendBoardCard,
+  EngineMode,
+  SortMode,
   TrendBoardFilter,
   PulseScenarioType,
   WaveScenarioType,
@@ -88,17 +88,41 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
 
   const symbols = useMemo(() => {
     return [
-      'BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT',
-      'ADAUSDT', 'APTUSDT', 'ARBUSDT', 'ATOMUSDT', 'AVAXUSDT',
-      'BCHUSDT', 'DOGEUSDT', 'DOTUSDT', 'FILUSDT', 'GALAUSDT',
-      'INJUSDT', 'LDOUSDT', 'LINKUSDT', 'LTCUSDT', 'NEARUSDT',
-      'OPUSDT', 'POLUSDT', 'PYTHUSDT', 'SANDUSDT', 'SEIUSDT',
-      'STXUSDT', 'SUIUSDT', 'TONUSDT', 'UNIUSDT', 'ZECUSDT',
+      'BTCUSDT',
+      'ETHUSDT',
+      'SOLUSDT',
+      'BNBUSDT',
+      'XRPUSDT',
+      'ADAUSDT',
+      'APTUSDT',
+      'ARBUSDT',
+      'ATOMUSDT',
+      'AVAXUSDT',
+      'BCHUSDT',
+      'DOGEUSDT',
+      'DOTUSDT',
+      'FILUSDT',
+      'GALAUSDT',
+      'INJUSDT',
+      'LDOUSDT',
+      'LINKUSDT',
+      'LTCUSDT',
+      'NEARUSDT',
+      'OPUSDT',
+      'POLUSDT',
+      'PYTHUSDT',
+      'SANDUSDT',
+      'SEIUSDT',
+      'STXUSDT',
+      'SUIUSDT',
+      'TONUSDT',
+      'UNIUSDT',
+      'ZECUSDT',
     ];
   }, []);
 
   const [storeInitialized, setStoreInitialized] = useState(false);
-  
+
   useEffect(() => {
     const initStore = async () => {
       try {
@@ -108,7 +132,7 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
         setError('Store initialization failed');
       }
     };
-    
+
     initStore();
   }, [symbols]);
 
@@ -116,16 +140,17 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
     if (!storeInitialized) {
       return;
     }
-    
+
     try {
       setLoading(true);
       setError(null);
-      
+
       const barInterval = engineMode === EngineMode.PULSE ? '1m' : '10m';
-      
+
       // Store-аас функцүүдийг шууд авах
       const store = useSymbolStore.getState();
       const storeGetTrend = store.getTrend;
+      const storeGetScreenTrend = store.getScreenTrend;
       const storeGetVolatility = store.getVolatility;
       const storeGetPrice = store.getPrice;
       const storeGetDailyChange = store.getDailyChange;
@@ -133,7 +158,7 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
       const storeGetLowest24h = store.getLowest24h;
       const storeGetSymbol = store.getSymbol;
 
-      const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
       // engine과 무관한 통계이므로 pulse/wave 두 인스턴스가 동시에 호출해도
       // 공유 캐시(fetchPriceStats30dShared)가 실제 RPC 호출을 한 번으로 묶는다.
       const priceRanges = await fetchPriceStats30dShared(symbols, thirtyDaysAgo);
@@ -143,58 +168,71 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
         const symbolData = storeGetSymbol(symbol);
         const trendShort = storeGetTrend(symbol, barInterval, 'short');
         const trendLong = storeGetTrend(symbol, barInterval, 'long');
+        const screenTrendLong = storeGetScreenTrend(symbol, barInterval, 'long');
         const volatility = storeGetVolatility(symbol, barInterval);
         const currentPrice = storeGetPrice(symbol);
         const dailyChange = storeGetDailyChange(symbol) || 0;
         const highest24h = storeGetHighest24h(symbol) || 0;
         const lowest24h = storeGetLowest24h(symbol) || 0;
         const priceRange = priceRanges.get(symbol);
-        
+
         // Trend direction
-        const shortTermTrend = trendShort !== null ? valueToTrendDirection(trendShort) : TrendDirection.FLAT;
-        const longTermTrend = trendLong !== null ? valueToTrendDirection(trendLong) : TrendDirection.FLAT;
-        const volatilityLevel = volatility !== null ? volatilityValueToLevel(Math.abs(volatility)) : VolatilityLevel.MEDIUM;
-        
+        const shortTermTrend =
+          trendShort !== null ? valueToTrendDirection(trendShort) : TrendDirection.FLAT;
+        const longTermTrend =
+          trendLong !== null ? valueToTrendDirection(trendLong) : TrendDirection.FLAT;
+        const screenLongTermTrend =
+          screenTrendLong !== null ? valueToTrendDirection(screenTrendLong) : TrendDirection.FLAT;
+        const volatilityLevel =
+          volatility !== null
+            ? volatilityValueToLevel(Math.abs(volatility))
+            : VolatilityLevel.MEDIUM;
+
         // Price context
-        const midPrice30d = priceRange ? (priceRange.highest + priceRange.lowest) / 2 : (currentPrice || 0);
-        const vwap = priceRange?.vwap || (currentPrice || 0);
-        const discountVs30dMidPct = currentPrice && midPrice30d > 0 
-          ? ((currentPrice - midPrice30d) / midPrice30d) * 100 
-          : 0;
-        const vwapGapPct = currentPrice && vwap > 0 
-          ? ((currentPrice - vwap) / vwap) * 100 
-          : 0;
-        
+        const midPrice30d = priceRange
+          ? (priceRange.highest + priceRange.lowest) / 2
+          : currentPrice || 0;
+        const vwap = priceRange?.vwap || currentPrice || 0;
+        const discountVs30dMidPct =
+          currentPrice && midPrice30d > 0 ? ((currentPrice - midPrice30d) / midPrice30d) * 100 : 0;
+        const vwapGapPct = currentPrice && vwap > 0 ? ((currentPrice - vwap) / vwap) * 100 : 0;
+
         // Noise score (volatility-аас тооцоолох)
         const volatilityValue = volatility !== null ? Math.abs(volatility) : 50;
         const noiseScore = Math.min(100, Math.max(0, volatilityValue));
-        
+
         // Confidence & Upside calculation
-        const trendAligned = shortTermTrend === longTermTrend && shortTermTrend !== TrendDirection.FLAT;
+        const trendAligned =
+          shortTermTrend === longTermTrend && shortTermTrend !== TrendDirection.FLAT;
         const baseConfidence = 100 - noiseScore;
         const alignmentBonus = trendAligned ? 10 : 0;
         const confidence = Math.max(1, Math.min(100, baseConfidence + alignmentBonus));
-        
-        const pricePosition = highest24h > 0 && lowest24h > 0 && currentPrice
-          ? (currentPrice - lowest24h) / (highest24h - lowest24h)
-          : 0.5;
+
+        const pricePosition =
+          highest24h > 0 && lowest24h > 0 && currentPrice
+            ? (currentPrice - lowest24h) / (highest24h - lowest24h)
+            : 0.5;
         const upsidePotentialPct = Math.round((1 - pricePosition) * 100);
-        
+
         // Scenario determination
-        const scenario = engineMode === EngineMode.PULSE 
-          ? determinePulseScenario(upsidePotentialPct, confidence, vwapGapPct, volatilityValue)
-          : determineWaveScenario(upsidePotentialPct, confidence, shortTermTrend, longTermTrend);
-        
+        const scenario =
+          engineMode === EngineMode.PULSE
+            ? determinePulseScenario(upsidePotentialPct, confidence, vwapGapPct, volatilityValue)
+            : determineWaveScenario(upsidePotentialPct, confidence, shortTermTrend, longTermTrend);
+
         // Direction (trend-ээс тодорхойлох)
         let direction: 'LONG' | 'SHORT' | 'NONE' = 'NONE';
         if (shortTermTrend === TrendDirection.UP && longTermTrend === TrendDirection.UP) {
           direction = 'LONG';
-        } else if (shortTermTrend === TrendDirection.DOWN && longTermTrend === TrendDirection.DOWN) {
+        } else if (
+          shortTermTrend === TrendDirection.DOWN &&
+          longTermTrend === TrendDirection.DOWN
+        ) {
           direction = 'SHORT';
         } else {
           direction = 'NONE';
         }
-        
+
         return {
           symbol,
           name: symbol.replace('USDT', ''),
@@ -203,7 +241,7 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
             noiseScore,
             ancActive: noiseScore < 60,
             shortTermTrend,
-            longTermTrend,
+            longTermTrend: screenLongTermTrend,
             volatility: volatilityLevel,
           },
           groupB: {
@@ -228,16 +266,16 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
             highVolScore: (volatilityValue * upsidePotentialPct) / 100,
             discountScore: Math.abs(discountVs30dMidPct) + Math.abs(vwapGapPct),
           },
-          lastUpdatedTs: barInterval === '1m' 
-            ? (symbolData?.trendTs1m || new Date().toISOString())
-            : (symbolData?.trendTs10m || new Date().toISOString()),
+          lastUpdatedTs:
+            barInterval === '1m'
+              ? symbolData?.trendTs1m || new Date().toISOString()
+              : symbolData?.trendTs10m || new Date().toISOString(),
           isHolding: false, // дараа нь бодит дата оруулах
           direction,
         };
       });
-      
+
       setAllCards(cards);
-      
     } catch (err) {
       console.error('Trend board error:', err);
       setError('데이터를 불러올 수 없습니다.');
@@ -251,17 +289,25 @@ export function useTrendBoard(engineMode: EngineMode): UseTrendBoardReturn {
   useEffect(() => {
     const barInterval = engineMode === EngineMode.PULSE ? '1m' : '10m';
     const onSymbolChange = useSymbolStore.getState().onSymbolChange;
-    
-    const unsubscribe = onSymbolChange((_symbol: string, data: Partial<import('@/stores/symbolStore').SymbolData>) => {
-      const hasTrendChange = 
-        (barInterval === '1m' && (data.trendShort1m !== undefined || data.trendLong1m !== undefined)) ||
-        (barInterval === '10m' && (data.trendShort10m !== undefined || data.trendLong10m !== undefined));
-      
-      if (hasTrendChange) {
-        fetchData();
+
+    const unsubscribe = onSymbolChange(
+      (_symbol: string, data: Partial<import('@/stores/symbolStore').SymbolData>) => {
+        const hasTrendChange =
+          (barInterval === '1m' &&
+            (data.trendShort1m !== undefined ||
+              data.trendLong1m !== undefined ||
+              data.screenTrendLong1m !== undefined)) ||
+          (barInterval === '10m' &&
+            (data.trendShort10m !== undefined ||
+              data.trendLong10m !== undefined ||
+              data.screenTrendLong10m !== undefined));
+
+        if (hasTrendChange) {
+          fetchData();
+        }
       }
-    });
-    
+    );
+
     return unsubscribe;
   }, [engineMode, fetchData]);
 
@@ -301,11 +347,10 @@ function volatilityValueToLevel(value: number): VolatilityLevel {
   return VolatilityLevel.HIGH;
 }
 
-
 function determinePulseScenario(
-  upside: number, 
-  confidence: number, 
-  vwapGap: number, 
+  upside: number,
+  confidence: number,
+  vwapGap: number,
   volatility: number
 ): PulseScenarioType {
   if (confidence > 70 && vwapGap > 2 && volatility > 60) return PulseScenarioType.FLASH_BREAKOUT;
@@ -315,14 +360,15 @@ function determinePulseScenario(
 }
 
 function determineWaveScenario(
-  upside: number, 
-  confidence: number, 
-  trendShort: TrendDirection, 
+  upside: number,
+  confidence: number,
+  trendShort: TrendDirection,
   trendLong: TrendDirection
 ): WaveScenarioType {
-  if (trendShort === trendLong && trendShort !== 'FLAT' && confidence > 70) return WaveScenarioType.TREND_SURFING;
+  if (trendShort === trendLong && trendShort !== 'FLAT' && confidence > 70)
+    return WaveScenarioType.TREND_SURFING;
   if (upside > 80 && trendShort === 'UP') return WaveScenarioType.DEEP_ANCHOR;
-  if (trendShort !== trendLong && trendShort !== 'FLAT' && trendLong !== 'FLAT') return WaveScenarioType.TREND_REVERSAL;
+  if (trendShort !== trendLong && trendShort !== 'FLAT' && trendLong !== 'FLAT')
+    return WaveScenarioType.TREND_REVERSAL;
   return WaveScenarioType.STORM_BREWING;
 }
-

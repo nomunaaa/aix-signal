@@ -13,7 +13,7 @@ export type Kline = [
     number,
     string,
     string,
-    string
+    string,
 ];
 
 export type Candle = {
@@ -62,16 +62,14 @@ export type MockTradeFillPoint = {
 };
 
 export type Candle10m = {
-  bucket: number;
-  time: UTCTimestamp;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
+    bucket: number;
+    time: UTCTimestamp;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
 };
-
-
 
 export type TrendEvent = {
     id: string;
@@ -80,9 +78,9 @@ export type TrendEvent = {
     type?: string;
     trend_type?: string;
     value?: number;
+    screen_direction?: number | null;
     barinterval?: string;
 };
-
 
 export type VolatilityEvent = {
     id: string;
@@ -96,16 +94,16 @@ export type VolatilityEvent = {
 export type SignalEvent = {
     id: string;
     symbol: string;
-    signal_type: string;      // "entry", "exit", etc.
-    direction: string;        // "long", "short"
+    signal_type: string; // "entry", "exit", etc.
+    direction: string; // "long", "short"
     signal_name: string | null;
     price: number;
     bar_interval: string;
     source: string;
     trend_confidence: number | null;
     trend_type: string | null;
-    timestamp: number;        // ms
-    timestamp_ms: number;     // ms
+    timestamp: number; // ms
+    timestamp_ms: number; // ms
     created_at: string;
     level: number | null;
     percentage: number | null;
@@ -114,8 +112,10 @@ export type SignalEvent = {
     ingest_mode?: string | null;
     /** Entry event timestamp assigned from the matching signal cycle for trend filtering. */
     entry_timestamp_ms?: number | null;
-    entry_trend_short?: "UP" | "DOWN" | "NEUTRAL" | "up" | "down" | "neutral" | -100 | -1 | 0 | 1 | 100 | null;
-    entry_trend_long?: "UP" | "DOWN" | "NEUTRAL" | "up" | "down" | "neutral" | -100 | -1 | 0 | 1 | 100 | null;
+    entry_trend_short?:
+        "UP" | "DOWN" | "NEUTRAL" | "up" | "down" | "neutral" | -100 | -1 | 0 | 1 | 100 | null;
+    entry_trend_long?:
+        "UP" | "DOWN" | "NEUTRAL" | "up" | "down" | "neutral" | -100 | -1 | 0 | 1 | 100 | null;
 };
 export type MarkerCandlestickSeriesApi = ISeriesApi<"Candlestick"> & {
     setMarkers: (markers: SeriesMarker<UTCTimestamp>[]) => void;

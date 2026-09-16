@@ -2279,6 +2279,7 @@ export type Database = {
           id: string
           indicator_name: string
           raw_direction: number
+          screen_direction: number | null
           source: string
           symbol: string
           timeframe: string
@@ -2293,6 +2294,7 @@ export type Database = {
           id?: string
           indicator_name: string
           raw_direction: number
+          screen_direction?: number | null
           source: string
           symbol: string
           timeframe: string
@@ -2307,6 +2309,7 @@ export type Database = {
           id?: string
           indicator_name?: string
           raw_direction?: number
+          screen_direction?: number | null
           source?: string
           symbol?: string
           timeframe?: string
