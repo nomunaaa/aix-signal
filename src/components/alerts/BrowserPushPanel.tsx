@@ -3,7 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { useBilingualText } from '@/hooks/useBilingualText';
 import { toast } from 'sonner';
-import { Bell, BellOff } from 'lucide-react';
+import { Bell, BellOff, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 /**
  * 가입 직후 SignupComplete에서만 브라우저 알림 권한을 물어봤고, 그 화면을 다시
@@ -14,6 +15,7 @@ export function BrowserPushPanel() {
   const { tr } = useBilingualText();
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [supported, setSupported] = useState(true);
+  const [showSetupGuide, setShowSetupGuide] = useState(false);
 
   useEffect(() => {
     if (!('Notification' in window)) {
@@ -104,6 +106,73 @@ export function BrowserPushPanel() {
             </li>
             <li>{tr('페이지를 새로고침', 'Refresh the page')}</li>
           </ol>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowSetupGuide((prev) => !prev)}
+        className="mt-4 flex w-full items-center justify-between text-sm font-medium text-muted-foreground hover:text-foreground"
+        aria-expanded={showSetupGuide}
+      >
+        {tr('Chrome·Edge 알림 설정 방법 보기', 'How to set up notifications in Chrome / Edge')}
+        <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', showSetupGuide && 'rotate-180')} />
+      </button>
+
+      {showSetupGuide && (
+        <div className="mt-3 space-y-4 rounded-lg border border-border/60 bg-muted/20 p-4 text-sm">
+          <div className="space-y-1.5">
+            <h3 className="font-semibold text-foreground">
+              {tr('1. 브라우저에서 알림 허용', '1. Allow notifications in your browser')}
+            </h3>
+            <ol className="list-decimal space-y-0.5 pl-4 text-xs text-muted-foreground">
+              <li>{tr('위의 스위치를 켜고 "허용" 버튼을 누릅니다.', 'Turn on the switch above and click "Allow" on the prompt.')}</li>
+              <li>
+                {tr(
+                  '이미 차단한 적이 있다면 주소창 왼쪽의 자물쇠 아이콘 → "알림"을 "허용"으로 변경 후 새로고침합니다.',
+                  'If you already blocked it, click the lock icon in the address bar → set "Notifications" to "Allow", then refresh.'
+                )}
+              </li>
+            </ol>
+          </div>
+
+          <div className="space-y-1.5">
+            <h3 className="font-semibold text-foreground">
+              {tr('2. 운영체제 알림 설정도 확인하세요', "2. Also check your OS-level notification settings")}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {tr(
+                '브라우저에서 알림을 허용해도, 운영체제에서 Chrome/Edge 알림을 막고 있으면 화면에 뜨지 않습니다.',
+                'Even with browser permission granted, notifications won\'t appear if your OS is blocking Chrome/Edge notifications.'
+              )}
+            </p>
+            <ul className="list-disc space-y-0.5 pl-4 text-xs text-muted-foreground">
+              <li>
+                {tr(
+                  'macOS: 시스템 설정 → 알림 → Google Chrome(또는 Microsoft Edge) → "알림 허용" 켜기',
+                  'macOS: System Settings → Notifications → Google Chrome (or Microsoft Edge) → enable "Allow Notifications"'
+                )}
+              </li>
+              <li>
+                {tr(
+                  'Windows: 설정 → 시스템 → 알림 → Google Chrome(또는 Microsoft Edge) 항목 켜기',
+                  'Windows: Settings → System → Notifications → turn on the Google Chrome (or Microsoft Edge) entry'
+                )}
+              </li>
+            </ul>
+          </div>
+
+          <div className="space-y-1.5">
+            <h3 className="font-semibold text-foreground">
+              {tr('3. "방해 금지 모드"도 확인하세요', '3. Check "Do Not Disturb" / focus modes too')}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {tr(
+                'macOS 집중 모드나 Windows 방해 금지 모드가 켜져 있으면 알림이 조용히 숨겨질 수 있습니다.',
+                'macOS Focus mode or Windows Focus Assist can silently suppress notifications when turned on.'
+              )}
+            </p>
+          </div>
         </div>
       )}
     </Card>

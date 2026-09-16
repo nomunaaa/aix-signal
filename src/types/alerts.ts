@@ -15,6 +15,17 @@ export type NotifyPreset = 'Conservative' | 'Balanced' | 'Aggressive';
 export type NotifyChannel = '앱 내 알림(기본)';
 
 /**
+ * 알림 종류 (4단계 설정). 'all'이면 다른 값과 무관하게 전부 받는다.
+ */
+export type NotificationAlertType =
+  | 'all'
+  | 'wave_pulse_same_time'
+  | 'trend_score_20'
+  | 'trading_1m'
+  | 'trading_10m'
+  | 'trend_signal';
+
+/**
  * 포지션 방향
  */
 export type Side = 'LONG' | 'SHORT';
@@ -31,6 +42,7 @@ export interface AlertSettings {
   preset: NotifyPreset;
   channels: NotifyChannel[];
   favorites: string[];
+  notificationTypes: NotificationAlertType[];
   dnd: {
     enabled: boolean;
     start: string; // HH:mm
@@ -152,12 +164,14 @@ export interface QuickStartWizardProps {
     preset: NotifyPreset;
     channels: NotifyChannel[];
     favorites: string[];
+    notificationTypes: NotificationAlertType[];
   }) => void | Promise<void>;
   allowedSymbols?: string[];
   initialSettings?: {
     preset?: NotifyPreset;
     channels?: NotifyChannel[];
     favorites?: string[];
+    notificationTypes?: NotificationAlertType[];
   };
 }
 

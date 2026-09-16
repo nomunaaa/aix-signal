@@ -849,6 +849,7 @@ export type Database = {
           message: string
           symbol: string
           trading_category: string | null
+          trend_confidence: number | null
           updated_at: string
           user_id: string
         }
@@ -862,6 +863,7 @@ export type Database = {
           message: string
           symbol: string
           trading_category?: string | null
+          trend_confidence?: number | null
           updated_at?: string
           user_id: string
         }
@@ -875,6 +877,7 @@ export type Database = {
           message?: string
           symbol?: string
           trading_category?: string | null
+          trend_confidence?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -2454,6 +2457,7 @@ export type Database = {
           id: string
           mobile_enabled: boolean | null
           mute_until: string | null
+          notification_types: string[]
           preset: string | null
           scope: string | null
           signal_alerts: boolean | null
@@ -2481,6 +2485,7 @@ export type Database = {
           id?: string
           mobile_enabled?: boolean | null
           mute_until?: string | null
+          notification_types?: string[]
           preset?: string | null
           scope?: string | null
           signal_alerts?: boolean | null
@@ -2508,6 +2513,7 @@ export type Database = {
           id?: string
           mobile_enabled?: boolean | null
           mute_until?: string | null
+          notification_types?: string[]
           preset?: string | null
           scope?: string | null
           signal_alerts?: boolean | null

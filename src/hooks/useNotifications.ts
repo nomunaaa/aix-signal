@@ -16,6 +16,7 @@ export interface Notification {
   bar_interval: string | null;
   trading_category: string | null;
   flow: string | null;
+  trend_confidence: number | null;
   is_read: boolean;
   created_at: string;
   updated_at: string;
@@ -60,6 +61,7 @@ type BrowserAlertSettings = {
   dnd_end: string | null;
   dnd_exceptions: string[] | null;
   timezone: string | null;
+  notification_types: string[] | null;
 };
 
 const normalizeSymbols = (symbols: string[] | null | undefined) =>
@@ -149,6 +151,60 @@ const shouldShowRealtimePopup = (
   }
 
   return true;
+};
+
+const WAVE_PULSE_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * /alerts 4단계에서 고른 알림 종류와 이 알림이 맞는지 확인한다. 'all'이거나 선택이
+ * 비어 있으면 전부 통과(기존 동작과 동일). 그 외에는 선택한 종류 중 하나라도
+ * 맞으면 통과(OR) — 여러 종류를 동시에 받고 싶어 하는 게 자연스러운 기대치다.
+ *
+ * "wave/pulse 동시 발생"만 예외적으로 비동기 DB 조회가 필요하다 — 같은 종목의
+ * 반대 봉주기(1m<->10m) 알림이 최근 5분 안에도 있었는지 확인해야 하기 때문이다.
+ */
+const matchesNotificationTypes = async (
+  notification: Notification,
+  types: string[] | null | undefined,
+  userId: string
+): Promise<boolean> => {
+  const selected = new Set(
+    (types ?? []).map((t) => t.trim().toLowerCase()).filter(Boolean)
+  );
+  if (selected.size === 0 || selected.has("all")) return true;
+
+  if (selected.has("trading_1m") && notification.bar_interval === "1m") return true;
+  if (selected.has("trading_10m") && notification.bar_interval === "10m") return true;
+  if (selected.has("trend_score_20") && (notification.trend_confidence ?? 0) >= 20) return true;
+  if (selected.has("trend_signal") && notification.kind === "info") return true;
+
+  if (selected.has("wave_pulse_same_time")) {
+    const otherInterval =
+      notification.bar_interval === "1m" ? "10m" :
+      notification.bar_interval === "10m" ? "1m" :
+      null;
+
+    if (otherInterval) {
+      const center = new Date(notification.created_at).getTime();
+      const windowStart = new Date(center - WAVE_PULSE_WINDOW_MS).toISOString();
+      const windowEnd = new Date(center + WAVE_PULSE_WINDOW_MS).toISOString();
+
+      const { data } = await supabase
+        .from("notifications")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("symbol", notification.symbol)
+        .eq("bar_interval", otherInterval)
+        .gte("created_at", windowStart)
+        .lte("created_at", windowEnd)
+        .limit(1)
+        .maybeSingle();
+
+      if (data) return true;
+    }
+  }
+
+  return false;
 };
 
 const dispatchNotificationsSync = (detail: NotificationSyncDetail) => {
@@ -325,7 +381,7 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
     const { data, error: settingsError } = await supabase
       .from("user_alert_settings")
       .select(
-        "enabled, signal_alerts, event_entry, event_exit, symbols, favorites, scope, dnd_enabled, dnd_start, dnd_end, dnd_exceptions, timezone"
+        "enabled, signal_alerts, event_entry, event_exit, symbols, favorites, scope, dnd_enabled, dnd_start, dnd_end, dnd_exceptions, timezone, notification_types"
       )
       .eq("user_id", user.id)
       .order("updated_at", { ascending: false, nullsFirst: false })
@@ -350,9 +406,11 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
       }
 
       if (settings === undefined) return false;
-      return shouldShowRealtimePopup(notification, settings);
+      if (!shouldShowRealtimePopup(notification, settings)) return false;
+      if (!user) return true;
+      return matchesNotificationTypes(notification, settings?.notification_types, user.id);
     },
-    [loadRealtimeAlertSettings]
+    [loadRealtimeAlertSettings, user]
   );
 
   // 읽음 처리

@@ -8,11 +8,29 @@ import { Loader2, Check, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useBilingualText } from '@/hooks/useBilingualText';
 import { SORTED_SYMBOLS } from '@/config/symbols';
-import { QuickStartWizardProps, NotifyPreset, NotifyChannel } from '@/types/alerts';
+import { QuickStartWizardProps, NotifyPreset, NotifyChannel, NotificationAlertType } from '@/types/alerts';
 
 const PRESETS: NotifyPreset[] = ['Conservative', 'Balanced', 'Aggressive'];
 const CHANNELS: NotifyChannel[] = ['앱 내 알림(기본)'];
 const DEFAULT_FAVORITES = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
+const DEFAULT_NOTIFICATION_TYPES: NotificationAlertType[] = ['all'];
+
+const NOTIFICATION_TYPE_OPTIONS: { value: NotificationAlertType; labelKo: string; labelEn: string }[] = [
+  { value: 'all', labelKo: '전체 알림', labelEn: 'All notifications' },
+  {
+    value: 'wave_pulse_same_time',
+    labelKo: '웨이브·펄스 시그널이 동시에 발생했을 때',
+    labelEn: 'When wave and pulse signals occur at the same time',
+  },
+  {
+    value: 'trend_score_20',
+    labelKo: '트렌드 스코어 20점 이상일 때',
+    labelEn: 'When trend score is 20 points or higher',
+  },
+  { value: 'trading_1m', labelKo: '1분 트레이딩 알림', labelEn: '1-minute trading notification' },
+  { value: 'trading_10m', labelKo: '10분 트레이딩 알림', labelEn: '10-minute trading notification' },
+  { value: 'trend_signal', labelKo: '트렌드 시그널 알림', labelEn: 'Trend signal notification' },
+];
 
 const getMaxFavorites = (preset: NotifyPreset): number => {
   switch (preset) {
@@ -51,6 +69,9 @@ export const QuickStartWizard = memo(function QuickStartWizard({
   const [favorites, setFavorites] = useState<string[]>(() =>
     getInitialFavorites(initialSettings?.favorites, availableSymbols)
   );
+  const [notificationTypes, setNotificationTypes] = useState<NotificationAlertType[]>(
+    initialSettings?.notificationTypes?.length ? initialSettings.notificationTypes : DEFAULT_NOTIFICATION_TYPES
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -63,6 +84,9 @@ export const QuickStartWizard = memo(function QuickStartWizard({
       }
       if (initialSettings.favorites) {
         setFavorites(getInitialFavorites(initialSettings.favorites, availableSymbols));
+      }
+      if (initialSettings.notificationTypes?.length) {
+        setNotificationTypes(initialSettings.notificationTypes);
       }
     }
   }, [availableSymbols, initialSettings]);
@@ -104,12 +128,23 @@ export const QuickStartWizard = memo(function QuickStartWizard({
     setFavorites([]);
   };
 
+  const handleNotificationTypeToggle = (value: NotificationAlertType) => {
+    setNotificationTypes((prev) => {
+      if (value === 'all') return ['all'];
+      const withoutAll = prev.filter((t) => t !== 'all');
+      const next = withoutAll.includes(value)
+        ? withoutAll.filter((t) => t !== value)
+        : [...withoutAll, value];
+      return next.length === 0 ? ['all'] : next;
+    });
+  };
+
   const handleNext = async () => {
-    if (step < 3) {
+    if (step < 4) {
       setStep(step + 1);
     } else {
       if (isSubmitting) return;
-      
+
       setIsSubmitting(true);
       try {
         const available = new Set(availableSymbols);
@@ -117,6 +152,7 @@ export const QuickStartWizard = memo(function QuickStartWizard({
           preset,
           channels,
           favorites: favorites.filter((symbol) => available.has(symbol)),
+          notificationTypes,
         });
       } catch (error) {
         console.error('Error completing wizard:', error);
@@ -180,7 +216,7 @@ export const QuickStartWizard = memo(function QuickStartWizard({
     <Card className="glass p-6">
       <div className="flex items-center gap-2 mb-6">
         <div className="flex items-center gap-2">
-          {[1, 2, 3].map(num => (
+          {[1, 2, 3, 4].map(num => (
             <div
               key={num}
               className={cn(
@@ -303,6 +339,32 @@ export const QuickStartWizard = memo(function QuickStartWizard({
         </div>
       )}
 
+      {step === 4 && (
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">{tr('알림 종류 선택', 'Choose notification types')}</h3>
+          <p className="text-sm text-muted-foreground">
+            {tr(
+              '받고 싶은 알림 종류를 고르세요. 전체 알림을 선택하면 다른 항목과 무관하게 모두 받습니다.',
+              'Pick which notification types you want. Choosing "All" overrides every other option.'
+            )}
+          </p>
+          <div className="space-y-3">
+            {NOTIFICATION_TYPE_OPTIONS.map((option) => (
+              <div key={option.value} className="flex items-start gap-3">
+                <Checkbox
+                  id={`notify-type-${option.value}`}
+                  checked={notificationTypes.includes(option.value)}
+                  onCheckedChange={() => handleNotificationTypeToggle(option.value)}
+                />
+                <Label htmlFor={`notify-type-${option.value}`} className="cursor-pointer leading-snug">
+                  {tr(option.labelKo, option.labelEn)}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between mt-6 pt-6 border-t">
         <Button
           variant="outline"
@@ -323,7 +385,7 @@ export const QuickStartWizard = memo(function QuickStartWizard({
             </>
           ) : (
             <>
-              {step === 3 ? tr('완료', 'Done') : tr('다음', 'Next')}
+              {step === 4 ? tr('완료', 'Done') : tr('다음', 'Next')}
               <ChevronRight className="h-4 w-4" />
             </>
           )}

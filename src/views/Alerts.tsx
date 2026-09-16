@@ -19,11 +19,19 @@ import { HeroSection } from "@/components/alerts/HeroSection";
 import { getAllowedSymbols } from "@/config/symbols";
 import { PUBLIC_BROWSING } from "@/config/access";
 import {
-  AlertSettings, 
-  Summary48h as Summary48hType, 
-  HistoryCycle, 
-  HistoryFilters as HistoryFiltersType 
+  AlertSettings,
+  Summary48h as Summary48hType,
+  HistoryCycle,
+  HistoryFilters as HistoryFiltersType,
+  NotificationAlertType,
 } from "@/types/alerts";
+
+const DEFAULT_NOTIFICATION_TYPES: NotificationAlertType[] = ['all'];
+
+function parseNotificationTypes(value: unknown): NotificationAlertType[] {
+  if (!Array.isArray(value) || value.length === 0) return DEFAULT_NOTIFICATION_TYPES;
+  return value as NotificationAlertType[];
+}
 
 const IN_APP_CHANNELS: AlertSettings['channels'] = ['앱 내 알림(기본)'];
 
@@ -59,7 +67,13 @@ const Alerts = () => {
 
   // Load user settings
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      // PUBLIC_BROWSING가 켜져 있으면 로그인 게이트를 건너뛰고 이 페이지가 그대로
+      // 렌더되는데, loading을 여기서 꺼주지 않으면 비로그인 방문자는 영원히
+      // "로딩 중..." 화면에 갇힌다.
+      setLoading(false);
+      return;
+    }
 
     const loadSettings = async () => {
       try {
@@ -83,6 +97,7 @@ const Alerts = () => {
             preset: (data.preset || 'Balanced') as AlertSettings['preset'],
             channels: IN_APP_CHANNELS,
             favorites,
+            notificationTypes: parseNotificationTypes(data.notification_types),
             dnd: {
               enabled: !!data.dnd_start,
               start: data.dnd_start || '23:00',
@@ -265,6 +280,7 @@ const Alerts = () => {
     preset: AlertSettings['preset'];
     channels: AlertSettings['channels'];
     favorites: string[];
+    notificationTypes: NotificationAlertType[];
   }) => {
     if (!user) {
       toast({
@@ -287,6 +303,7 @@ const Alerts = () => {
         scope: 'favorites',
         enabled: hasSymbolAccess,
         signal_alerts: hasSymbolAccess,
+        notification_types: wizardSettings.notificationTypes,
         dnd_enabled: true,
         dnd_start: '23:00',
         dnd_end: '07:00',
@@ -335,6 +352,7 @@ const Alerts = () => {
           preset: (savedData.preset || 'Balanced') as AlertSettings['preset'],
           channels: IN_APP_CHANNELS,
           favorites: savedFavorites,
+          notificationTypes: parseNotificationTypes(savedData.notification_types),
           dnd: {
             enabled: !!savedData.dnd_start,
             start: savedData.dnd_start || '23:00',
