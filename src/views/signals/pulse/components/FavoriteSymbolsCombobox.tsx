@@ -36,6 +36,7 @@ export function FavoriteSymbolsCombobox({
   const showFavoritesOnly = usePulseStore((s) => s.showFavoritesOnly);
 
   const normalizedSymbols = useMemo(() => normalizeSymbols(symbols), [symbols]);
+  const topSymbols = useMemo(() => normalizedSymbols.slice(0, 5), [normalizedSymbols]);
 
   // 즐겨찾기를 맨 위로 올린 순서. 열려 있는 동안에는 고정한다 — 별을 누를 때마다
   // 즉시 재정렬하면 클릭한 행이 커서 아래에서 튀어 올라 다음 종목을 잘못 누르게 된다.
@@ -72,6 +73,49 @@ export function FavoriteSymbolsCombobox({
   const scopeLabel = showFavoritesOnly ? favoritesLabel : copy.tableControls.allSymbols;
   const searchLabel = language === 'ko' ? '즐겨찾기 종목 검색' : 'Search favorite symbols';
   const emptyLabel = language === 'ko' ? '종목 없음' : 'No symbols';
+  const resultsLabel = language === 'ko' ? '검색 결과' : 'Results';
+
+  const renderSymbolRow = (symbol: string) => {
+    const selected = favorites.has(symbol);
+    return (
+      <button
+        key={symbol}
+        type="button"
+        role="option"
+        aria-selected={selected}
+        onClick={() => toggleFavorite(symbol)}
+        className={cn(
+          'flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs transition-colors',
+          selected
+            ? 'bg-yellow-400/12 text-foreground'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+        )}
+      >
+        <Star
+          className={cn(
+            'h-3.5 w-3.5 shrink-0',
+            selected ? 'fill-current text-yellow-400' : 'text-muted-foreground/40'
+          )}
+          aria-hidden
+        />
+        <span className="min-w-0 flex-1 truncate font-mono font-medium">{symbol}</span>
+        {selected ? <Check className="h-3.5 w-3.5 shrink-0 text-yellow-500" aria-hidden /> : null}
+      </button>
+    );
+  };
+
+  const renderGroup = (label: string, groupSymbols: readonly string[]) => {
+    if (groupSymbols.length === 0) return null;
+
+    return (
+      <div className="space-y-0.5">
+        <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </div>
+        {groupSymbols.map(renderSymbolRow)}
+      </div>
+    );
+  };
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -81,7 +125,7 @@ export function FavoriteSymbolsCombobox({
           type="button"
           variant="outline"
           className={cn(
-            'h-9 min-w-[120px] shrink-0 justify-between gap-1.5 border-border bg-background px-2.5 text-xs font-normal',
+            'h-9 min-w-[100px] shrink-0 justify-between gap-1.5 border-border bg-background px-2.5 text-xs font-normal',
             highlighted
               ? 'border-yellow-400/40 bg-yellow-400/10 text-yellow-700 focus-visible:!ring-yellow-400/30 dark:text-yellow-300'
               : 'text-muted-foreground hover:bg-muted/40',
@@ -105,9 +149,9 @@ export function FavoriteSymbolsCombobox({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="start" className="w-[min(100vw-2rem,18rem)] p-2">
+      <PopoverContent align="start" className="w-[min(80vw-2rem,12rem)] p-2">
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-1" role="group" aria-label={favoritesLabel}>
+          <div className="space-y-1" role="group" aria-label={favoritesLabel}>
             <button
               type="button"
               onClick={() => {
@@ -116,13 +160,14 @@ export function FavoriteSymbolsCombobox({
                 onSelectAll?.();
               }}
               className={cn(
-                'h-8 rounded-md px-2 text-xs font-medium transition-colors',
+                'flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs font-medium transition-colors',
                 !showFavoritesOnly
                   ? 'bg-primary/10 text-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
-              {copy.tableControls.allSymbols}
+              <Star className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span>{copy.tableControls.allSymbols}</span>
             </button>
             <button
               type="button"
@@ -131,13 +176,14 @@ export function FavoriteSymbolsCombobox({
                 setShowFavoritesOnly(true);
               }}
               className={cn(
-                'h-8 rounded-md px-2 text-xs font-medium transition-colors',
+                'flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs font-medium transition-colors',
                 showFavoritesOnly
                   ? 'bg-yellow-400/12 text-yellow-700 dark:text-yellow-300'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
-              {favoritesLabel}
+              <Star className="h-3.5 w-3.5 shrink-0 fill-yellow-400 text-yellow-400" aria-hidden />
+              <span>{favoritesLabel}</span>
             </button>
           </div>
           <div className="border-t border-border" role="separator" />
@@ -152,38 +198,25 @@ export function FavoriteSymbolsCombobox({
             />
           </div>
 
-          <div className="max-h-72 overflow-y-auto pr-1" role="listbox" aria-label={favoritesLabel}>
+          <div className="max-h-72 space-y-2 overflow-y-auto pr-1" role="listbox" aria-label={favoritesLabel}>
             {filteredSymbols.length > 0 ? (
-              filteredSymbols.map((symbol) => {
-                const selected = favorites.has(symbol);
-                return (
-                  <button
-                    key={symbol}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    onClick={() => toggleFavorite(symbol)}
-                    className={cn(
-                      'flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs transition-colors',
-                      selected
-                        ? 'bg-yellow-400/12 text-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    )}
-                  >
-                    <Star
-                      className={cn(
-                        'h-3.5 w-3.5 shrink-0',
-                        selected ? 'fill-current text-yellow-400' : 'text-muted-foreground/40'
-                      )}
-                      aria-hidden
-                    />
-                    <span className="min-w-0 flex-1 truncate font-mono font-medium">{symbol}</span>
-                    {selected ? (
-                      <Check className="h-3.5 w-3.5 shrink-0 text-yellow-500" aria-hidden />
-                    ) : null}
-                  </button>
-                );
-              })
+              query.trim() ? (
+                renderGroup(resultsLabel, filteredSymbols)
+              ) : (
+                <>
+                  {renderGroup(
+                    favoritesLabel,
+                    filteredSymbols.filter((symbol) => favorites.has(symbol))
+                  )}
+                  {renderGroup('Top 5', topSymbols.filter((symbol) => !favorites.has(symbol)))}
+                  {renderGroup(
+                    copy.tableControls.allSymbols,
+                    normalizedSymbols.filter(
+                      (symbol) => !favorites.has(symbol) && !topSymbols.includes(symbol)
+                    )
+                  )}
+                </>
+              )
             ) : (
               <div className="px-2 py-6 text-center text-xs text-muted-foreground">
                 {emptyLabel}

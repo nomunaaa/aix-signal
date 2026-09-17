@@ -1363,27 +1363,6 @@ const Binance1mChartContainer: React.FC = () => {
                 E2X2 · 역추세
               </span>
 
-              {/* Zoom */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  차트 확대축소 :
-                </span>
-                <button
-                  onClick={() => handleZoom("in")}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/80 text-xs text-foreground hover:border-foreground/40"
-                  aria-label="Zoom in"
-                >
-                  +
-                </button>
-                <button
-                  onClick={() => handleZoom("out")}
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/80 text-xs text-foreground hover:border-foreground/40"
-                  aria-label="Zoom out"
-                >
-                  −
-                </button>
-              </div>
-
               {/* 여기서 줄을 강제로 바꾼다 — 기간 버튼이 우측 상단 캡쳐/전체화면 아이콘과
                   겹쳐서 깨지므로 항상 아랫줄에서 시작하게 한다. */}
               <div className="basis-full h-0" aria-hidden />
@@ -1473,7 +1452,29 @@ const Binance1mChartContainer: React.FC = () => {
                     />
                   </PopoverContent>
                 </Popover>
+              </div>              
+
+              {/* Zoom */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  차트 확대축소 :
+                </span>
+                <button
+                  onClick={() => handleZoom("in")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/80 text-xs text-foreground hover:border-foreground/40"
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+                <button
+                  onClick={() => handleZoom("out")}
+                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card/80 text-xs text-foreground hover:border-foreground/40"
+                  aria-label="Zoom out"
+                >
+                  −
+                </button>
               </div>
+
             </div>
           </div>
 
