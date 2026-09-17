@@ -76,6 +76,12 @@ export type TfKey15m = "6H" | "12H" | "1D" | "3D" | "5D";
 export const BB_PERIOD = 20;
 export const BB_MULTIPLIER = 2;
 
+// Moving Average (이평선) — 기본 5개 기간, 사용자가 각 기간 값을 직접 바꿀 수 있다.
+export const MA_DEFAULT_PERIODS = [5, 10, 20, 60, 120] as const;
+export const MA_COLORS = ["#eab308", "#f97316", "#a855f7", "#3b82f6", "#ec4899"] as const;
+export const MA_MIN_PERIOD = 2;
+export const MA_MAX_PERIOD = 500;
+
 // ---------- SVG arrows ----------
 export const LONG_ENTRY_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
