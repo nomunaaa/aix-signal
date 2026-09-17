@@ -23,13 +23,19 @@ import { ProofToolbar } from './ProofToolbar';
 import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
-import { symbolsMeetingQualityThresholds, type ProofQualityPeriod } from './symbolQuality';
+import { symbolsWithPositiveLongTermProfit, type ProofQualityPeriod } from './symbolQuality';
 import { SIGNAL_STREAM_OPTION_IDS } from '@/views/signals/pulse/utils/streamSelector';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 
 const DEFAULT_SEED = DEFAULT_SHARED_SIMULATION_INPUT.capital;
 const DEFAULT_ENTRY_RATIO = DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio;
 const DEFAULT_LEVERAGE = DEFAULT_SHARED_SIMULATION_INPUT.leverage;
+const QUALIFICATION_STREAMS: readonly ProofStatsStream[] = ['PULSE', 'WAVE'];
+const QUALIFICATION_TREND_MODES: readonly ProofStatsTrendMode[] = [
+  'reversal',
+  'trend',
+  'nonTrend',
+];
 
 const OPTION_SELECTIONS: Partial<Record<SignalStreamOptionId, ProofStatsSelection>> = {
   P1: { stream: 'PULSE', trendMode: 'reversal' },
@@ -52,8 +58,6 @@ export function ProofPageView() {
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
   const searchQuery = usePulseStore((state) => state.searchQuery);
-  const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
-  const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
 
   const selectedOptionIds = useMemo(
     () => SIGNAL_STREAM_OPTION_IDS.filter((id) => streamOptionFilter[id]),
@@ -105,18 +109,23 @@ export function ProofPageView() {
     if (Object.keys(data.buckets.total).length === 0) {
       return { totalStats: data.totalStats, symbolStats: data.symbolStats, streamWinRates: {} };
     }
+    // Establish the eligible symbol universe before applying the P1/W2/etc. selector.
+    // This prevents a symbol from qualifying merely because a single selected stream
+    // happens to be positive while its full long-term result is not.
+    const qualificationStats = reconstructSymbolStats(
+      data.buckets,
+      QUALIFICATION_STREAMS,
+      QUALIFICATION_TREND_MODES,
+      tradingCategories
+    );
+    let aggregateSymbols = symbolsWithPositiveLongTermProfit(qualificationStats);
+
     const symbolStats = reconstructSymbolStats(
       data.buckets,
       streams,
       trendModes,
       tradingCategories,
       selections
-    );
-    let aggregateSymbols = symbolsMeetingQualityThresholds(
-      symbolStats,
-      qualityWinRateThreshold,
-      qualityRiskRewardThreshold,
-      qualityPeriod
     );
     if (showFavoritesOnly) {
       aggregateSymbols = aggregateSymbols.filter((symbol) => favorites.has(symbol));
@@ -134,6 +143,7 @@ export function ProofPageView() {
       selections
     );
     const qualifiedSymbolSet = new Set(aggregateSymbols);
+    const qualifiedSymbolStats = symbolStats.filter((row) => qualifiedSymbolSet.has(row.symbol));
     const streamWinRates = (['PULSE', 'WAVE'] as const).reduce<
       Partial<Record<'pulse' | 'wave', number>>
     >((rates, stream) => {
@@ -164,21 +174,19 @@ export function ProofPageView() {
     }, {});
     return {
       totalStats,
-      symbolStats,
+      symbolStats: qualifiedSymbolStats,
       streamWinRates,
     };
   }, [
     data,
-    streams,
-    trendModes,
-    selections,
     tradingCategories,
     showFavoritesOnly,
     favorites,
-    qualityWinRateThreshold,
-    qualityRiskRewardThreshold,
-    qualityPeriod,
     searchQuery,
+    streams,
+    trendModes,
+    selections,
+    qualityPeriod,
   ]);
 
   useEffect(() => {
@@ -257,7 +265,6 @@ export function ProofPageView() {
         buckets={data.buckets}
         selectedOptionIds={selectedOptionIds}
         language={language}
-        qualityPeriod={qualityPeriod}
         copy={copy}
       />
 

@@ -1,5 +1,9 @@
 import type { ProofCycleStatsSlice, ProofSymbolStatsRow } from '@/lib/mock/proof-mock';
-import { meetsQualityThresholdsForPeriod, symbolsMeetingQualityThresholds } from './symbolQuality';
+import {
+  meetsQualityThresholdsForPeriod,
+  symbolsMeetingQualityThresholds,
+  symbolsWithPositiveLongTermProfit,
+} from './symbolQuality';
 
 function slice(overrides: Partial<ProofCycleStatsSlice> = {}): ProofCycleStatsSlice {
   return {
@@ -53,9 +57,11 @@ describe('proof symbol quality filter', () => {
 
   it('does not treat a missing P/L ratio as a qualifying zero', () => {
     const missingRatios = row({
-      recent3moDiscounted: slice({ winRate: 0.7, winLossRatio: null }),
-      discounted: slice({ winRate: 0.7, winLossRatio: null }),
+      recent3moCombined: slice({ winRate: 0.7, winLossRatio: null }),
+      combined: slice({ winRate: 0.7, winLossRatio: null }),
     });
+
+    expect(meetsQualityThresholdsForPeriod(missingRatios, 60, 1, 'last3mo')).toBe(false);
   });
 
   it('returns the same qualifying symbol set used by the pinned aggregate', () => {
@@ -67,6 +73,28 @@ describe('proof symbol quality filter', () => {
     });
 
     expect(symbolsMeetingQualityThresholds([row(), rejected], 60, 1, 'last3mo')).toEqual([
+      'BCHUSDT',
+    ]);
+  });
+
+  it('keeps a recent loss when both long-term returns are profitable', () => {
+    const recentLoss = row({
+      recent30Total: slice({ pnlPerEntryNotionalRateSum: -0.1 }),
+      recent3moTotal: slice({ pnlPerEntryNotionalRateSum: 0.2 }),
+      standard: slice({ pnlPerEntryNotionalRateSum: 0.3 }),
+    });
+    const threeMonthLoss = row({
+      symbol: 'XRPUSDT',
+      recent3moTotal: slice({ pnlPerEntryNotionalRateSum: -0.1 }),
+      standard: slice({ pnlPerEntryNotionalRateSum: 0.3 }),
+    });
+    const cumulativeLoss = row({
+      symbol: 'ETHUSDT',
+      recent3moTotal: slice({ pnlPerEntryNotionalRateSum: 0.2 }),
+      standard: slice({ pnlPerEntryNotionalRateSum: -0.1 }),
+    });
+
+    expect(symbolsWithPositiveLongTermProfit([recentLoss, threeMonthLoss, cumulativeLoss])).toEqual([
       'BCHUSDT',
     ]);
   });

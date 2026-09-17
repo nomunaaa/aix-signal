@@ -52,3 +52,21 @@ export function symbolsMeetingQualityThresholds(
     )
     .map((row) => row.symbol.trim().toUpperCase());
 }
+
+/**
+ * Proof aggregates use only symbols whose displayed long-term returns are positive.
+ * A recent 30-day loss is allowed; both the three-month and cumulative return must
+ * remain above zero before the symbol can contribute to any Proof summary.
+ */
+export function hasPositiveLongTermProfit(row: ProofSymbolStatsRow): boolean {
+  return (
+    row.recent3moTotal.pnlPerEntryNotionalRateSum > 0 &&
+    row.standard.pnlPerEntryNotionalRateSum > 0
+  );
+}
+
+export function symbolsWithPositiveLongTermProfit(rows: readonly ProofSymbolStatsRow[]): string[] {
+  return rows
+    .filter(hasPositiveLongTermProfit)
+    .map((row) => row.symbol.trim().toUpperCase());
+}

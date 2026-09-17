@@ -22,7 +22,6 @@ import { HistoryEntryCountLink } from './HistoryEntryCountLink';
 import { SortableTh, TableHeaderLabel, type SymbolStatsSortKey } from './SortableTh';
 import { formatHoldSec, formatRatio, type ProofLanguage } from './proofFormat';
 import type { ProofCopy } from './proofCopy';
-import { meetsQualityThresholdsForPeriod, type ProofQualityPeriod } from './symbolQuality';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 import {
   SIGNAL_OPTION_BADGE_CLASS,
@@ -174,7 +173,6 @@ export function SymbolStatsSection({
   tradingCategories,
   copy,
   language,
-  qualityPeriod,
   buckets,
   selectedOptionIds,
 }: {
@@ -187,14 +185,11 @@ export function SymbolStatsSection({
   tradingCategories: readonly TradingCategory[];
   copy: ProofCopy;
   language: ProofLanguage;
-  qualityPeriod: ProofQualityPeriod;
   buckets: ProofBuckets;
   selectedOptionIds: readonly SignalStreamOptionId[];
 }) {
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
-  const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
-  const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
   const [sortKey, setSortKey] = useState<SymbolStatsSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [expandedSymbols, setExpandedSymbols] = useState<Set<string>>(() => new Set());
@@ -249,12 +244,7 @@ export function SymbolStatsSection({
         return false;
       }
 
-      return meetsQualityThresholdsForPeriod(
-        row,
-        qualityWinRateThreshold,
-        qualityRiskRewardThreshold,
-        qualityPeriod
-      );
+      return true;
     });
     if (!sortKey) return filtered;
     const sorted = [...filtered].sort((a, b) => compareSymbolStatsRows(a, b, sortKey));
@@ -264,9 +254,6 @@ export function SymbolStatsSection({
     favorites,
     rows,
     showFavoritesOnly,
-    qualityWinRateThreshold,
-    qualityRiskRewardThreshold,
-    qualityPeriod,
     sortKey,
     sortDirection,
   ]);
