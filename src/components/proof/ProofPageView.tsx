@@ -8,6 +8,7 @@ import type { TradingCategory } from '@/lib/trading-category';
 import {
   reconstructSymbolStats,
   reconstructTotalStatsForSymbols,
+  scopeProofBucketsToPeriod,
   type ProofStatsSelection,
 } from '@/lib/proof/proof-buckets';
 import {
@@ -30,12 +31,6 @@ import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.typ
 const DEFAULT_SEED = DEFAULT_SHARED_SIMULATION_INPUT.capital;
 const DEFAULT_ENTRY_RATIO = DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio;
 const DEFAULT_LEVERAGE = DEFAULT_SHARED_SIMULATION_INPUT.leverage;
-const QUALIFICATION_STREAMS: readonly ProofStatsStream[] = ['PULSE', 'WAVE'];
-const QUALIFICATION_TREND_MODES: readonly ProofStatsTrendMode[] = [
-  'reversal',
-  'trend',
-  'nonTrend',
-];
 
 const OPTION_SELECTIONS: Partial<Record<SignalStreamOptionId, ProofStatsSelection>> = {
   P1: { stream: 'PULSE', trendMode: 'reversal' },
@@ -107,26 +102,24 @@ export function ProofPageView() {
   // 재구성한다. 버킷이 비어있는 경우(mock/empty state)는 서버 기본값을 그대로 쓴다.
   const activeStats = useMemo(() => {
     if (Object.keys(data.buckets.total).length === 0) {
-      return { totalStats: data.totalStats, symbolStats: data.symbolStats, streamWinRates: {} };
+      return {
+        totalStats: data.totalStats,
+        symbolStats: data.symbolStats,
+        streamWinRates: {},
+        buckets: data.buckets,
+      };
     }
-    // Establish the eligible symbol universe before applying the P1/W2/etc. selector.
-    // This prevents a symbol from qualifying merely because a single selected stream
-    // happens to be positive while its full long-term result is not.
-    const qualificationStats = reconstructSymbolStats(
-      data.buckets,
-      QUALIFICATION_STREAMS,
-      QUALIFICATION_TREND_MODES,
-      tradingCategories
-    );
-    let aggregateSymbols = symbolsWithPositiveLongTermProfit(qualificationStats);
-
+    const scopedBuckets = scopeProofBucketsToPeriod(data.buckets, qualityPeriod);
+    // The stream selector defines the comparison scope. A symbol qualifies when its
+    // selected P/W trend data is profitable in both long-term periods.
     const symbolStats = reconstructSymbolStats(
-      data.buckets,
+      scopedBuckets,
       streams,
       trendModes,
       tradingCategories,
       selections
     );
+    let aggregateSymbols = symbolsWithPositiveLongTermProfit(symbolStats);
     if (showFavoritesOnly) {
       aggregateSymbols = aggregateSymbols.filter((symbol) => favorites.has(symbol));
     }
@@ -135,7 +128,7 @@ export function ProofPageView() {
       aggregateSymbols = aggregateSymbols.filter((symbol) => symbol.includes(query));
     }
     const totalStats = reconstructTotalStatsForSymbols(
-      data.buckets,
+      scopedBuckets,
       aggregateSymbols,
       streams,
       trendModes,
@@ -148,7 +141,7 @@ export function ProofPageView() {
       Partial<Record<'pulse' | 'wave', number>>
     >((rates, stream) => {
       const streamRows = reconstructSymbolStats(
-        data.buckets,
+        scopedBuckets,
         [stream],
         selections
           .filter((selection) => selection.stream === stream)
@@ -176,6 +169,7 @@ export function ProofPageView() {
       totalStats,
       symbolStats: qualifiedSymbolStats,
       streamWinRates,
+      buckets: scopedBuckets,
     };
   }, [
     data,
@@ -262,7 +256,7 @@ export function ProofPageView() {
         streams={streams}
         trendModes={trendModes}
         tradingCategories={tradingCategories}
-        buckets={data.buckets}
+        buckets={activeStats.buckets}
         selectedOptionIds={selectedOptionIds}
         language={language}
         copy={copy}
