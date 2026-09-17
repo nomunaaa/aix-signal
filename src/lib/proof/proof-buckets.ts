@@ -78,38 +78,6 @@ export interface ProofBuckets {
   bySymbolRecent3mo: Record<string, ProofBucketMap>;
 }
 
-/**
- * Applies the page's date range before any stream/trend aggregation.
- * This mirrors filtering raw cycles by exit time: after a 30-day selection,
- * no older cycles can contribute to either the three-month or cumulative view.
- */
-export function scopeProofBucketsToPeriod(
-  buckets: ProofBuckets,
-  period: 'last30d' | 'last3mo' | 'all'
-): ProofBuckets {
-  if (period === 'all') return buckets;
-
-  if (period === 'last30d') {
-    return {
-      total: buckets.recent30,
-      recent30: buckets.recent30,
-      recent3mo: buckets.recent30,
-      bySymbolTotal: buckets.bySymbolRecent30,
-      bySymbolRecent30: buckets.bySymbolRecent30,
-      bySymbolRecent3mo: buckets.bySymbolRecent30,
-    };
-  }
-
-  return {
-    total: buckets.recent3mo,
-    recent30: buckets.recent30,
-    recent3mo: buckets.recent3mo,
-    bySymbolTotal: buckets.bySymbolRecent3mo,
-    bySymbolRecent30: buckets.bySymbolRecent30,
-    bySymbolRecent3mo: buckets.bySymbolRecent3mo,
-  };
-}
-
 export interface ProofStatsSelection {
   stream: ProofStatsStream;
   trendMode: ProofStatsTrendMode;

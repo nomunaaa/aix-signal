@@ -8,7 +8,6 @@ import type { TradingCategory } from '@/lib/trading-category';
 import {
   reconstructSymbolStats,
   reconstructTotalStatsForSymbols,
-  scopeProofBucketsToPeriod,
   type ProofStatsSelection,
 } from '@/lib/proof/proof-buckets';
 import {
@@ -24,7 +23,11 @@ import { ProofToolbar } from './ProofToolbar';
 import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
-import { symbolsWithPositiveLongTermProfit, type ProofQualityPeriod } from './symbolQuality';
+import {
+  symbolsMeetingQualityThresholds,
+  symbolsWithPositiveLongTermProfit,
+  type ProofQualityPeriod,
+} from './symbolQuality';
 import { SIGNAL_STREAM_OPTION_IDS } from '@/views/signals/pulse/utils/streamSelector';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 
@@ -53,6 +56,8 @@ export function ProofPageView() {
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
   const searchQuery = usePulseStore((state) => state.searchQuery);
+  const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
+  const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
 
   const selectedOptionIds = useMemo(
     () => SIGNAL_STREAM_OPTION_IDS.filter((id) => streamOptionFilter[id]),
@@ -109,17 +114,25 @@ export function ProofPageView() {
         buckets: data.buckets,
       };
     }
-    const scopedBuckets = scopeProofBucketsToPeriod(data.buckets, qualityPeriod);
     // The stream selector defines the comparison scope. A symbol qualifies when its
     // selected P/W trend data is profitable in both long-term periods.
     const symbolStats = reconstructSymbolStats(
-      scopedBuckets,
+      data.buckets,
       streams,
       trendModes,
       tradingCategories,
       selections
     );
     let aggregateSymbols = symbolsWithPositiveLongTermProfit(symbolStats);
+    const qualitySymbols = new Set(
+      symbolsMeetingQualityThresholds(
+        symbolStats,
+        qualityWinRateThreshold,
+        qualityRiskRewardThreshold,
+        qualityPeriod
+      )
+    );
+    aggregateSymbols = aggregateSymbols.filter((symbol) => qualitySymbols.has(symbol));
     if (showFavoritesOnly) {
       aggregateSymbols = aggregateSymbols.filter((symbol) => favorites.has(symbol));
     }
@@ -128,7 +141,7 @@ export function ProofPageView() {
       aggregateSymbols = aggregateSymbols.filter((symbol) => symbol.includes(query));
     }
     const totalStats = reconstructTotalStatsForSymbols(
-      scopedBuckets,
+      data.buckets,
       aggregateSymbols,
       streams,
       trendModes,
@@ -141,7 +154,7 @@ export function ProofPageView() {
       Partial<Record<'pulse' | 'wave', number>>
     >((rates, stream) => {
       const streamRows = reconstructSymbolStats(
-        scopedBuckets,
+        data.buckets,
         [stream],
         selections
           .filter((selection) => selection.stream === stream)
@@ -169,7 +182,7 @@ export function ProofPageView() {
       totalStats,
       symbolStats: qualifiedSymbolStats,
       streamWinRates,
-      buckets: scopedBuckets,
+      buckets: data.buckets,
     };
   }, [
     data,
@@ -177,6 +190,8 @@ export function ProofPageView() {
     showFavoritesOnly,
     favorites,
     searchQuery,
+    qualityWinRateThreshold,
+    qualityRiskRewardThreshold,
     streams,
     trendModes,
     selections,

@@ -20,10 +20,10 @@ function qualitySliceForPeriod(
   period: ProofQualityPeriod
 ): ProofCycleStatsSlice {
   return period === 'last30d'
-    ? row.recent30Combined
+    ? row.recent30Total
     : period === 'last3mo'
-      ? row.recent3moCombined
-      : row.combined;
+      ? row.recent3moTotal
+      : row.standard;
 }
 
 /** Keep a symbol only when the selected period satisfies both quality thresholds. */
