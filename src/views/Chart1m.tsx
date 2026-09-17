@@ -49,7 +49,12 @@ import { uploadTradeCloseCapture } from "@/lib/my/tradeChartCapture";
 import { closeMyPosition } from "@/lib/my/close-position";
 import { mockMarginFromPct } from "@/lib/mockTradeCapital";
 import { ChartSymbolSelect } from "@/components/chart/chart-symbol-select";
+import {
+  ChartSignalOptionSelector,
+  parseChartSignalOptions,
+} from "@/components/chart/ChartSignalOptionSelector";
 import { readLastChartSymbol, writeLastChartSymbol } from "@/lib/lastChartSymbol";
+import type { SignalStreamOptionId } from "@/views/signals/pulse/types/pulse.types";
 function rangeWithAnchors(
   entryMs: number,
   exitMs: number,
@@ -89,10 +94,40 @@ const Binance1mChartContainer: React.FC = () => {
   );
   const normalizedSymbol = symbol.trim().toUpperCase();
 
-  // Chart는 항상 E2X2(전략) + 역추세(추세 구분)로 고정한다 — Signal Board/Trend Board와
-  // 공유하던 pulseStore 선택은 더 이상 반영하지 않는다(사용자 선택 불가, UI도 제거됨).
+  const selectedChartOptions = useMemo(() => {
+    const requested = parseChartSignalOptions(searchParams.get('chartOptions'));
+    const available = requested.filter((option) => option.startsWith('P') || option.startsWith('B'));
+    return available.length > 0 ? available : (['P1'] as SignalStreamOptionId[]);
+  }, [searchParams]);
+
+  // Chart data remains scoped to E2X2; P1/P2/P3 select reversal/trend/non-trend signals.
   const tradingCategoryFilter: ChartTradingCategoryFilter = 'E2X2';
-  const trendModesFilter: ChartTrendMode[] = useMemo(() => ['reversal'], []);
+  const trendModesFilter: ChartTrendMode[] = useMemo(
+    () =>
+      selectedChartOptions.flatMap((option) => {
+        if (!option.startsWith('P')) return [];
+        return option.endsWith('1') ? ['reversal'] : option.endsWith('2') ? ['trend'] : ['nonTrend'];
+      }),
+    [selectedChartOptions]
+  );
+
+  const handleChartOptionSelect = (option: SignalStreamOptionId) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (option.startsWith('W')) {
+      params.set('chartOptions', option);
+      navigate(`/chart10m?${params.toString()}`);
+      return;
+    }
+
+    const next = option.startsWith('P')
+      ? selectedChartOptions.filter((current) => current.startsWith('P'))
+      : [];
+    const nextOptions = next.includes(option)
+      ? next.filter((current) => current !== option)
+      : [...next, option];
+    params.set('chartOptions', nextOptions.join(','));
+    navigate(`/chart1m?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (symbolFromQuery) {
@@ -1363,9 +1398,10 @@ const Binance1mChartContainer: React.FC = () => {
               </span>
               <ChartIntervalSelect active="1m" />
 
-              <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-500/40 bg-card px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                E2X2 · 역추세
-              </span>
+              <ChartSignalOptionSelector
+                selectedOptions={selectedChartOptions}
+                onSelect={handleChartOptionSelect}
+              />
 
               {/* 여기서 줄을 강제로 바꾼다 — 기간 버튼이 우측 상단 캡쳐/전체화면 아이콘과
                   겹쳐서 깨지므로 항상 아랫줄에서 시작하게 한다. */}
@@ -1524,9 +1560,10 @@ const Binance1mChartContainer: React.FC = () => {
                 disabled={SYMBOLS.length === 0}
               />
 
-              <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-500/40 bg-card px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                E2X2 · 역추세
-              </span>
+              <ChartSignalOptionSelector
+                selectedOptions={selectedChartOptions}
+                onSelect={handleChartOptionSelect}
+              />
 
               {/* Zoom */}
               <div className="flex items-center gap-1">
