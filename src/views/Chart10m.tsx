@@ -29,6 +29,7 @@ import {
   Download,
   Camera,
   Loader2,
+  Settings2,
 } from "lucide-react";
 import { useBinanceChart } from "./Multiplecharts/useBinanceChart";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,7 +54,7 @@ import { SimulatorSettingsPanel } from "@/components/chart-workspace/SimulatorSe
 import { useMockTradePositions } from "@/hooks/useMockTradePositions";
 import { useSharedSimulationInput } from "@/hooks/useSharedSimulationInput";
 import { TradeCaptureFallback } from "@/components/chart-workspace/TradeCaptureFallback";
-import { resolveChartBucketMs, resolveMaxCandles } from "@/views/Multiplecharts/constants";
+import { resolveChartBucketMs, resolveMaxCandles, MA_COLORS, MA_MIN_PERIOD, MA_MAX_PERIOD } from "@/views/Multiplecharts/constants";
 import { uploadTradeCloseCapture } from "@/lib/my/tradeChartCapture";
 import { closeMyPosition } from "@/lib/my/close-position";
 import { mockMarginFromPct } from "@/lib/mockTradeCapital";
@@ -252,6 +253,8 @@ const Chart10m: React.FC = () => {
       initialLoading,
       chartReady,
       showBollinger,
+      showMA,
+      maPeriods,
       lastPrice,
       lastCandleTime,
       showTrendShort,
@@ -260,6 +263,8 @@ const Chart10m: React.FC = () => {
     },
     actions: {
       setShowBollinger,
+      setShowMA,
+      setMaPeriods,
       handleZoom,
       handleTimeframeClick,
       forceResize,
@@ -1653,8 +1658,8 @@ const Chart10m: React.FC = () => {
 
           </div>
         </div>
-        {/* Bollinger toggle — 차트 위 오버레이 */}
-        <div className="pointer-events-none absolute left-4 bottom-20 z-30">
+        {/* Bollinger / 이평선(MA) toggle — 차트 위 오버레이 */}
+        <div className="pointer-events-none absolute left-4 bottom-20 z-30 flex items-center gap-2">
           <button
             onClick={() => setShowBollinger((v: boolean) => !v)}
             className={`pointer-events-auto px-3 py-1.5 text-xs rounded-full border transition
@@ -1665,6 +1670,53 @@ const Chart10m: React.FC = () => {
           >
             Bollinger
           </button>
+          <button
+            onClick={() => setShowMA((v: boolean) => !v)}
+            className={`pointer-events-auto px-3 py-1.5 text-xs rounded-full border transition
+              ${showMA
+                ? "bg-amber-500 text-slate-900 border-amber-500"
+                : "bg-card/80 text-foreground border-border hover:border-foreground/40"
+              }`}
+          >
+            이평선
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="pointer-events-auto flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card/80 text-foreground hover:border-foreground/40"
+                aria-label="이평선 기간 설정"
+              >
+                <Settings2 className="h-3.5 w-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-56 pointer-events-auto">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">이평선 기간 (MA period)</p>
+              <div className="space-y-2">
+                {maPeriods.map((period, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: MA_COLORS[idx] }}
+                    />
+                    <input
+                      type="number"
+                      min={MA_MIN_PERIOD}
+                      max={MA_MAX_PERIOD}
+                      value={period}
+                      onChange={(e) => {
+                        const next = Number(e.target.value);
+                        if (!Number.isFinite(next)) return;
+                        const updated = [...maPeriods];
+                        updated[idx] = next;
+                        setMaPeriods(updated);
+                      }}
+                      className="h-7 w-full rounded-md border border-border bg-background px-2 text-xs"
+                    />
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         </>}
         indicators={
