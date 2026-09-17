@@ -60,6 +60,9 @@ import { mockMarginFromPct } from '@/lib/mockTradeCapital';
 import { closeMyPosition } from '@/lib/my/close-position';
 import { toast } from '@/hooks/use-toast';
 import type { ChartTradingCategoryFilter, ChartTrendMode } from '@/views/Multiplecharts/types';
+import { StreamSelector } from '@/views/signals/pulse/components/StreamSelector';
+import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
+import { trendModeFilterFromOptions } from '@/views/signals/pulse/utils/streamSelector';
 
 const DEFAULT_SYMBOLS = VOLUME_TOP5_SYMBOLS.slice(0, 4);
 
@@ -79,9 +82,7 @@ const STREAMS = [
   { label: 'Wave (10m)', value: '10m' },
 ] as const;
 
-// 멀티차트는 항상 E2X2(전략) + 역추세(추세 구분)로 고정한다 — 사용자 선택 UI 없음.
-const LOCKED_TRADING_CATEGORY: ChartTradingCategoryFilter = 'E2X2';
-const LOCKED_TREND_MODES: ChartTrendMode[] = ['reversal'];
+const ALL_TRADING_CATEGORY: ChartTradingCategoryFilter = 'ALL';
 
 const INDICATORS = [
   { key: 'short', label: 'Trend short' },
@@ -100,6 +101,16 @@ export default function MultiChartGrid() {
   const [showTrendLong, setShowTrendLong] = useState(true);
   const [showBollinger, setShowBollinger] = useState(false);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // Signal Board/Proof/History와 같은 pulseStore 선택을 공유한다 — 여기서만 쓰던
+  // 고정 'E2X2 · 역추세' 배지 대신, 다른 화면과 똑같은 P1~W3 선택 결과를 그대로 쓴다.
+  const streamOptionFilter = usePulseStore((s) => s.streamOptionFilter);
+  const trendModesFilter = useMemo<ChartTrendMode[]>(() => {
+    const filter = trendModeFilterFromOptions(streamOptionFilter);
+    return (Object.entries(filter) as [ChartTrendMode, boolean][])
+      .filter(([, enabled]) => enabled)
+      .map(([mode]) => mode);
+  }, [streamOptionFilter]);
 
   const [selectedId, setSelectedId] = useState(0);
   // id로 키를 잡는다 — 배열 index를 쓰면 타일을 하나 지웠을 때 뒤쪽 타일들의
@@ -248,9 +259,7 @@ export default function MultiChartGrid() {
       <div className="flex items-center gap-x-4 gap-y-2 border-b border-border px-4 py-2.5 sm:flex-wrap">
         <h1 className="shrink-0 text-sm font-semibold text-foreground">멀티차트</h1>
 
-        <span className="inline-flex h-7 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-500/40 bg-card px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-          E2X2 · 역추세
-        </span>
+        <StreamSelector className="hidden shrink-0 !min-h-0 !gap-1 !p-0 sm:flex" />
 
         {/* 모바일: 요약 한 줄 + 시트 */}
         <button
@@ -328,6 +337,11 @@ export default function MultiChartGrid() {
             </div>
 
             <div>
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">신호</p>
+              <StreamSelector className="!min-h-0 !gap-1.5 !p-0" />
+            </div>
+
+            <div>
               <p className="mb-1.5 text-xs font-medium text-muted-foreground">지표</p>
               <div className="grid grid-cols-3 gap-2">
                 {INDICATORS.map((ind) => {
@@ -390,8 +404,8 @@ export default function MultiChartGrid() {
                   showTrendShort={showTrendShort}
                   showTrendLong={showTrendLong}
                   showBollinger={showBollinger}
-                  tradingCategoryFilter={LOCKED_TRADING_CATEGORY}
-                  trendModesFilter={LOCKED_TREND_MODES}
+                  tradingCategoryFilter={ALL_TRADING_CATEGORY}
+                  trendModesFilter={trendModesFilter}
                   selected={tile.id === selectedId}
                   onSelect={() => setSelectedId(tile.id)}
                   onMockStateChange={(snapshot) => handleMockStateChange(tile.id, snapshot)}
