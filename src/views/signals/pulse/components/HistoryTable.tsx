@@ -139,6 +139,8 @@ export interface HistoryTableProps {
   onRowClick?: (row: ClosedSignal) => void;
   /** LIVE/WAIT 행 필터가 전체가 아닐 때 톤·접힘 (AIX-85) */
   signalFilterActive?: boolean;
+  /** 상단 시그널(P1~W3)이 하나도 선택되지 않은 상태. 히스토리 대신 안내만 보여 준다. */
+  noStreamSelected?: boolean;
   /** Paid-plan gate: keep table chrome visible and show the lock copy in the table body. */
   upgradeRequired?: boolean;
   /** Profit simulation settings shared from the top action bar. */
@@ -831,6 +833,7 @@ export function HistoryTable({
   className,
   onRowClick,
   signalFilterActive = false,
+  noStreamSelected = false,
   upgradeRequired = false,
   simulationInput,
   selectedStrategy,
@@ -1217,6 +1220,18 @@ export function HistoryTable({
     },
     [effectiveTotalPages, onPageChange]
   );
+
+  // 시그널 미선택이 먼저다 — 데이터가 있든 없든 "선택해 달라"가 정확한 안내다.
+  if (noStreamSelected && !upgradeRequired) {
+    return (
+      <EmptyState
+        icon={History}
+        title={copy.history.noStreamTitle}
+        description={copy.history.noStreamDescription}
+        className={className}
+      />
+    );
+  }
 
   if (sourceSignals.length === 0 && !upgradeRequired) {
     return (

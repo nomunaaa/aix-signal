@@ -56,6 +56,7 @@ import {
 } from '../config/sectionColumnDefs';
 import { localizePulseColumnDefs, usePulseCopy } from '../utils/pulseTranslations';
 import {
+  SIGNAL_STREAM_OPTION_IDS,
   baseStreamFilterFromOptions,
   streamOptionMatchesSignal,
   trendModeFilterFromOptions,
@@ -291,6 +292,12 @@ export function PulseSingleColumnLayout({
   const streamOptionFilter = usePulseStore((s) => s.streamOptionFilter);
   const effectiveHistoryStreamOptionFilter = historyStreamOptionsFromUrl ?? streamOptionFilter;
   const isSymbolLocked = allowedSymbols.length === 0;
+  // P1~W3 중 하나도 켜져 있지 않으면 히스토리를 계산해 봐야 의미가 없다 —
+  // 빈 표 대신 "시그널을 선택해 주세요" 안내를 띄운다.
+  const noHistoryStreamSelected = useMemo(
+    () => SIGNAL_STREAM_OPTION_IDS.every((id) => !effectiveHistoryStreamOptionFilter[id]),
+    [effectiveHistoryStreamOptionFilter]
+  );
   const historyStreamFilter = useMemo(
     () => baseStreamFilterFromOptions(effectiveHistoryStreamOptionFilter),
     [effectiveHistoryStreamOptionFilter]
@@ -908,6 +915,7 @@ export function PulseSingleColumnLayout({
                 pageSize={historyPageSize}
                 onRowClick={(row) => navigateToSignalChart(row)}
                 signalFilterActive={false}
+                noStreamSelected={noHistoryStreamSelected}
                 upgradeRequired={isSymbolLocked}
                 simulationInput={simulationInput}
                 selectedStrategy={selectedStrategy}
