@@ -77,6 +77,8 @@ export type PulseCopy = {
   history: {
     emptyTitle: string;
     emptyDescription: string;
+    noStreamTitle: string;
+    noStreamDescription: string;
     title: string;
     expandAria: string;
     exportCsv: string;
@@ -250,6 +252,8 @@ const KO_COPY: PulseCopy = {
   history: {
     emptyTitle: '거래 히스토리가 없습니다',
     emptyDescription: '청산된 시그널 기록이 여기에 표시됩니다.',
+    noStreamTitle: '시그널을 선택해 주세요.',
+    noStreamDescription: '상단에서 시그널(P1~W3)을 하나 이상 선택하면 히스토리가 표시됩니다.',
     title: '히스토리',
     expandAria: '히스토리 섹션 펼침. 청산 종료(CLOSED) 목록은 LIVE·WAIT 행 필터와 무관합니다.',
     exportCsv: 'CSV 내보내기',
@@ -433,6 +437,8 @@ const EN_COPY: PulseCopy = {
   history: {
     emptyTitle: 'No trade history',
     emptyDescription: 'Closed signal records will appear here.',
+    noStreamTitle: 'Please select a signal.',
+    noStreamDescription: 'Pick at least one signal (P1–W3) above to see history.',
     title: 'History',
     expandAria: 'Expand history section. Closed cycles are independent of the LIVE/WAIT row filter.',
     exportCsv: 'Export CSV',
