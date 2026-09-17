@@ -1348,16 +1348,16 @@ const Binance1mChartContainer: React.FC = () => {
 
           <div className="hidden md:flex items-center pointer-events-auto">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
-                시그널 :
-              </span>
-              <ChartIntervalSelect active="1m" />
               <ChartSymbolSelect
                 symbols={SYMBOLS}
                 value={activeSymbol}
                 onValueChange={setSymbol}
                 disabled={SYMBOLS.length === 0}
               />
+              <span className="text-xs text-muted-foreground font-medium whitespace-nowrap">
+                시그널 :
+              </span>
+              <ChartIntervalSelect active="1m" />
 
               <span className="inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-500/40 bg-card px-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 E2X2 · 역추세
