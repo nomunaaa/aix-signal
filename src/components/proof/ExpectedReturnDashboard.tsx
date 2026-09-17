@@ -10,7 +10,6 @@ import {
 
 const COPY = {
   ko: {
-    title: '매매 성과 요약',
     entries: ['총 진입 횟수', '매매에 진입한 총 횟수'],
     winRate: ['승률', '수익 거래 비율'],
     riskReward: ['손익비', '평균 수익 ÷ 평균 손실'],
@@ -26,7 +25,6 @@ const COPY = {
     times: '회',
   },
   en: {
-    title: 'Trading Performance',
     entries: ['Total Entries', 'Total number of trade entries'],
     winRate: ['Win Rate', 'Share of profitable trades'],
     riskReward: ['Risk/Reward', 'Average win ÷ average loss'],
@@ -174,11 +172,7 @@ export function ExpectedReturnDashboard({
     <div className="rounded-xl border-2 border-border bg-card p-4 text-foreground shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:border-blue-900 dark:bg-[linear-gradient(135deg,#070b14_0%,#101c36_100%)] dark:text-white dark:shadow-[0_8px_32px_rgba(0,0,0,0.5)] sm:py-3 sm:px-3">
       <div className="mb-3 flex flex-col gap-3 border-b border-border pb-[5px] dark:border-white/10 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-x-[10px] gap-y-1">
-          <div className="text-[22px] font-bold tracking-wider">
-            AI<span className="text-pink-500">X</span>
-          </div>
-          <div className="text-lg font-bold">{copy.title}</div>
-          <div className="rounded bg-muted px-2.5 py-1 text-[13px] text-muted-foreground dark:bg-white/5 dark:text-slate-400">
+          <div className="rounded bg-muted px-3 py-1.5 text-lg font-bold text-foreground dark:bg-white/5 dark:text-white">
             {period}
           </div>
         </div>
