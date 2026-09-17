@@ -65,7 +65,7 @@ function signalBoardHistoryHref({
     params.set('historyCategories', tradingCategories.join(','));
   }
 
-  return `/signals/pulse?${params.toString()}`;
+  return `/history?${params.toString()}`;
 }
 
 export function HistoryEntryCountLink({

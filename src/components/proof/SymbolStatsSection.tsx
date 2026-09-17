@@ -198,9 +198,13 @@ export function SymbolStatsSection({
   const [sortKey, setSortKey] = useState<SymbolStatsSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [expandedSymbols, setExpandedSymbols] = useState<Set<string>>(() => new Set());
+  const selectedChildren = useMemo(() => {
+    const selectedIds = new Set(selectedOptionIds);
+    return SIGNAL_CHILDREN.filter((child) => selectedIds.has(child.id));
+  }, [selectedOptionIds]);
   const childRowsByOption = useMemo(() => {
     const result = new Map<SignalStreamOptionId, Map<string, ProofSymbolStatsRow>>();
-    for (const child of SIGNAL_CHILDREN) {
+    for (const child of selectedChildren) {
       if (!child.selection) {
         result.set(child.id, new Map());
         continue;
@@ -215,7 +219,7 @@ export function SymbolStatsSection({
       result.set(child.id, new Map(childRows.map((row) => [row.symbol, row])));
     }
     return result;
-  }, [buckets, tradingCategories]);
+  }, [buckets, selectedChildren, tradingCategories]);
   const toggleExpanded = (symbol: string) => {
     setExpandedSymbols((current) => {
       const next = new Set(current);
@@ -513,7 +517,7 @@ export function SymbolStatsSection({
                       />
                     </tr>
                     {expanded
-                      ? SIGNAL_CHILDREN.map((child) => {
+                      ? selectedChildren.map((child) => {
                           const childRow = childRowsByOption.get(child.id)?.get(row.symbol);
                           const childStreams = child.selection ? [child.selection.stream] : [];
                           const childTrendModes = child.selection
