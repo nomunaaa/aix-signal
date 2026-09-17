@@ -35,7 +35,7 @@ export const PROOF_COPY = {
       step2Title: '통계 기준별 예상 수익',
       basisRecent30: '최근 30일 통계',
       basisRecent3mo: '최근 3개월 통계',
-      basisTotal: '총 누적 통계',
+      basisTotal: '총누적(2년) 통계',
       basisTag: '기준',
       seed: '시드머니',
       entryRatio: '진입 비율',
