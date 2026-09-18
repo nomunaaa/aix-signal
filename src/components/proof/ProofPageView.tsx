@@ -7,6 +7,7 @@ import { buildEmptyProofPage } from '@/lib/proof/build-proof-page-data';
 import type { TradingCategory } from '@/lib/trading-category';
 import {
   reconstructSymbolStats,
+  reconstructSymbolStatsForProfitableSelections,
   reconstructTotalStatsForSymbols,
   type ProofStatsSelection,
 } from '@/lib/proof/proof-buckets';
@@ -25,7 +26,6 @@ import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
 import {
   symbolsMeetingQualityThresholds,
-  symbolsWithPositiveLongTermProfit,
   type ProofQualityPeriod,
 } from './symbolQuality';
 import { SIGNAL_STREAM_OPTION_IDS } from '@/views/signals/pulse/utils/streamSelector';
@@ -114,16 +114,14 @@ export function ProofPageView() {
         buckets: data.buckets,
       };
     }
-    // The stream selector defines the comparison scope. A symbol qualifies when its
-    // selected P/W trend data is profitable in both long-term periods.
-    const symbolStats = reconstructSymbolStats(
+    // Each selected P/W trend qualifies independently. The displayed symbol list
+    // is their union, and a parent row aggregates only its qualifying trends.
+    const symbolStats = reconstructSymbolStatsForProfitableSelections(
       data.buckets,
-      streams,
-      trendModes,
-      tradingCategories,
-      selections
+      selections,
+      tradingCategories
     );
-    let aggregateSymbols = symbolsWithPositiveLongTermProfit(symbolStats);
+    let aggregateSymbols = symbolStats.map((row) => row.symbol.trim().toUpperCase());
     const qualitySymbols = new Set(
       symbolsMeetingQualityThresholds(
         symbolStats,

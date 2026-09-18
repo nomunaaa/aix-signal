@@ -713,3 +713,76 @@ export function reconstructSymbolStats(
     (a, b) => b.standard.pnlPerEntryNotionalRateSum - a.standard.pnlPerEntryNotionalRateSum
   );
 }
+
+/**
+ * Rebuild each symbol from only the selected stream/trend combinations that are
+ * profitable in both long-term windows. This is a union across combinations:
+ * a symbol may qualify through P1 even when its P2 result is unprofitable.
+ */
+export function reconstructSymbolStatsForProfitableSelections(
+  buckets: ProofBuckets,
+  selections: readonly ProofStatsSelection[],
+  tradingCategories: readonly TradingCategory[]
+): ProofSymbolStatsRow[] {
+  const categoryKeys = categoryKeysForSelection(tradingCategories);
+  const symbols = new Set([
+    ...Object.keys(buckets.bySymbolTotal),
+    ...Object.keys(buckets.bySymbolRecent30),
+    ...Object.keys(buckets.bySymbolRecent3mo),
+  ]);
+  const rows: ProofSymbolStatsRow[] = [];
+
+  for (const symbol of symbols) {
+    const totalMap = buckets.bySymbolTotal[symbol] ?? {};
+    const recent30Map = buckets.bySymbolRecent30[symbol] ?? {};
+    const recent3moMap = buckets.bySymbolRecent3mo[symbol] ?? {};
+    const profitableSelections = selections.filter((selection) => {
+      const recent3mo = finalizeSlice(
+        combinedAcc(
+          recent3moMap,
+          [selection.stream],
+          [selection.trendMode],
+          categoryKeys,
+          [selection]
+        ),
+        'standard'
+      );
+      const total = finalizeSlice(
+        combinedAcc(
+          totalMap,
+          [selection.stream],
+          [selection.trendMode],
+          categoryKeys,
+          [selection]
+        ),
+        'standard'
+      );
+      return (
+        recent3mo.pnlPerEntryNotionalRateSum > 0 &&
+        total.pnlPerEntryNotionalRateSum > 0
+      );
+    });
+    if (!profitableSelections.length) continue;
+
+    const totalAcc = combinedAcc(totalMap, [], [], categoryKeys, profitableSelections);
+    const recent30Acc = combinedAcc(recent30Map, [], [], categoryKeys, profitableSelections);
+    const recent3moAcc = combinedAcc(recent3moMap, [], [], categoryKeys, profitableSelections);
+    rows.push({
+      symbol,
+      shortName: symbolShortName(symbol),
+      recent30Total: finalizeSlice(recent30Acc, 'standard'),
+      recent3moTotal: finalizeSlice(recent3moAcc, 'standard'),
+      recent30Discounted: finalizeSlice(recent30Acc, 'discounted'),
+      recent3moDiscounted: finalizeSlice(recent3moAcc, 'discounted'),
+      recent30Combined: finalizeSlice(recent30Acc, 'combined'),
+      recent3moCombined: finalizeSlice(recent3moAcc, 'combined'),
+      standard: finalizeSlice(totalAcc, 'standard'),
+      discounted: finalizeSlice(totalAcc, 'discounted'),
+      combined: finalizeSlice(totalAcc, 'combined'),
+    });
+  }
+
+  return rows.sort(
+    (a, b) => b.standard.pnlPerEntryNotionalRateSum - a.standard.pnlPerEntryNotionalRateSum
+  );
+}
