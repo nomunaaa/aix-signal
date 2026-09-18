@@ -11,14 +11,12 @@ import {
   RefreshCw,
   Send,
   ShieldCheck,
-  Smartphone,
   Unlink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { SMSSetup } from '@/components/charts/channels/SMSSetup';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from '@/lib/navigation-compat';
@@ -142,7 +140,6 @@ export default function LinkChannels() {
   const [telegramLink, setTelegramLink] = useState('');
   const [telegramLinked, setTelegramLinked] = useState(false);
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatus | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
@@ -162,7 +159,6 @@ export default function LinkChannels() {
       const result = data as TelegramStatusResponse;
       setTelegramStatus(result.telegram);
       setTelegramLinked(result.telegram.linked);
-      setPhoneNumber(result.phone_number ?? null);
       if (result.telegram.plan === 'free') setTelegramLink('');
     } catch (error) {
       console.error('Error loading channel status:', error);
@@ -264,7 +260,6 @@ export default function LinkChannels() {
       const result = data as TelegramStatusResponse;
       setTelegramStatus(result.telegram);
       setTelegramLinked(result.telegram.linked);
-      setPhoneNumber(result.phone_number ?? null);
 
       if (result.telegram.invite_sent) {
         toast.success('텔레그램 그룹 초대를 보냈습니다.');
@@ -463,19 +458,6 @@ export default function LinkChannels() {
               )}
             </>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Smartphone className="h-5 w-5" />
-            SMS
-          </CardTitle>
-          <CardDescription>중요한 SMS 알림을 받을 전화번호를 저장하세요.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SMSSetup userId={user!.id} phoneNumber={phoneNumber} onUpdate={loadStatus} />
         </CardContent>
       </Card>
     </div>
