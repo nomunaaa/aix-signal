@@ -23,7 +23,16 @@ export type GlossaryKey =
   | 'channel-priority'
   | 'alc-event'
   | 'relative-time'
-  | 'color-standard';
+  | 'color-standard'
+  | 'signal-p1'
+  | 'signal-p2'
+  | 'signal-p3'
+  | 'signal-b1'
+  | 'signal-b2'
+  | 'signal-b3'
+  | 'signal-w1'
+  | 'signal-w2'
+  | 'signal-w3';
 
 export const glossary: Record<GlossaryKey, { term: string; definition: string; termEn?: string; definitionEn?: string }> = {
   'ai-x-signal': {
@@ -117,6 +126,60 @@ export const glossary: Record<GlossaryKey, { term: string; definition: string; t
   'color-standard': {
     term: '색상 표준',
     definition: '녹색=상승, 빨강=하락(글로벌 표준).',
+  },
+  'signal-p1': {
+    term: 'P1 (Pulse · 역추세)',
+    definition: 'Pulse(1분봉) 데이터 기반, 역추세 구간 시그널.',
+    termEn: 'P1 (Pulse · Reversal)',
+    definitionEn: 'A reversal-phase signal based on Pulse (1-minute) data.',
+  },
+  'signal-p2': {
+    term: 'P2 (Pulse · 추세)',
+    definition: 'Pulse(1분봉) 데이터 기반, 추세 추종 구간 시그널.',
+    termEn: 'P2 (Pulse · Trend)',
+    definitionEn: 'A trend-following signal based on Pulse (1-minute) data.',
+  },
+  'signal-p3': {
+    term: 'P3 (Pulse · 비추세)',
+    definition: 'Pulse(1분봉) 데이터 기반, 비추세 구간 시그널.',
+    termEn: 'P3 (Pulse · Non-trend)',
+    definitionEn: 'A non-trend-phase signal based on Pulse (1-minute) data.',
+  },
+  'signal-b1': {
+    term: 'B1 (Beat · 역추세)',
+    definition: 'Beat(1분봉) 데이터 기반, 역추세 구간 시그널.',
+    termEn: 'B1 (Beat · Reversal)',
+    definitionEn: 'A reversal-phase signal based on Beat (1-minute) data.',
+  },
+  'signal-b2': {
+    term: 'B2 (Beat · 추세)',
+    definition: 'Beat(1분봉) 데이터 기반, 추세 추종 구간 시그널.',
+    termEn: 'B2 (Beat · Trend)',
+    definitionEn: 'A trend-following signal based on Beat (1-minute) data.',
+  },
+  'signal-b3': {
+    term: 'B3 (Beat · 비추세)',
+    definition: 'Beat(1분봉) 데이터 기반, 비추세 구간 시그널.',
+    termEn: 'B3 (Beat · Non-trend)',
+    definitionEn: 'A non-trend-phase signal based on Beat (1-minute) data.',
+  },
+  'signal-w1': {
+    term: 'W1 (Wave · 역추세)',
+    definition: 'Wave(10분봉) 데이터 기반, 역추세 구간 시그널.',
+    termEn: 'W1 (Wave · Reversal)',
+    definitionEn: 'A reversal-phase signal based on Wave (10-minute) data.',
+  },
+  'signal-w2': {
+    term: 'W2 (Wave · 추세)',
+    definition: 'Wave(10분봉) 데이터 기반, 추세 추종 구간 시그널.',
+    termEn: 'W2 (Wave · Trend)',
+    definitionEn: 'A trend-following signal based on Wave (10-minute) data.',
+  },
+  'signal-w3': {
+    term: 'W3 (Wave · 비추세)',
+    definition: 'Wave(10분봉) 데이터 기반, 비추세 구간 시그널.',
+    termEn: 'W3 (Wave · Non-trend)',
+    definitionEn: 'A non-trend-phase signal based on Wave (10-minute) data.',
   },
 };
 
