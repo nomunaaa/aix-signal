@@ -29,8 +29,6 @@ import {
   type SignalStreamId,
   type SignalTrendMode,
   type HistoryQueryState,
-  type SignalStreamOptionFilter,
-  type SignalStreamOptionId,
 } from '../types/pulse.types';
 import { usePulseStore } from '../stores/pulseStore';
 import { useSimulation } from '../hooks/useSimulation';
@@ -46,6 +44,10 @@ import {
   matchesHistoryDatePeriod,
   normalizeIsoTimestamp,
 } from '../utils/historyDateRange';
+import {
+  parseHistoryStreamOptionsParam,
+  parseHistorySymbolsParam,
+} from '../utils/historyQueryParams';
 import { chartPathForSignal } from '../utils/chartLink';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
 import { normalizeTradingCategory, type TradingCategory } from '@/lib/trading-category';
@@ -103,16 +105,6 @@ function parseHistoryLimitParam(value: string | null): number | null {
 
 function parseHistoryPeriodParam(value: string | null): SignalDatePeriod | null {
   return value === '30d' || value === '90d' || value === 'all' ? value : null;
-}
-
-function parseHistoryStreamOptionsParam(value: string | null): SignalStreamOptionFilter | null {
-  if (!value) return null;
-  const requested = new Set(value.split(','));
-  const validIds: SignalStreamOptionId[] = ['P1', 'P2', 'P3', 'B1', 'B2', 'B3', 'W1', 'W2', 'W3'];
-  if (!validIds.some((id) => requested.has(id))) return null;
-  return Object.fromEntries(
-    validIds.map((id) => [id, requested.has(id)])
-  ) as SignalStreamOptionFilter;
 }
 
 function streamFromBarinterval(barinterval?: '1m' | '10m'): SignalStreamId {
@@ -246,6 +238,10 @@ export function PulseSingleColumnLayout({
           searchParams.get('symbol') ??
           searchParams.get('search')
       );
+  const historySymbolsFromUrl = useMemo(() => {
+    if (historySymbolFilterClearedRef.current) return [];
+    return parseHistorySymbolsParam(searchParams.get('historySymbols'));
+  }, [searchParams]);
   const historyLimit = parseHistoryLimitParam(searchParams.get('historyLimit'));
   const historyPeriodFromUrl = parseHistoryPeriodParam(searchParams.get('historyPeriod'));
   const historyStreamOptionsFromUrl = useMemo(
@@ -308,11 +304,19 @@ export function PulseSingleColumnLayout({
   );
   const historyTradingCategories = E2X2_ONLY_CATEGORIES;
   const effectiveHistoryDatePeriod = historyPeriodFromUrl ?? datePeriod;
-  const qualityScopedSymbols = useMemo(
-    () =>
-      allowedSymbols.filter((symbol) => qualityQualifiedSymbols.has(symbol.trim().toUpperCase())),
-    [allowedSymbols, qualityQualifiedSymbols]
-  );
+  const historySymbolScope = useMemo(() => {
+    if (historySymbolsFromUrl.length > 0) {
+      return new Set(historySymbolsFromUrl.map(favoriteSymbolKey));
+    }
+    return qualityQualifiedSymbols;
+  }, [historySymbolsFromUrl, qualityQualifiedSymbols]);
+  const qualityScopedSymbols = useMemo(() => {
+    if (historySymbolsFromUrl.length > 0) {
+      const allowed = new Set(allowedSymbols.map(favoriteSymbolKey));
+      return historySymbolsFromUrl.filter((symbol) => allowed.has(favoriteSymbolKey(symbol)));
+    }
+    return allowedSymbols.filter((symbol) => qualityQualifiedSymbols.has(symbol.trim().toUpperCase()));
+  }, [allowedSymbols, historySymbolsFromUrl, qualityQualifiedSymbols]);
   // Range inputs update on every pointer move. Defer only the History query's symbol scope so
   // dragging a quality slider does not compete with pointer painting or issue a request per step.
   const deferredHistorySymbols = useDeferredValue(qualityScopedSymbols);
@@ -374,9 +378,9 @@ export function PulseSingleColumnLayout({
             effectiveHistoryStreamOptionFilter,
             streamFromClosedSignal(signal),
             trendModeFromClosedSignal(signal)
-          ) && qualityQualifiedSymbols.has(favoriteSymbolKey(signal.symbol))
+          ) && historySymbolScope.has(favoriteSymbolKey(signal.symbol))
       ),
-    [closedSignals, effectiveHistoryStreamOptionFilter, qualityQualifiedSymbols]
+    [closedSignals, effectiveHistoryStreamOptionFilter, historySymbolScope]
   );
 
   const closedForActiveTradingCategories = useMemo(
@@ -509,6 +513,7 @@ export function PulseSingleColumnLayout({
     historyTrendModeFilter.reversal,
     historyTradingCategories,
     historyPageSize,
+    historySymbolsFromUrl.join(','),
   ]);
 
   // sortedClosed.length is a dependency so this retries once data finishes loading, but it
@@ -718,6 +723,7 @@ export function PulseSingleColumnLayout({
       (prev) => {
         const next = new URLSearchParams(prev);
         next.delete('historySymbol');
+        next.delete('historySymbols');
         next.delete('search');
         next.delete('symbol');
         return next;
@@ -908,6 +914,9 @@ export function PulseSingleColumnLayout({
                 onPageChange={setHistoryPage}
                 serverPaginated={useHistoryServerPagination}
                 externalSymbolFilter={historySymbolFilter || undefined}
+                externalHistorySymbols={
+                  historySymbolsFromUrl.length > 0 ? historySymbolsFromUrl : undefined
+                }
                 onClearExternalSymbolFilter={handleClearHistorySymbolFilter}
                 externalDatePeriod={effectiveHistoryDatePeriod}
                 externalDateRange={exactHistoryDateRange}

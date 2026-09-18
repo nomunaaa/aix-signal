@@ -20,21 +20,8 @@ import { getAllowedSymbols, getSymbolsFromEnv } from '@/config/symbols';
 import { TRADING_CATEGORY_ORDER } from '@/lib/trading-category';
 import { usePulseCopy } from './utils/pulseTranslations';
 import { calculateOpenSignalPnl } from './utils/historyPnl';
+import { mergePulseUrlWithHistoryParams } from './utils/historyQueryParams';
 import type { Signal } from './types/pulse.types';
-
-const HISTORY_QUERY_PARAM_KEYS = [
-  'historySymbol',
-  'historyLimit',
-  'historyPeriod',
-  'historyFromIso',
-  'historyToIso',
-  'historyStreams',
-  'historyTrendMode',
-  'historyStreamOptions',
-  'historyCategories',
-  'historySort',
-  'historyFocus',
-] as const;
 
 function calculateDiscountRate(signal: Signal): number {
   if (signal.entryPrice <= 0 || signal.currentPrice <= 0) return 0;
@@ -109,17 +96,21 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
 
   useEffect(() => {
     syncFromURL(searchParams);
-  }, []);
+  }, [searchParams, syncFromURL]);
 
   // Keep URL in sync with filter/sort/strategy
   useEffect(() => {
-    const params = toURLParams();
-    for (const key of HISTORY_QUERY_PARAM_KEYS) {
-      const value = searchParams.get(key);
-      if (value) params.set(key, value);
-    }
-    const str = params.toString();
-    if (str !== searchParams.toString()) {
+    const liveHistoryParams =
+      typeof window === 'undefined'
+        ? searchParams
+        : new URLSearchParams(window.location.search);
+    const params = mergePulseUrlWithHistoryParams(toURLParams(), liveHistoryParams);
+    const nextQuery = params.toString();
+    const currentQuery =
+      typeof window === 'undefined'
+        ? searchParams.toString()
+        : window.location.search.replace(/^\?/, '');
+    if (nextQuery !== currentQuery) {
       // Next.js router(setSearchParams)를 쓰면 검색 파라미터 변경만으로도 RSC 왕복 +
       // 리렌더가 일어나 스크롤 위치가 튄다(필터 하나 누를 때마다 화면이 맨 위로).
       // 이 URL은 마운트 시 syncFromURL이 한 번 읽을 뿐인 "공유용 기록"이므로,
@@ -127,10 +118,12 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
       window.history.replaceState(
         window.history.state,
         '',
-        str ? `${window.location.pathname}?${str}` : window.location.pathname
+        nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname
       );
     }
   }, [
+    searchParams,
+    toURLParams,
     selectedStrategy,
     selectedStream,
     searchQuery,

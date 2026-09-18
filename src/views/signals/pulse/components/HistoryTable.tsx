@@ -128,6 +128,8 @@ export interface HistoryTableProps {
   serverPaginated?: boolean;
   /** 외부에서 종목 필터를 주입 (관계형 조회: 라이브 시그널 -> 히스토리) */
   externalSymbolFilter?: string;
+  /** URL drill-down: keep history scoped to an explicit symbol list from Proof/Selection. */
+  externalHistorySymbols?: readonly string[];
   /** externalSymbolFilter를 심어준 상위(URL) 상태를 정리 — 사용자가 종목 스코프를 전체로 되돌릴 때 호출 */
   onClearExternalSymbolFilter?: () => void;
   externalDatePeriod?: HistoryDatePeriod;
@@ -293,9 +295,16 @@ function applyHistoryFilter(
   simulationInput?: SimulationInput,
   selectedStrategy?: StrategyId,
   favorites?: ReadonlySet<string>,
-  showFavoritesOnly?: boolean
+  showFavoritesOnly?: boolean,
+  externalHistorySymbols?: readonly string[]
 ): ClosedSignal[] {
   let result = list;
+  if (externalHistorySymbols?.length) {
+    const scope = new Set(
+      externalHistorySymbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean)
+    );
+    result = result.filter((signal) => scope.has(signal.symbol.trim().toUpperCase()));
+  }
   if (filter.symbol.trim()) {
     const q = filter.symbol.toLowerCase();
     result = result.filter((s) => s.symbol.toLowerCase().includes(q));
@@ -825,6 +834,7 @@ export function HistoryTable({
   onPageChange,
   serverPaginated = false,
   externalSymbolFilter,
+  externalHistorySymbols,
   onClearExternalSymbolFilter: _onClearExternalSymbolFilter,
   externalDatePeriod = '30d',
   externalDateRange,
@@ -927,7 +937,8 @@ export function HistoryTable({
       simulationInput,
       selectedStrategy,
       favorites,
-      showFavoritesOnly
+      showFavoritesOnly,
+      externalHistorySymbols
     );
     // 전략 성과 그룹핑(sortClosedSignalsByStrategyPerformance)과 무관하게, 청산일시
     // 기준 순수 시간순으로 보고 싶을 때를 위한 전용 정렬(내림차순 토글 버튼).
@@ -940,6 +951,7 @@ export function HistoryTable({
     favorites,
     showFavoritesOnly,
     historySort,
+    externalHistorySymbols,
   ]);
   const loadedTotalCount = filteredAllSignals.length;
   const defaultFilterForScope = defaultHistoryFilter(
@@ -992,7 +1004,8 @@ export function HistoryTable({
           simulationInput,
           selectedStrategy,
           favorites,
-          showFavoritesOnly
+          showFavoritesOnly,
+          externalHistorySymbols
         );
         setServerSymbolCount(
           new Set(filtered.map((signal) => signal.symbol.trim().toUpperCase()).filter(Boolean)).size
@@ -1006,6 +1019,7 @@ export function HistoryTable({
       cancelled = true;
     };
   }, [
+    externalHistorySymbols,
     favorites,
     filter,
     historySort,
@@ -1186,7 +1200,8 @@ export function HistoryTable({
           simulationInput,
           selectedStrategy,
           favorites,
-          showFavoritesOnly
+          showFavoritesOnly,
+          externalHistorySymbols
         ),
         historySort.by,
         historySort.dir

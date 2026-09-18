@@ -14,8 +14,9 @@ export const PROOF_STREAM_TO_HISTORY_STREAM: Record<ProofStatsStream, 'pulse' | 
   WAVE: 'wave',
 };
 
-function signalBoardHistoryHref({
+export function signalBoardHistoryHref({
   symbol,
+  symbols,
   count,
   period,
   asOfIso,
@@ -24,7 +25,8 @@ function signalBoardHistoryHref({
   tradingCategories,
   signalOptions,
 }: {
-  symbol: string;
+  symbol?: string;
+  symbols?: readonly string[];
   count: number;
   period: '30d' | '90d' | 'all';
   asOfIso?: string | null;
@@ -41,7 +43,14 @@ function signalBoardHistoryHref({
     historySort: 'recent_closed',
     historyFocus: '1',
   });
-  if (symbol) params.set('historySymbol', symbol);
+  const normalizedSymbols = symbols
+    ?.map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
+  if (normalizedSymbols?.length) {
+    params.set('historySymbols', Array.from(new Set(normalizedSymbols)).join(','));
+  } else if (symbol) {
+    params.set('historySymbol', symbol);
+  }
   const historyPeriod = period;
   params.set('historyPeriod', historyPeriod);
   const exactRange = exactHistoryPeriodRange(historyPeriod, asOfIso);
@@ -110,6 +119,56 @@ export function HistoryEntryCountLink({
       aria-label={`${symbol} recently closed signal history, ${count} entries`}
     >
       <span className="min-w-0 truncate">{count}</span>
+      <ChevronRight
+        className="hidden h-3 w-3 shrink-0 text-muted-foreground sm:block"
+        aria-hidden
+      />
+    </Link>
+  );
+}
+
+export function HistorySymbolCountLink({
+  symbols,
+  count,
+  period,
+  asOfIso,
+  streams,
+  trendModes,
+  tradingCategories,
+  signalOptions,
+  className,
+}: {
+  symbols: readonly string[];
+  count: number;
+  period: '30d' | '90d' | 'all';
+  asOfIso?: string | null;
+  streams: readonly ProofStatsStream[];
+  trendModes: readonly ProofStatsTrendMode[];
+  tradingCategories: readonly TradingCategory[];
+  signalOptions?: readonly SignalStreamOptionId[];
+  className?: string;
+}) {
+  if (symbols.length <= 0) return <span>—</span>;
+
+  return (
+    <Link
+      to={signalBoardHistoryHref({
+        symbols,
+        count,
+        period,
+        asOfIso,
+        streams,
+        trendModes,
+        tradingCategories,
+        signalOptions,
+      })}
+      className={cn(
+        'inline-flex min-w-0 max-w-full items-center justify-end gap-0.5 rounded px-1 py-0.5 text-right font-mono font-semibold tabular-nums text-foreground underline-offset-2 hover:bg-muted/60 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        className
+      )}
+      aria-label={`${symbols.length} qualifying symbols, ${count} closed signal entries`}
+    >
+      <span className="min-w-0 truncate">{symbols.length}</span>
       <ChevronRight
         className="hidden h-3 w-3 shrink-0 text-muted-foreground sm:block"
         aria-hidden
