@@ -549,11 +549,23 @@ export function useBinanceChart(
     const LABEL_GAP_PX = 3;
 
     /**
-     * 시그널 화살표 아래 라벨 — 어떤 시그널 타입(P1/P2/P3/W1/W2/W3)에서 나온 화살표인지 표기한다.
-     * trend mode를 못 구한 경우(옵션 코드 없음)에는 라벨을 그리지 않는다.
+     * 시그널 화살표 아래 라벨 — 동작([매수]/[추가매수]/[분할청산]/[모두청산])과
+     * 시그널 타입 코드(P1/P2/P3/W1/W2/W3)를 함께 표기한다.
+     * partial_exit은 signal_events.percentage가 있을 때만 "N%청산"으로 쓰고,
+     * 비어 있으면 임의의 숫자를 지어내지 않고 "분할청산"으로만 표기한다.
      */
     const getLabelForSignal = useCallback((s: RenderSignal): string => {
-        return s.optionCode ? `[${s.optionCode}]` : "";
+        const type = String(s.type).toLowerCase();
+        let action = "";
+        if (type === "entry") action = "매수";
+        else if (type === "added_entry") action = "추가매수";
+        else if (type === "partial_exit") {
+            const pct = Number(s.percentage);
+            action = Number.isFinite(pct) && pct > 0 ? `${pct}%청산` : "분할청산";
+        } else if (type === "exit") action = "모두청산";
+
+        if (!action) return "";
+        return s.optionCode ? `[${action} ${s.optionCode}]` : `[${action}]`;
     }, []);
 
     const renderSignalSvgs = useCallback(() => {
