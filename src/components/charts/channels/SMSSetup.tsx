@@ -25,9 +25,13 @@ export const SMSSetup = ({ userId, phoneNumber, onUpdate }: SMSSetupProps) => {
       return;
     }
 
-    // Basic validation for phone number format
+    // 검증은 공백/하이픈을 제거하고 하지만, 그 결과를 저장하지 않고 원본 phone.trim()을
+    // 저장하면 "+976 9911 2233"처럼 사이에 공백이 든 번호가 그대로 DB에 들어가
+    // 화면에 표시될 때(또는 SMS 발송 시) 번호가 조각나 보인다. 검증에 쓴 것과
+    // 저장하는 것을 반드시 같은 정규화된 값으로 맞춘다.
+    const normalizedPhone = phone.replace(/[\s-]/g, '').trim();
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-    if (!phoneRegex.test(phone.replace(/[\s-]/g, ''))) {
+    if (!phoneRegex.test(normalizedPhone)) {
       toast.error('올바른 전화번호 형식이 아닙니다 (예: +821012345678)');
       return;
     }
@@ -36,8 +40,8 @@ export const SMSSetup = ({ userId, phoneNumber, onUpdate }: SMSSetupProps) => {
     try {
       const { error } = await supabase
         .from('profiles')
-         
-        .update({ phone_number: phone.trim() } as any)
+
+        .update({ phone_number: normalizedPhone } as any)
         .eq('id', userId);
 
       if (error) throw error;
