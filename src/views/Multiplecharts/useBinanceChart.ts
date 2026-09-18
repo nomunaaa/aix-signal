@@ -40,10 +40,6 @@ import {
     resolveMaxCandles,
     BB_PERIOD,
     BB_MULTIPLIER,
-    MA_DEFAULT_PERIODS,
-    MA_COLORS,
-    MA_MIN_PERIOD,
-    MA_MAX_PERIOD,
     TfKey1m,
     TfKey5m,
     TfKey10m,
@@ -278,10 +274,6 @@ export function useBinanceChart(
     }, [showTrendLong]);
     const [showBollinger, setShowBollinger] = useState(false);
     const showBollingerRef = useRef(false);
-    const [showMA, setShowMA] = useState(false);
-    const showMARef = useRef(false);
-    const [maPeriods, setMaPeriods] = useState<number[]>([...MA_DEFAULT_PERIODS]);
-    const maPeriodsRef = useRef<number[]>([...MA_DEFAULT_PERIODS]);
 
     const snapshotRangeMs = options?.snapshotRangeMs ?? null;
     const disableAutoLoadOlder = options?.disableAutoLoadOlder ?? Boolean(snapshotRangeMs);
@@ -336,13 +328,6 @@ export function useBinanceChart(
 
     const bbRafRef = useRef<number | null>(null);
     const lastBbAtRef = useRef<number>(0);
-
-    // 각 MA 기간(5/10/20/60/120)당 하나의 라인 시리즈 — 개수는 고정, 기간 값만 바뀐다.
-    const maSeriesRefs = useRef<(ISeriesApi<"Line"> | null)[]>(
-        MA_DEFAULT_PERIODS.map(() => null)
-    );
-    const maRafRef = useRef<number | null>(null);
-    const lastMaAtRef = useRef<number>(0);
 
     const lastEventsAtRef = useRef<number>(0);
     const eventsRafRef = useRef<number | null>(null);
@@ -444,9 +429,6 @@ export function useBinanceChart(
          
         mockTradeLineRef.current?.applyOptions({ priceFormat: bbFmt } as any);
 
-        for (const series of maSeriesRefs.current) {
-            series?.applyOptions({ priceFormat: bbFmt } as any);
-        }
     }, []);
 
     const rebuildCandleMaps = useCallback(() => {
@@ -1025,77 +1007,6 @@ export function useBinanceChart(
     }, [showBollinger, recalcBollinger]);
 
     // -------------------------
-    // Moving Average (이평선)
-    // -------------------------
-    const recalcMA = useCallback(() => {
-        const seriesList = maSeriesRefs.current;
-        if (!seriesList.length) return;
-
-        if (!showMARef.current) {
-            for (const series of seriesList) series?.setData([]);
-            return;
-        }
-
-        const candles = candlesRef.current;
-        const closes = candles.map((c) => c.close);
-        const periods = maPeriodsRef.current;
-
-        periods.forEach((period, idx) => {
-            const series = seriesList[idx];
-            if (!series) return;
-
-            if (
-                !Number.isFinite(period) ||
-                period < MA_MIN_PERIOD ||
-                period > MA_MAX_PERIOD ||
-                closes.length < period
-            ) {
-                series.setData([]);
-                return;
-            }
-
-            const points: { time: UTCTimestamp; value: number }[] = [];
-            let sum = 0;
-            for (let i = 0; i < closes.length; i++) {
-                sum += closes[i];
-                if (i >= period) sum -= closes[i - period];
-                if (i >= period - 1) {
-                    points.push({ time: candles[i].time, value: sum / period });
-                }
-            }
-            series.setData(points);
-        });
-    }, []);
-
-    const scheduleMA = useCallback(() => {
-        if (!showMARef.current) return;
-
-        const now = Date.now();
-        if (now - lastMaAtRef.current < BOLLINGER_THROTTLE_MS) return;
-        if (maRafRef.current !== null) return;
-
-        maRafRef.current = window.requestAnimationFrame(() => {
-            maRafRef.current = null;
-            if (disposedRef.current) return;
-
-            lastMaAtRef.current = Date.now();
-            recalcMA();
-        });
-    }, [recalcMA]);
-
-    useEffect(() => {
-        showMARef.current = showMA;
-        lastMaAtRef.current = 0;
-        recalcMA();
-    }, [showMA, recalcMA]);
-
-    useEffect(() => {
-        maPeriodsRef.current = maPeriods;
-        lastMaAtRef.current = 0;
-        recalcMA();
-    }, [maPeriods, recalcMA]);
-
-    // -------------------------
     // Series sync
     // -------------------------
     const syncSeries = useCallback(() => {
@@ -1175,7 +1086,6 @@ export function useBinanceChart(
 
             if (newCandle) {
                 scheduleBollinger();
-                scheduleMA();
             }
 
             scheduleRenderSignalSvgs();
@@ -1184,7 +1094,6 @@ export function useBinanceChart(
             getCandleColorForTime,
             // rebuildCandleMaps,
             scheduleBollinger,
-            scheduleMA,
             scheduleRenderSignalSvgs,
             syncSeries,
         ]
@@ -1366,7 +1275,6 @@ export function useBinanceChart(
 
         scheduleBackgroundBandsUpdate();
         scheduleBollinger();
-                scheduleMA();
         scheduleRenderSignalSvgs();
     }, [
         symbol,
@@ -1376,7 +1284,6 @@ export function useBinanceChart(
         options?.signalId,
         scheduleBackgroundBandsUpdate,
         scheduleBollinger,
-        scheduleMA,
         syncSeries,
         buildRenderSignals,
         scheduleRenderSignalSvgs,
@@ -1919,7 +1826,6 @@ export function useBinanceChart(
 
             syncSeries();
             scheduleBollinger();
-                scheduleMA();
             scheduleFetchAndApplyEventsRef.current?.();
 
             const nextLen = candlesRef.current.length;
@@ -1944,7 +1850,6 @@ export function useBinanceChart(
         BUCKET_MS,
         maxCandlesMemory,
         scheduleBollinger,
-        scheduleMA,
         syncSeries,
         disableAutoLoadOlder,
     ]);
@@ -2177,15 +2082,6 @@ export function useBinanceChart(
         bbUpperRef.current = chart.addSeries(LineSeries, { ...bbCommon, lineStyle: 2, priceFormat: bbFmt });
         bbLowerRef.current = chart.addSeries(LineSeries, { ...bbCommon, lineStyle: 2, priceFormat: bbFmt });
 
-        maSeriesRefs.current = MA_COLORS.map((color) =>
-            chart.addSeries(LineSeries, {
-                color,
-                lineWidth: 1,
-                priceLineVisible: false,
-                lastValueVisible: false,
-                priceFormat: bbFmt,
-            })
-        );
 
         chartRef.current = chart;
         seriesRef.current = series;
@@ -2320,7 +2216,6 @@ export function useBinanceChart(
 
                 syncSeries();
                 scheduleBollinger();
-                scheduleMA();
                 setChartReady(candlesRef.current.length > 0);
 
                 const last = candlesRef.current[candlesRef.current.length - 1];
@@ -2798,7 +2693,6 @@ export function useBinanceChart(
             if (viewportPersistTimerRef.current) clearTimeout(viewportPersistTimerRef.current);
 
             if (bbRafRef.current !== null) cancelAnimationFrame(bbRafRef.current);
-            if (maRafRef.current !== null) cancelAnimationFrame(maRafRef.current);
             if (eventsRafRef.current !== null) cancelAnimationFrame(eventsRafRef.current);
             if (uiRafRef.current !== null) cancelAnimationFrame(uiRafRef.current);
             if (bgRafRef.current !== null) cancelAnimationFrame(bgRafRef.current);
@@ -2821,7 +2715,6 @@ export function useBinanceChart(
         loadOlderData,
         scheduleBackgroundBandsUpdate,
         scheduleBollinger,
-        scheduleMA,
         scheduleFetchAndApplyEvents,
         scheduleUiStateSync,
         BUCKET_MS,
@@ -2864,7 +2757,6 @@ export function useBinanceChart(
 
                     scheduleBackgroundBandsUpdate();
                     scheduleBollinger();
-                scheduleMA();
                     scheduleRenderSignalSvgs();
                 }
             )
@@ -2947,7 +2839,6 @@ export function useBinanceChart(
         options?.signalId,
         scheduleBackgroundBandsUpdate,
         scheduleBollinger,
-        scheduleMA,
         syncSeries,
         scheduleRenderSignalSvgs,
         buildRenderSignals,
@@ -2969,8 +2860,6 @@ export function useBinanceChart(
             ohlc: displayOhlc,
             initialLoading,
             showBollinger,
-            showMA,
-            maPeriods,
             lastPrice,
             lastPriceSymbol,
             lastCandleTime,
@@ -2981,8 +2870,6 @@ export function useBinanceChart(
         },
         actions: {
             setShowBollinger,
-            setShowMA,
-            setMaPeriods,
             handleZoom,
             handleTimeframeClick,
             forceResize,
