@@ -268,8 +268,6 @@ export function ProofPageView() {
         seed={seed}
         entryRatio={entryRatio}
         leverage={leverage}
-        streams={streams}
-        trendModes={trendModes}
         tradingCategories={tradingCategories}
         buckets={activeStats.buckets}
         selectedOptionIds={selectedOptionIds}

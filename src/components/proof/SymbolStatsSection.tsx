@@ -20,13 +20,19 @@ import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import { AssetSymbolCell, HistoricalMoneyCell, HistoricalPctCell } from './ProofStatCells';
 import { HistoryEntryCountLink } from './HistoryEntryCountLink';
 import { SortableTh, TableHeaderLabel, type SymbolStatsSortKey } from './SortableTh';
-import { formatHoldSec, formatRatio, type ProofLanguage } from './proofFormat';
+import {
+  combineProofCycleStats,
+  formatHoldSec,
+  formatRatio,
+  type ProofLanguage,
+} from './proofFormat';
 import type { ProofCopy } from './proofCopy';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 import {
   SIGNAL_OPTION_BADGE_CLASS,
   signalOptionTone,
 } from '@/views/signals/pulse/utils/streamSelector';
+import { hasPositiveLongTermProfit } from './symbolQuality';
 
 function symbolStatsSortValue(row: ProofSymbolStatsRow, key: SymbolStatsSortKey): number {
   if (key === 'symbol') return 0;
@@ -163,13 +169,31 @@ function SymbolMetricCells({
   });
 }
 
+/** Build the parent row from precisely the child rows that remain visible. */
+function combineVisibleChildRows(rows: readonly ProofSymbolStatsRow[]): ProofSymbolStatsRow {
+  const first = rows[0];
+  if (!first) throw new Error('At least one visible child row is required.');
+
+  return {
+    symbol: first.symbol,
+    shortName: first.shortName,
+    recent30Total: combineProofCycleStats(rows.map((row) => row.recent30Total)),
+    recent3moTotal: combineProofCycleStats(rows.map((row) => row.recent3moTotal)),
+    recent30Discounted: combineProofCycleStats(rows.map((row) => row.recent30Discounted)),
+    recent3moDiscounted: combineProofCycleStats(rows.map((row) => row.recent3moDiscounted)),
+    recent30Combined: combineProofCycleStats(rows.map((row) => row.recent30Combined)),
+    recent3moCombined: combineProofCycleStats(rows.map((row) => row.recent3moCombined)),
+    standard: combineProofCycleStats(rows.map((row) => row.standard)),
+    discounted: combineProofCycleStats(rows.map((row) => row.discounted)),
+    combined: combineProofCycleStats(rows.map((row) => row.combined)),
+  };
+}
+
 export function SymbolStatsSection({
   rows,
   seed,
   entryRatio,
   leverage,
-  streams,
-  trendModes,
   tradingCategories,
   copy,
   language,
@@ -180,8 +204,6 @@ export function SymbolStatsSection({
   seed: number;
   entryRatio: number;
   leverage: number;
-  streams: readonly ProofStatsStream[];
-  trendModes: readonly ProofStatsTrendMode[];
   tradingCategories: readonly TradingCategory[];
   copy: ProofCopy;
   language: ProofLanguage;
@@ -232,9 +254,18 @@ export function SymbolStatsSection({
     }
   };
   const visibleRows = useMemo(() => {
+    const rowsWithVisibleChildren = rows.flatMap((row) => {
+      const visibleChildren = selectedChildren
+        .map((child) => childRowsByOption.get(child.id)?.get(row.symbol))
+        .filter(
+          (childRow): childRow is ProofSymbolStatsRow =>
+            childRow != null && hasPositiveLongTermProfit(childRow)
+        );
+      return visibleChildren.length ? [combineVisibleChildRows(visibleChildren)] : [];
+    });
     let filtered = showFavoritesOnly
-      ? rows.filter((row) => favorites.has(row.symbol.trim().toUpperCase()))
-      : rows;
+      ? rowsWithVisibleChildren.filter((row) => favorites.has(row.symbol.trim().toUpperCase()))
+      : rowsWithVisibleChildren;
     filtered = filtered.filter((row) => {
       if (
         row.standard.cycleCount === 0 &&
@@ -253,6 +284,8 @@ export function SymbolStatsSection({
   }, [
     favorites,
     rows,
+    childRowsByOption,
+    selectedChildren,
     showFavoritesOnly,
     sortKey,
     sortDirection,
@@ -469,6 +502,13 @@ export function SymbolStatsSection({
             ) : (
               visibleRows.map((row) => {
                 const expanded = expandedSymbols.has(row.symbol);
+                const visibleChildren = selectedChildren.filter((child) => {
+                  const childRow = childRowsByOption.get(child.id)?.get(row.symbol);
+                  return childRow != null && hasPositiveLongTermProfit(childRow);
+                });
+                const visibleChildSelections = visibleChildren.flatMap((child) =>
+                  child.selection ? [child.selection] : []
+                );
                 return (
                   <Fragment key={row.symbol}>
                     <tr className="hover:bg-muted/30">
@@ -496,20 +536,27 @@ export function SymbolStatsSection({
                         seed={seed}
                         entryRatio={entryRatio}
                         leverage={leverage}
-                        streams={streams}
-                        trendModes={trendModes}
+                        streams={[
+                          ...new Set(visibleChildSelections.map((selection) => selection.stream)),
+                        ]}
+                        trendModes={[
+                          ...new Set(
+                            visibleChildSelections.map((selection) => selection.trendMode)
+                          ),
+                        ]}
                         tradingCategories={tradingCategories}
-                        signalOptions={selectedOptionIds}
+                        signalOptions={visibleChildren.map((child) => child.id)}
                         language={language}
                       />
                     </tr>
                     {expanded
-                      ? selectedChildren.map((child) => {
+                      ? visibleChildren.map((child) => {
                           const childRow = childRowsByOption.get(child.id)?.get(row.symbol);
                           const childStreams = child.selection ? [child.selection.stream] : [];
                           const childTrendModes = child.selection
                             ? [child.selection.trendMode]
                             : [];
+                          if (!childRow) return null;
                           return (
                             <tr
                               key={`${row.symbol}-${child.id}`}
