@@ -101,12 +101,12 @@ const Binance1mChartContainer: React.FC = () => {
     return available.length > 0 ? available : (['P1'] as SignalStreamOptionId[]);
   }, [searchParams]);
 
-  // Chart data remains scoped to E2X2; P1/P2/P3 select reversal/trend/non-trend signals.
+  // Chart data remains scoped to E2X2; P1/P2/P3 (and their B1/B2/B3 alias) select reversal/trend/non-trend signals.
   const tradingCategoryFilter: ChartTradingCategoryFilter = 'E2X2';
   const trendModesFilter: ChartTrendMode[] = useMemo(
     () =>
       selectedChartOptions.flatMap((option) => {
-        if (!option.startsWith('P')) return [];
+        if (!(option.startsWith('P') || option.startsWith('B'))) return [];
         return option.endsWith('1') ? ['reversal'] : option.endsWith('2') ? ['trend'] : ['nonTrend'];
       }),
     [selectedChartOptions]
@@ -120,14 +120,16 @@ const Binance1mChartContainer: React.FC = () => {
       return;
     }
 
-    const next = option.startsWith('P')
-      ? selectedChartOptions.filter((current) => current.startsWith('P'))
-      : [];
+    const next = selectedChartOptions.filter(
+      (current) => current.startsWith('P') || current.startsWith('B')
+    );
     const nextOptions = next.includes(option)
       ? next.filter((current) => current !== option)
       : [...next, option];
+    // 마지막 옵션은 해제하지 않는다 — 전부 해제되면 기본값(P1)으로 되돌아가며 불필요한 재탐색이 발생한다.
+    if (nextOptions.length === 0) return;
     params.set('chartOptions', nextOptions.join(','));
-    navigate(`/chart1m?${params.toString()}`);
+    navigate(`/chart1m?${params.toString()}`, { replace: true });
   };
 
   useEffect(() => {
