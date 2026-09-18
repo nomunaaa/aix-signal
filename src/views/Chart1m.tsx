@@ -294,6 +294,7 @@ const Binance1mChartContainer: React.FC = () => {
       lastCandleTime,
       showTrendShort,
       showTrendLong,
+      actionTypeFilter,
       signalEvents,
     },
     actions: {
@@ -305,6 +306,7 @@ const Binance1mChartContainer: React.FC = () => {
       forceResize,
       setShowTrendShort,
       setShowTrendLong,
+      setActionTypeFilter,
       setMockTradeOverlay,
       clearMockTradeOverlay,
       gotoStart,
@@ -1806,6 +1808,52 @@ const Binance1mChartContainer: React.FC = () => {
                 </PopoverContent>
               </Popover>
             </div>
+
+            <span className="text-muted-foreground/50">|</span>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={actionTypeFilter.entry}
+                onChange={(e) =>
+                  setActionTypeFilter((prev) => ({ ...prev, entry: e.target.checked }))
+                }
+              />
+              <span>매수</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={actionTypeFilter.added_entry}
+                onChange={(e) =>
+                  setActionTypeFilter((prev) => ({ ...prev, added_entry: e.target.checked }))
+                }
+              />
+              <span>추가매수</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={actionTypeFilter.partial_exit}
+                onChange={(e) =>
+                  setActionTypeFilter((prev) => ({ ...prev, partial_exit: e.target.checked }))
+                }
+              />
+              <span>분할청산</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={actionTypeFilter.exit}
+                onChange={(e) =>
+                  setActionTypeFilter((prev) => ({ ...prev, exit: e.target.checked }))
+                }
+              />
+              <span>모두청산</span>
+            </label>
 
           </div>
         </div>

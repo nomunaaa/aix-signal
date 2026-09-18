@@ -145,6 +145,14 @@ type RenderSignal = {
     percentage?: number | null;
 };
 
+/** 시그널 화살표/라벨의 동작 타입([매수]/[추가매수]/[분할청산]/[모두청산])별 표시 여부. */
+export type ActionTypeFilter = {
+    entry: boolean;
+    added_entry: boolean;
+    partial_exit: boolean;
+    exit: boolean;
+};
+
 type SignalCycleEntryTime = {
     trading_category: string | null;
     cycle_id: string | null;
@@ -282,6 +290,15 @@ export function useBinanceChart(
     const showMARef = useRef(false);
     const [maPeriods, setMaPeriods] = useState<number[]>([...MA_DEFAULT_PERIODS]);
     const maPeriodsRef = useRef<number[]>([...MA_DEFAULT_PERIODS]);
+
+    /** 시그널 화살표/라벨 표기 필터 — [매수]/[추가매수]/[분할청산]/[모두청산]을 개별로 껐다 켤 수 있다. */
+    const [actionTypeFilter, setActionTypeFilter] = useState<ActionTypeFilter>({
+        entry: true,
+        added_entry: true,
+        partial_exit: true,
+        exit: true,
+    });
+    const actionTypeFilterRef = useRef<ActionTypeFilter>(actionTypeFilter);
 
     const snapshotRangeMs = options?.snapshotRangeMs ?? null;
     const disableAutoLoadOlder = options?.disableAutoLoadOlder ?? Boolean(snapshotRangeMs);
@@ -606,6 +623,9 @@ export function useBinanceChart(
         const fragment = document.createDocumentFragment();
 
         for (const s of renderSignalsRef.current) {
+            const typeKey = String(s.type).toLowerCase() as keyof ActionTypeFilter;
+            if (actionTypeFilterRef.current[typeKey] === false) continue;
+
             const candle = candleByTime.get(Number(s.time));
             if (!candle) continue;
 
@@ -791,6 +811,11 @@ export function useBinanceChart(
             renderMockTradeSvgs();
         });
     }, [renderSignalSvgs, renderMockTradeSvgs]);
+
+    useEffect(() => {
+        actionTypeFilterRef.current = actionTypeFilter;
+        scheduleRenderSignalSvgs();
+    }, [actionTypeFilter, scheduleRenderSignalSvgs]);
 
     useEffect(() => {
         const overlay = signalSvgOverlayRef.current;
@@ -2977,6 +3002,7 @@ export function useBinanceChart(
             chartReady,
             showTrendShort,
             showTrendLong,
+            actionTypeFilter,
             signalEvents,
         },
         actions: {
@@ -2988,6 +3014,7 @@ export function useBinanceChart(
             forceResize,
             setShowTrendShort,
             setShowTrendLong,
+            setActionTypeFilter,
             setMockTradeOverlay,
             clearMockTradeOverlay,
             setOverlayPriceLines,
