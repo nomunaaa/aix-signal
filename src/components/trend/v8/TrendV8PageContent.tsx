@@ -1248,7 +1248,7 @@ function TrendBoardFilterPanel({
             <SelectItem value="all">{qualityCopy.all}</SelectItem>
           </SelectContent>
         </Select>
-        <div className="hidden flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5 sm:flex">
+        <div className="hidden flex-wrap items-center gap-2 rounded-lg p-2.5 sm:flex">
           <TrendQualitySlider
             label={qualityCopy.winRate}
             value={winRateThreshold}

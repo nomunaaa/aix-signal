@@ -127,9 +127,9 @@ export const PROOF_COPY = {
     quality: {
       winRate: 'Win Rate',
       riskReward: 'Risk/Reward',
-      last30d: '30d',
-      last3mo: '3M',
-      all: 'All',
+      last30d: 'Last 30 days',
+      last3mo: 'Last 3 months',
+      all: 'All time',
     },
     simulator: {
       step2Title: 'Expected Return by Basis',

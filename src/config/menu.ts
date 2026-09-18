@@ -27,6 +27,13 @@ export type NavItem = {
 
 export const MAIN_MENU: NavItem[] = [
   {
+    label: '시그널 선택',
+    labelEn: 'Selection',
+    href: '/selection',
+    icon: 'fa-list-check',
+    description: '시그널 전략 선택',
+  },
+  {
     label: '시그널 보드',
     labelEn: 'Signal Board',
     href: '/signals',

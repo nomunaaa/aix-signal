@@ -163,7 +163,7 @@ const Header = memo(function Header({
           {/* 중앙: Desktop Navigation — 플랫 링크 (랜딩 등에서만) */}
           {showMainNav ? (
             <nav
-              className="hidden min-w-0 flex-1 items-center justify-center overflow-x-auto px-2 lg:flex"
+              className="hidden min-w-0 flex-1 items-center justify-center overflow-x-auto px-1 lg:flex"
               style={{ gap: 'var(--header-gap)' }}
             >
               {navItems.map((item) => {
@@ -175,7 +175,7 @@ const Header = memo(function Header({
                     key={item.href}
                     to={item.href}
                     className={cn(
-                      'flex shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors xl:px-3 xl:text-sm',
+                      'flex shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors xl:px-2 xl:text-sm',
                       'hover:bg-accent/50 hover:text-foreground',
                       active ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
                     )}

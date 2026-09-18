@@ -579,7 +579,7 @@ export function TableControlBar({
       ) : null}
 
       {/* 데스크톱 전용 — 모바일에서는 필터 시트 안에 전체폭으로 들어간다. */}
-      <div className="hidden flex-wrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5 sm:flex">
+      <div className="hidden flex-wrap items-center gap-2 rounded-lg p-2.5 sm:flex">
         <label className="flex w-[7.5rem] min-w-[7.5rem] flex-col gap-1 text-xs">
           <span className="flex items-center justify-between text-muted-foreground">
             <span>Win Rate</span>

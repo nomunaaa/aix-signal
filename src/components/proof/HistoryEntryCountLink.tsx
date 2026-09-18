@@ -35,13 +35,13 @@ function signalBoardHistoryHref({
 }): string {
   const historyStreams = streams.map((stream) => PROOF_STREAM_TO_HISTORY_STREAM[stream]);
   const params = new URLSearchParams({
-    historySymbol: symbol,
     historyLimit: String(Math.max(1, count)),
     historyPeriod: period,
     historyStreams: historyStreams.join(','),
     historySort: 'recent_closed',
     historyFocus: '1',
   });
+  if (symbol) params.set('historySymbol', symbol);
   const historyPeriod = period;
   params.set('historyPeriod', historyPeriod);
   const exactRange = exactHistoryPeriodRange(historyPeriod, asOfIso);

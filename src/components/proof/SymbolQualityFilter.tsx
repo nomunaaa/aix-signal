@@ -56,7 +56,7 @@ export function SymbolQualityFilter({
   const setRiskRewardThreshold = usePulseStore((state) => state.setQualityRiskRewardThreshold);
 
   return (
-    <div className="flex flex-nowrap items-center gap-2 rounded-lg border border-border bg-card/50 p-2.5">
+    <div className="flex flex-nowrap items-center gap-2 rounded-lg p-2.5">
       <select
         value={period}
         onChange={(event) => onPeriodChange(event.target.value as ProofQualityPeriod)}

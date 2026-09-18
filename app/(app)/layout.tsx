@@ -62,6 +62,7 @@ export default function AppGroupLayout({ children }: { children: React.ReactNode
       pathname === '/positions' ||
       pathname === '/portfolio' ||
       pathname === '/proof' ||
+      pathname === '/selection' ||
       pathname === '/history'
     ) {
       return { fullWidth: true, contentClassName: '!px-0 !py-0' as string | undefined };
