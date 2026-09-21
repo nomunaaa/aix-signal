@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useBilingualText } from "@/hooks/useBilingualText";
+import { readBrowserNotificationPref } from "@/lib/browserNotificationPref";
 import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 
 export type NotificationKind = "entry" | "exit" | "info";
@@ -593,8 +594,9 @@ export const useNotifications = (options: UseNotificationsOptions = {}) => {
     }
   }, [user, instanceId, toast, tr]);
 
-  // 브라우저 알림 표시
+  // 브라우저 알림 표시 — 권한이 있어도 사용자가 알림 패널에서 껐다면 띄우지 않는다.
   const showBrowserNotification = useCallback((notification: Notification) => {
+    if (!readBrowserNotificationPref()) return;
     if ("Notification" in window && Notification.permission === "granted") {
       const kindLabel =
         notification.kind === "entry" ? tr("진입", "Entry") :

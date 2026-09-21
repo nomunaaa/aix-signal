@@ -323,19 +323,6 @@ export function SymbolStatsSection({
         <h2 className="text-xl font-semibold tracking-tight text-foreground">
           {copy.sections.symbol.title}
         </h2>
-        <button
-          type="button"
-          onClick={toggleExpandAll}
-          disabled={visibleRows.length === 0}
-          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-50"
-        >
-          {allExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5" />
-          )}
-          {allExpanded ? copy.table.collapseAll : copy.table.expandAll}
-        </button>
       </div>
 
       <div className="rounded-lg border border-border bg-card">
@@ -363,8 +350,29 @@ export function SymbolStatsSection({
           </colgroup>
           <thead className="bg-muted text-muted-foreground">
             <tr>
-              <th className="bg-muted px-1 py-2 text-center align-middle font-medium">
-                <TableHeaderLabel label={copy.table.asset} />
+              {/* 전체 열기/닫기는 행마다 있는 chevron 바로 위, 같은 열에 둔다 —
+                  제목 옆에 있을 때보다 무엇을 여닫는 버튼인지 분명해진다. */}
+              <th className="bg-muted px-1 py-2 align-middle font-medium">
+                <div className="flex w-full min-w-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={toggleExpandAll}
+                    disabled={visibleRows.length === 0}
+                    aria-expanded={allExpanded}
+                    title={allExpanded ? copy.table.collapseAll : copy.table.expandAll}
+                    aria-label={allExpanded ? copy.table.collapseAll : copy.table.expandAll}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors hover:bg-background/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-40"
+                  >
+                    {allExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                  <span className="min-w-0 flex-1 text-center">
+                    <TableHeaderLabel label={copy.table.asset} />
+                  </span>
+                </div>
               </th>
               <th colSpan={6} className={`${GROUP_HEADER_CLASS} border-l border-border/60`}>
                 {copy.table.recent30}
