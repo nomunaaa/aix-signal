@@ -603,7 +603,7 @@ export function TableControlBar({
           <input
             className="h-1.5 w-full cursor-pointer accent-primary"
             type="range"
-            min="35"
+            min="0"
             max="100"
             step="1"
             value={qualityWinRateThreshold}
@@ -618,7 +618,7 @@ export function TableControlBar({
           <input
             className="h-1.5 w-full cursor-pointer accent-primary"
             type="range"
-            min="0.6"
+            min="0"
             max="5"
             step="0.1"
             value={qualityRiskRewardThreshold}
@@ -883,7 +883,7 @@ export function TableControlBar({
                   <input
                     className="h-1.5 w-full cursor-pointer accent-primary"
                     type="range"
-                    min="35"
+                    min="0"
                     max="100"
                     step="1"
                     value={qualityWinRateThreshold}
@@ -900,7 +900,7 @@ export function TableControlBar({
                   <input
                     className="h-1.5 w-full cursor-pointer accent-primary"
                     type="range"
-                    min="0.6"
+                    min="0"
                     max="5"
                     step="0.1"
                     value={qualityRiskRewardThreshold}
