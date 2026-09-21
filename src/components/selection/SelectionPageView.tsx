@@ -23,6 +23,7 @@ import { formatWinRate } from '@/lib/proof/format-proof';
 import { PROOF_COPY } from '@/components/proof/proofCopy';
 import { SymbolQualityFilter } from '@/components/proof/SymbolQualityFilter';
 import {
+  hasPositiveLongTermProfit,
   meetsQualityThresholdsForPeriod,
   type ProofQualityPeriod,
 } from '@/components/proof/symbolQuality';
@@ -104,8 +105,20 @@ export function SelectionPageView() {
     OPTIONS.map((option): [SignalStreamOptionId, SelectionOptionStats] => {
       if (!option.selection) return [option.id, { row: null, symbolCount: 0, symbols: [] }];
       const rows = reconstructSymbolStats(data.buckets, [option.selection.stream], [option.selection.trendMode], ['E2X2'], [option.selection]);
+      // Same bar as the Proof page's symbol table: a symbol must be profitable
+      // long-term AND meet the win-rate/risk-reward threshold, not just one or
+      // the other — otherwise a losing symbol could still pass on ratio alone.
       const symbols = rows
-        .filter((row) => meetsQualityThresholdsForPeriod(row, qualityWinRateThreshold, qualityRiskRewardThreshold, qualityPeriod))
+        .filter(
+          (row) =>
+            hasPositiveLongTermProfit(row) &&
+            meetsQualityThresholdsForPeriod(
+              row,
+              qualityWinRateThreshold,
+              qualityRiskRewardThreshold,
+              qualityPeriod
+            )
+        )
         .map((row) => row.symbol.trim().toUpperCase())
         .filter((symbol) => !showFavoritesOnly || favorites.has(symbol));
       return [option.id, {
