@@ -309,6 +309,13 @@ export function SymbolStatsSection({
     qualityRiskRewardThreshold,
     qualityPeriod,
   ]);
+  const allExpanded =
+    visibleRows.length > 0 && visibleRows.every((row) => expandedSymbols.has(row.symbol));
+  const toggleExpandAll = () => {
+    setExpandedSymbols(
+      allExpanded ? new Set() : new Set(visibleRows.map((row) => row.symbol))
+    );
+  };
 
   return (
     <section className="mt-10 space-y-4">
@@ -316,6 +323,19 @@ export function SymbolStatsSection({
         <h2 className="text-xl font-semibold tracking-tight text-foreground">
           {copy.sections.symbol.title}
         </h2>
+        <button
+          type="button"
+          onClick={toggleExpandAll}
+          disabled={visibleRows.length === 0}
+          className="flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-primary disabled:pointer-events-none disabled:opacity-50"
+        >
+          {allExpanded ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+          {allExpanded ? copy.table.collapseAll : copy.table.expandAll}
+        </button>
       </div>
 
       <div className="rounded-lg border border-border bg-card">
