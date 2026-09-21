@@ -411,122 +411,121 @@ const Profile = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)] md:items-start">
-                <div className="flex min-w-0 flex-col items-center gap-3 rounded-md bg-muted/30 px-4 py-5 text-center">
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-primary/40 bg-primary/10">
-                    <div className="absolute inset-0 flex items-center justify-center text-lg font-semibold text-primary">
-                      {profileInitials}
-                    </div>
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt=""
-                        className="relative h-full w-full bg-background object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    ) : null}
+              {/* 아바타를 세로 220px 컬럼으로 두면 그 아래가 통째로 비고, 폼은
+                  좁은 오른쪽 컬럼에 갇혀 지갑 주소 입력이 몇 글자 폭으로 찌그러진다.
+                  아바타는 가로 헤더로 눕히고, 폼은 카드 전체 폭을 쓰게 한다. */}
+              <div className="flex flex-wrap items-center gap-4 rounded-md bg-muted/30 px-4 py-3">
+                <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-primary/40 bg-primary/10">
+                  <div className="absolute inset-0 flex items-center justify-center text-base font-semibold text-primary">
+                    {profileInitials}
                   </div>
-                  <div className="w-full min-w-0 space-y-1">
-                    <div className="w-full truncate text-sm font-semibold">
-                      {profileDisplayName}
-                    </div>
-                    <div className="w-full truncate text-xs text-muted-foreground">
-                      {user?.email || tr('이메일 없음', 'No email')}
-                    </div>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt=""
+                      className="relative h-full w-full bg-background object-cover"
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1 space-y-0.5">
+                  <div className="truncate text-sm font-semibold">{profileDisplayName}</div>
+                  <div className="truncate text-xs text-muted-foreground">
+                    {user?.email || tr('이메일 없음', 'No email')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>{tr('닉네임', 'Nickname')}</Label>
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_96px]">
+                    <Input
+                      value={nicknameInput}
+                      onChange={(e) => setNicknameInput(e.target.value)}
+                      placeholder={tr('닉네임을 입력하세요', 'Enter a nickname')}
+                      className="min-w-0"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleSaveNickname}
+                      disabled={isSavingNickname || !nicknameInput.trim()}
+                      className="w-full"
+                    >
+                      {isSavingNickname ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
+                      {tr('저장', 'Save')}
+                    </Button>
                   </div>
                 </div>
 
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label>{tr('닉네임', 'Nickname')}</Label>
-                    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_96px]">
-                      <Input
-                        value={nicknameInput}
-                        onChange={(e) => setNicknameInput(e.target.value)}
-                        placeholder={tr('닉네임을 입력하세요', 'Enter a nickname')}
-                        className="min-w-0"
-                      />
-                      <Button
-                        type="button"
-                        onClick={handleSaveNickname}
-                        disabled={isSavingNickname || !nicknameInput.trim()}
-                        className="w-full"
-                      >
-                        {isSavingNickname ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        {tr('저장', 'Save')}
-                      </Button>
-                    </div>
+                <div className="space-y-2">
+                  <Label>{tr('이메일', 'Email')}</Label>
+                  <Input value={user?.email || ''} readOnly className="bg-muted/30" />
+                </div>
+              </div>
+
+              {/* 지갑/휴대폰은 "현재 저장된 값 + 변경 액션"이 있는 블록이라,
+                  단순 입력 행(닉네임/이메일)과 섞이면 읽기 어렵다 — 하나의
+                  테두리 안에 같은 구조(라벨+상태 배지 / 설명 / 컨트롤)로 묶는다. */}
+              <div className="rounded-lg border border-border/60">
+                <div className="space-y-2 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <Label>{tr('지갑 주소', 'Wallet address')}</Label>
+                    <Badge variant={hasSavedWallet ? 'secondary' : 'outline'} className="font-normal">
+                      {hasSavedWallet ? tr('등록됨', 'Saved') : tr('미등록', 'Not set')}
+                    </Badge>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>{tr('이메일', 'Email')}</Label>
-                    <Input value={user?.email || ''} readOnly className="bg-muted/30" />
-                  </div>
-
-                  {/* 지갑/휴대폰은 "현재 저장된 값 + 변경 액션"이 있는 블록이라,
-                      단순 입력 행(닉네임/이메일)과 섞이면 읽기 어렵다 — 하나의
-                      테두리 안에 같은 구조(라벨+상태 배지 / 설명 / 컨트롤)로 묶는다. */}
-                  <div className="rounded-lg border border-border/60">
-                    <div className="space-y-2 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Label>{tr('지갑 주소', 'Wallet address')}</Label>
-                        <Badge variant={hasSavedWallet ? 'secondary' : 'outline'} className="font-normal">
-                          {hasSavedWallet
-                            ? tr('등록됨', 'Saved')
-                            : tr('미등록', 'Not set')}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {tr(
-                          '정산금을 받으실 지갑 주소입니다. 네트워크(예: TRC20)와 주소를 함께 입력해 주세요.',
-                          'The wallet address settlements will be sent to. Enter both the network (e.g. TRC20) and the address.'
-                        )}
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)_auto]">
-                        <Input
-                          value={walletNetworkInput}
-                          onChange={(e) => setWalletNetworkInput(e.target.value)}
-                          placeholder={tr('네트워크', 'Network')}
-                          className="min-w-0"
-                        />
-                        <Input
-                          value={walletAddressInput}
-                          onChange={(e) => setWalletAddressInput(e.target.value)}
-                          placeholder={tr('지갑 주소를 입력하세요', 'Enter your wallet address')}
-                          className="min-w-0"
-                        />
-                        <Button
-                          type="button"
-                          onClick={handleSaveWallet}
-                          disabled={isSavingWallet || !isWalletDirty}
-                          className="w-full sm:w-auto"
-                        >
-                          {isSavingWallet ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                          {tr('저장', 'Save')}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {user?.id ? (
-                      <div className="border-t border-border/60 p-4">
-                        <PhoneNumberSection
-                          userId={user.id}
-                          phoneNumber={profile?.phone_number ?? null}
-                          phoneVerified={Boolean(profile?.phone_verified)}
-                          onUpdated={(phoneNumber) =>
-                            setProfile((prev: any) =>
-                              prev ? { ...prev, phone_number: phoneNumber, phone_verified: true } : prev
-                            )
-                          }
-                        />
-                      </div>
-                    ) : null}
+                  <p className="text-xs text-muted-foreground">
+                    {tr(
+                      '정산금을 받으실 지갑 주소입니다. 네트워크(예: TRC20)와 주소를 함께 입력해 주세요.',
+                      'The wallet address settlements will be sent to. Enter both the network (e.g. TRC20) and the address.'
+                    )}
+                  </p>
+                  {/* 주소 입력이 가장 길므로 남는 폭을 전부 가져가고, 네트워크와
+                      저장 버튼만 고정 폭을 쓴다. */}
+                  <div className="grid gap-2 sm:grid-cols-[140px_minmax(0,1fr)_auto]">
+                    <Input
+                      value={walletNetworkInput}
+                      onChange={(e) => setWalletNetworkInput(e.target.value)}
+                      placeholder={tr('네트워크', 'Network')}
+                      className="min-w-0"
+                    />
+                    <Input
+                      value={walletAddressInput}
+                      onChange={(e) => setWalletAddressInput(e.target.value)}
+                      placeholder={tr('지갑 주소를 입력하세요', 'Enter your wallet address')}
+                      className="min-w-0"
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleSaveWallet}
+                      disabled={isSavingWallet || !isWalletDirty}
+                      className="w-full sm:w-auto sm:min-w-[88px]"
+                    >
+                      {isSavingWallet ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {tr('저장', 'Save')}
+                    </Button>
                   </div>
                 </div>
+
+                {user?.id ? (
+                  <div className="border-t border-border/60 p-4">
+                    <PhoneNumberSection
+                      userId={user.id}
+                      phoneNumber={profile?.phone_number ?? null}
+                      phoneVerified={Boolean(profile?.phone_verified)}
+                      onUpdated={(phoneNumber) =>
+                        setProfile((prev: any) =>
+                          prev ? { ...prev, phone_number: phoneNumber, phone_verified: true } : prev
+                        )
+                      }
+                    />
+                  </div>
+                ) : null}
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
