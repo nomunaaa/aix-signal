@@ -5,6 +5,11 @@ import { useBilingualText } from '@/hooks/useBilingualText';
 import { toast } from 'sonner';
 import { Bell, BellOff, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  readBrowserNotificationPref,
+  subscribeBrowserNotificationPref,
+  writeBrowserNotificationPref,
+} from '@/lib/browserNotificationPref';
 
 /**
  * 가입 직후 SignupComplete에서만 브라우저 알림 권한을 물어봤고, 그 화면을 다시
@@ -16,6 +21,12 @@ export function BrowserPushPanel() {
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [supported, setSupported] = useState(true);
   const [showSetupGuide, setShowSetupGuide] = useState(false);
+  const [prefEnabled, setPrefEnabled] = useState(true);
+
+  useEffect(() => {
+    setPrefEnabled(readBrowserNotificationPref());
+    return subscribeBrowserNotificationPref(setPrefEnabled);
+  }, []);
 
   useEffect(() => {
     if (!('Notification' in window)) {
@@ -25,17 +36,27 @@ export function BrowserPushPanel() {
     setPermission(Notification.permission);
   }, []);
 
+  // 스위치가 켜져 보이려면 권한과 사용자 설정이 둘 다 있어야 한다.
+  const isOn = permission === 'granted' && prefEnabled;
+
   const handleToggle = async (checked: boolean) => {
+    // 끄기는 앱이 가진 설정만 바꾸면 되므로 항상 즉시 반영된다 — 권한은
+    // 페이지에서 취소할 수 없으니 여기서 건드리지 않는다.
     if (!checked) {
-      toast.info(
-        tr(
-          '브라우저 알림 차단은 브라우저 설정에서만 가능합니다.',
-          'Notifications can only be blocked from your browser settings.'
-        )
-      );
+      writeBrowserNotificationPref(false);
+      toast.info(tr('브라우저 알림을 껐습니다.', 'Browser notifications turned off.'));
       return;
     }
+
+    writeBrowserNotificationPref(true);
+
     if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      setPermission('granted');
+      toast.success(tr('브라우저 알림이 활성화되었습니다!', 'Browser notifications are now enabled!'));
+      return;
+    }
+
     const next = await Notification.requestPermission();
     setPermission(next);
     if (next === 'granted') {
@@ -54,7 +75,7 @@ export function BrowserPushPanel() {
     <Card className="glass-subtle p-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          {permission === 'granted' ? (
+          {isOn ? (
             <Bell className="h-5 w-5 shrink-0 text-primary" />
           ) : (
             <BellOff className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -70,7 +91,7 @@ export function BrowserPushPanel() {
           </div>
         </div>
         <Switch
-          checked={permission === 'granted'}
+          checked={isOn}
           onCheckedChange={handleToggle}
           disabled={!supported || permission === 'denied'}
           aria-label={tr('브라우저 알림 켜기/끄기', 'Toggle browser notifications')}
