@@ -271,6 +271,7 @@ export function ProofPageView() {
         selectedOptionIds={selectedOptionIds}
         language={language}
         copy={copy}
+        qualityPeriod={qualityPeriod}
       />
 
       <ProofFooter note={copy.footer} />
