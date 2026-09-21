@@ -1,7 +1,8 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   reconstructSymbolStats,
@@ -18,7 +19,7 @@ import { SIGNAL_OPTION_BADGE_CLASS, signalOptionTone } from '@/views/signals/pul
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 import { HistorySymbolCountLink } from '@/components/proof/HistoryEntryCountLink';
 import { HistoricalMoneyCell, HistoricalPctCell } from '@/components/proof/ProofStatCells';
-import { formatHoldSec, formatRatio, proofLanguageFromCode } from '@/components/proof/proofFormat';
+import { formatHoldSec, formatRatio, projectedPct, projectedUsd, proofLanguageFromCode } from '@/components/proof/proofFormat';
 import { formatWinRate } from '@/lib/proof/format-proof';
 import { PROOF_COPY } from '@/components/proof/proofCopy';
 import { SymbolQualityFilter } from '@/components/proof/SymbolQualityFilter';
@@ -44,6 +45,93 @@ type SelectionOptionStats = {
   symbolCount: number;
   symbols: string[];
 };
+
+type SelectionPeriod = 'recent30' | 'recent3mo' | 'total';
+type SelectionMetric = 'symbols' | 'accountReturn' | 'accountProfit' | 'winRate' | 'ratio' | 'holdTime';
+type SelectionSortKey = `${SelectionPeriod}:${SelectionMetric}`;
+
+const METRIC_COLUMNS: { metric: SelectionMetric; label: string }[] = [
+  { metric: 'symbols', label: 'Symbols' },
+  { metric: 'accountReturn', label: 'Account Return' },
+  { metric: 'accountProfit', label: 'Account Profit' },
+  { metric: 'winRate', label: 'Win Rate' },
+  { metric: 'ratio', label: 'Ratio' },
+  { metric: 'holdTime', label: 'Hold Time' },
+];
+
+/** Mirrors the same seed/entryRatio/leverage the Account Return/Profit cells project with. */
+function selectionSortValue(entry: SelectionOptionStats, key: SelectionSortKey): number {
+  const [period, metric] = key.split(':') as [SelectionPeriod, SelectionMetric];
+  if (metric === 'symbols') return entry.symbolCount;
+
+  const slice = entry.row
+    ? period === 'recent30'
+      ? entry.row.recent30
+      : period === 'recent3mo'
+        ? entry.row.recent3mo
+        : entry.row.total
+    : emptyStatsSlice();
+  const { capital, capitalRatio, leverage } = DEFAULT_SHARED_SIMULATION_INPUT;
+  switch (metric) {
+    case 'accountReturn':
+      return projectedPct(slice, capital, capitalRatio, leverage);
+    case 'accountProfit':
+      return projectedUsd(slice, capital, capitalRatio, leverage);
+    case 'winRate':
+      return slice.winRate;
+    case 'ratio':
+      return slice.winLossRatio ?? -Infinity;
+    case 'holdTime':
+      return slice.avgHoldSec ?? -Infinity;
+    default:
+      return 0;
+  }
+}
+
+function SortableHeaderCell({
+  label,
+  sortKey,
+  activeKey,
+  direction,
+  onSort,
+}: {
+  label: string;
+  sortKey: SelectionSortKey;
+  activeKey: SelectionSortKey | null;
+  direction: 'asc' | 'desc';
+  onSort: (key: SelectionSortKey) => void;
+}) {
+  const isActive = activeKey === sortKey;
+  return (
+    <th
+      scope="col"
+      aria-sort={isActive ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
+      className="cursor-pointer select-none border-l border-border/60 px-1 py-2 transition-colors hover:bg-muted/80"
+      onClick={() => onSort(sortKey)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSort(sortKey);
+        }
+      }}
+    >
+      <span className="inline-flex items-center justify-center gap-0.5">
+        {label}
+        {isActive ? (
+          direction === 'desc' ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronUp className="h-3 w-3" />
+          )
+        ) : (
+          <ChevronDown className="h-3 w-3 opacity-30" />
+        )}
+      </span>
+    </th>
+  );
+}
 
 function MetricCells({
   slice,
@@ -135,6 +223,31 @@ export function SelectionPageView() {
     qualityWinRateThreshold,
     showFavoritesOnly,
   ]);
+  const [sortKey, setSortKey] = useState<SelectionSortKey | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const handleSort = (key: SelectionSortKey) => {
+    if (sortKey === key) {
+      setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'));
+    } else {
+      setSortKey(key);
+      setSortDirection('desc');
+    }
+  };
+  // Sort within the whole list (not just each Pulse/Beat/Wave sub-group) — the
+  // group label below is shown whenever it differs from the row above it, so
+  // this stays correct regardless of how the rows end up ordered.
+  const sortedRows = useMemo(() => {
+    const withEntries = OPTIONS.map((option) => ({
+      option,
+      entry: stats.get(option.id) ?? { row: null, symbolCount: 0, symbols: [] },
+    }));
+    if (!sortKey) return withEntries;
+    const sorted = [...withEntries].sort(
+      (a, b) => selectionSortValue(a.entry, sortKey) - selectionSortValue(b.entry, sortKey)
+    );
+    if (sortDirection === 'desc') sorted.reverse();
+    return sorted;
+  }, [stats, sortKey, sortDirection]);
   return (
     <div className="mx-auto min-h-screen w-full max-w-[1400px] bg-background px-4 py-8 pb-20 text-foreground md:px-5">
       <div
@@ -179,50 +292,45 @@ export function SelectionPageView() {
               </th>
             </tr>
             <tr>
-              {[
-                'Symbols',
-                'Account Return',
-                'Account Profit',
-                'Win Rate',
-                'Ratio',
-                'Hold Time',
-              ].map((label) => (
-                <Fragment key={label}>
-                  <th className="border-l border-border/60 px-1 py-2">{label}</th>
-                </Fragment>
+              {METRIC_COLUMNS.map(({ metric, label }) => (
+                <SortableHeaderCell
+                  key={`recent30:${metric}`}
+                  label={label}
+                  sortKey={`recent30:${metric}`}
+                  activeKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                />
               ))}
-              {[
-                'Symbols',
-                'Account Return',
-                'Account Profit',
-                'Win Rate',
-                'Ratio',
-                'Hold Time',
-              ].map((label) => (
-                <th key={`3-${label}`} className="border-l border-border/60 px-1 py-2">
-                  {label}
-                </th>
+              {METRIC_COLUMNS.map(({ metric, label }) => (
+                <SortableHeaderCell
+                  key={`recent3mo:${metric}`}
+                  label={label}
+                  sortKey={`recent3mo:${metric}`}
+                  activeKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                />
               ))}
-              {[
-                'Symbols',
-                'Account Return',
-                'Account Profit',
-                'Win Rate',
-                'Ratio',
-                'Hold Time',
-              ].map((label) => (
-                <th key={`a-${label}`} className="border-l border-border/60 px-1 py-2">
-                  {label}
-                </th>
+              {METRIC_COLUMNS.map(({ metric, label }) => (
+                <SortableHeaderCell
+                  key={`total:${metric}`}
+                  label={label}
+                  sortKey={`total:${metric}`}
+                  activeKey={sortKey}
+                  direction={sortDirection}
+                  onSort={handleSort}
+                />
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-border/60">
-            {OPTIONS.map((option, index) => {
-              const entry = stats.get(option.id);
-              const row = entry?.row ?? null;
-              const symbols = entry?.symbols ?? [];
+            {sortedRows.map(({ option, entry }, index) => {
+              const row = entry.row;
+              const symbols = entry.symbols;
               const selected = optionFilter[option.id];
+              const showGroupLabel =
+                index === 0 || sortedRows[index - 1].option.group !== option.group;
               return (
                 <tr
                   key={option.id}
@@ -231,7 +339,7 @@ export function SelectionPageView() {
                     selected && 'bg-yellow-100/80 dark:bg-yellow-500/15'
                   )}
                 >
-                  <td className="px-2 py-3 font-semibold">{index % 3 === 0 ? option.group : ''}</td>
+                  <td className="px-2 py-3 font-semibold">{showGroupLabel ? option.group : ''}</td>
                   <td className="px-2 py-3">
                     <span
                       className={cn(
