@@ -2,13 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ProofPageMock, ProofStatsStream, ProofStatsTrendMode } from '@/lib/mock/proof-mock';
+import type {
+  ProofPageMock,
+  ProofStatsStream,
+  ProofStatsTrendMode,
+  ProofTotalStatsRow,
+} from '@/lib/mock/proof-mock';
 import { buildEmptyProofPage } from '@/lib/proof/build-proof-page-data';
 import type { TradingCategory } from '@/lib/trading-category';
 import {
   reconstructSymbolStats,
   reconstructSymbolStatsForProfitableSelections,
-  reconstructTotalStatsForSymbols,
   type ProofStatsSelection,
 } from '@/lib/proof/proof-buckets';
 import {
@@ -19,15 +23,12 @@ import {
 import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import { ProofFooter } from '@/components/proof/ProofFooter';
 import { PROOF_COPY } from './proofCopy';
-import { proofLanguageFromCode } from './proofFormat';
+import { combineProofCycleStats, proofLanguageFromCode } from './proofFormat';
 import { ProofToolbar } from './ProofToolbar';
 import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
-import {
-  symbolsMeetingQualityThresholds,
-  type ProofQualityPeriod,
-} from './symbolQuality';
+import type { ProofQualityPeriod } from './symbolQuality';
 import { SIGNAL_STREAM_OPTION_IDS } from '@/views/signals/pulse/utils/streamSelector';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 
@@ -114,23 +115,19 @@ export function ProofPageView() {
         buckets: data.buckets,
       };
     }
-    // Each selected P/W trend qualifies independently. The displayed symbol list
-    // is their union, and a parent row aggregates only its qualifying trends.
+    // Each selected P/W trend qualifies independently against BOTH the long-term
+    // profit check and the win-rate/risk-reward bar (same bar SymbolQualityFilter
+    // shows) — the displayed symbol list is their union, and a parent row
+    // aggregates only its qualifying trends.
     const symbolStats = reconstructSymbolStatsForProfitableSelections(
       data.buckets,
       selections,
-      tradingCategories
+      tradingCategories,
+      qualityWinRateThreshold,
+      qualityRiskRewardThreshold,
+      qualityPeriod
     );
     let aggregateSymbols = symbolStats.map((row) => row.symbol.trim().toUpperCase());
-    const qualitySymbols = new Set(
-      symbolsMeetingQualityThresholds(
-        symbolStats,
-        qualityWinRateThreshold,
-        qualityRiskRewardThreshold,
-        qualityPeriod
-      )
-    );
-    aggregateSymbols = aggregateSymbols.filter((symbol) => qualitySymbols.has(symbol));
     if (showFavoritesOnly) {
       aggregateSymbols = aggregateSymbols.filter((symbol) => favorites.has(symbol));
     }
@@ -138,16 +135,32 @@ export function ProofPageView() {
       const query = searchQuery.trim().toUpperCase();
       aggregateSymbols = aggregateSymbols.filter((symbol) => symbol.includes(query));
     }
-    const totalStats = reconstructTotalStatsForSymbols(
-      data.buckets,
-      aggregateSymbols,
-      streams,
-      trendModes,
-      tradingCategories,
-      selections
-    );
     const qualifiedSymbolSet = new Set(aggregateSymbols);
     const qualifiedSymbolStats = symbolStats.filter((row) => qualifiedSymbolSet.has(row.symbol));
+    // Sum the already-qualified per-symbol rows directly instead of re-deriving
+    // totals from the raw buckets with the full (unfiltered-per-symbol) selection
+    // list — that would double-count trends a symbol didn't actually qualify
+    // through, making these totals disagree with what the table below sums to.
+    const totalStats: [ProofTotalStatsRow, ProofTotalStatsRow] = [
+      {
+        key: 'standard',
+        label: 'Standard',
+        recent30: combineProofCycleStats(qualifiedSymbolStats.map((row) => row.recent30Total)),
+        recent3mo: combineProofCycleStats(qualifiedSymbolStats.map((row) => row.recent3moTotal)),
+        total: combineProofCycleStats(qualifiedSymbolStats.map((row) => row.standard)),
+      },
+      {
+        key: 'discounted',
+        label: 'Discounted',
+        recent30: combineProofCycleStats(
+          qualifiedSymbolStats.map((row) => row.recent30Discounted)
+        ),
+        recent3mo: combineProofCycleStats(
+          qualifiedSymbolStats.map((row) => row.recent3moDiscounted)
+        ),
+        total: combineProofCycleStats(qualifiedSymbolStats.map((row) => row.discounted)),
+      },
+    ];
     const streamWinRates = (['PULSE', 'WAVE'] as const).reduce<
       Partial<Record<'pulse' | 'wave', number>>
     >((rates, stream) => {
