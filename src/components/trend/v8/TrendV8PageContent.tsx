@@ -1252,7 +1252,7 @@ function TrendBoardFilterPanel({
           <TrendQualitySlider
             label={qualityCopy.winRate}
             value={winRateThreshold}
-            min={35}
+            min={0}
             max={100}
             step={1}
             valueLabel={formatWinRatePct(winRateThreshold)}
@@ -1261,7 +1261,7 @@ function TrendBoardFilterPanel({
           <TrendQualitySlider
             label={qualityCopy.riskReward}
             value={riskRewardThreshold}
-            min={0.6}
+            min={0}
             max={5}
             step={0.1}
             valueLabel={formatRiskRewardRatio(riskRewardThreshold)}
@@ -1317,7 +1317,7 @@ function TrendBoardFilterPanel({
               <TrendQualitySlider
                 label={qualityCopy.winRate}
                 value={winRateThreshold}
-                min={35}
+                min={0}
                 max={100}
                 step={1}
                 valueLabel={formatWinRatePct(winRateThreshold)}
@@ -1326,7 +1326,7 @@ function TrendBoardFilterPanel({
               <TrendQualitySlider
                 label={qualityCopy.riskReward}
                 value={riskRewardThreshold}
-                min={0.6}
+                min={0}
                 max={5}
                 step={0.1}
                 valueLabel={formatRiskRewardRatio(riskRewardThreshold)}
