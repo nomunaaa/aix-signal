@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import type { ProofCycleStatsSlice, ProofTotalStatsRow } from '@/lib/mock/proof-mock';
 import { formatWinRate } from '@/lib/proof/format-proof';
 import type { ProofCopy } from './proofCopy';
-import { combineProofCycleStats, formatRatio } from './proofFormat';
+import { formatRatio } from './proofFormat';
 
 function StatItem({ label, value, tone }: { label: string; value: string; tone?: 'pos' | 'warn' }) {
   return (
@@ -33,7 +33,11 @@ function StatColumn({
   slicePicker: (row: ProofTotalStatsRow) => ProofCycleStatsSlice;
   copy: ProofCopy;
 }) {
-  const slice = combineProofCycleStats(rows.map(slicePicker));
+  // rows[0]/rows[1] (standard/discounted) are two accounting bases over the SAME
+  // closed cycles, not two disjoint trade sets — summing them double-counted
+  // cycleCount (e.g. showing 56 entries for 28 real trades). Standard basis only,
+  // matching what the symbol table sums to.
+  const slice = slicePicker(rows[0]);
   const present = slice.cycleCount > 0;
 
   return (
@@ -61,7 +65,7 @@ function StatColumn({
   );
 }
 
-/** Scroll үед Standard + Discounted нийлбэрээр харуулах 3-KPI статистик бар. */
+/** Scroll үед standard-basis дата дээр үндэслэсэн 3-KPI статистик бар. */
 export function ProofStatBar({
   rows,
   copy,

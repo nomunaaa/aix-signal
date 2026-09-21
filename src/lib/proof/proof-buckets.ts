@@ -32,6 +32,22 @@ import type {
   ProofSymbolStatsRow,
   ProofTotalStatsRow,
 } from '@/lib/mock/proof-mock';
+/** Mirrors components/proof/symbolQuality.ts's ProofQualityPeriod — kept local to avoid a lib->components import. */
+type QualityPeriod = 'last30d' | 'last3mo' | 'all';
+
+/** Same win-rate/risk-reward bar as SymbolQualityFilter — kept local to avoid a lib->components import cycle. */
+function sliceMeetsQualityThresholds(
+  slice: ProofCycleStatsSlice,
+  winRateThreshold: number,
+  riskRewardThreshold: number
+): boolean {
+  return (
+    slice.cycleCount > 0 &&
+    slice.winLossRatio != null &&
+    slice.winRate * 100 >= winRateThreshold &&
+    slice.winLossRatio >= riskRewardThreshold
+  );
+}
 
 const UNCATEGORIZED = 'UNCATEGORIZED' as const;
 type CategoryKey = TradingCategory | typeof UNCATEGORIZED;
@@ -716,13 +732,19 @@ export function reconstructSymbolStats(
 
 /**
  * Rebuild each symbol from only the selected stream/trend combinations that are
- * profitable in both long-term windows. This is a union across combinations:
- * a symbol may qualify through P1 even when its P2 result is unprofitable.
+ * profitable in both long-term windows AND meet the win-rate/risk-reward bar for
+ * the selected period (same bar SymbolQualityFilter exposes). This is a union
+ * across combinations: a symbol may qualify through P1 even when its P2 result
+ * doesn't. Keeping both checks here (rather than only in the display layer)
+ * keeps page-level totals consistent with exactly the rows the table shows.
  */
 export function reconstructSymbolStatsForProfitableSelections(
   buckets: ProofBuckets,
   selections: readonly ProofStatsSelection[],
-  tradingCategories: readonly TradingCategory[]
+  tradingCategories: readonly TradingCategory[],
+  winRateThreshold: number,
+  riskRewardThreshold: number,
+  qualityPeriod: QualityPeriod
 ): ProofSymbolStatsRow[] {
   const categoryKeys = categoryKeysForSelection(tradingCategories);
   const symbols = new Set([
@@ -737,6 +759,16 @@ export function reconstructSymbolStatsForProfitableSelections(
     const recent30Map = buckets.bySymbolRecent30[symbol] ?? {};
     const recent3moMap = buckets.bySymbolRecent3mo[symbol] ?? {};
     const profitableSelections = selections.filter((selection) => {
+      const recent30 = finalizeSlice(
+        combinedAcc(
+          recent30Map,
+          [selection.stream],
+          [selection.trendMode],
+          categoryKeys,
+          [selection]
+        ),
+        'standard'
+      );
       const recent3mo = finalizeSlice(
         combinedAcc(
           recent3moMap,
@@ -757,10 +789,13 @@ export function reconstructSymbolStatsForProfitableSelections(
         ),
         'standard'
       );
-      return (
-        recent3mo.pnlPerEntryNotionalRateSum > 0 &&
-        total.pnlPerEntryNotionalRateSum > 0
-      );
+      const isProfitable =
+        recent3mo.pnlPerEntryNotionalRateSum > 0 && total.pnlPerEntryNotionalRateSum > 0;
+      if (!isProfitable) return false;
+
+      const periodSlice =
+        qualityPeriod === 'last30d' ? recent30 : qualityPeriod === 'last3mo' ? recent3mo : total;
+      return sliceMeetsQualityThresholds(periodSlice, winRateThreshold, riskRewardThreshold);
     });
     if (!profitableSelections.length) continue;
 
