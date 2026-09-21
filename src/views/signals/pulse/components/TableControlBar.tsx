@@ -4,7 +4,7 @@
  * Provides: search, combined temporal + direction filter, sort presets, favorites-only, density, column picker.
  */
 
-import { useMemo, useCallback, useEffect, useState, useRef } from 'react';
+import { useMemo, useCallback, useEffect, useState, useRef, type ReactNode } from 'react';
 import {
   Search,
   ArrowUpDown,
@@ -132,6 +132,14 @@ interface TableControlBarProps {
   simulationHistorySignals?: ClosedSignal[];
   /** Enables the P1-P3/B1-B3/W1-W3 selector on /signals. */
   useStreamOptionSelector?: boolean;
+  /** Page-specific replacement for the P1-P3/B1-B3/W1-W3 control. */
+  renderStreamOptionSelector?: (className?: string) => ReactNode;
+  /** Optional scope control rendered immediately after Favorites. */
+  renderFavoriteScopeAddon?: (className?: string) => ReactNode;
+  /** Optional compact summary for the mobile filter entry button. */
+  streamSummaryOverride?: string;
+  /** Keeps the simulator values but omits its label to save horizontal space. */
+  compactSimulationTrigger?: boolean;
 }
 
 function parseCombinedFilterValue(v: string): {
@@ -169,6 +177,10 @@ export function TableControlBar({
   streamWinRates = {},
   simulationHistorySignals,
   useStreamOptionSelector = false,
+  renderStreamOptionSelector,
+  renderFavoriteScopeAddon,
+  streamSummaryOverride,
+  compactSimulationTrigger = false,
 }: TableControlBarProps) {
   const { language, copy } = usePulseCopy();
   const searchQuery = usePulseStore((s) => s.searchQuery);
@@ -208,15 +220,17 @@ export function TableControlBar({
   }, [lastUpdate]);
 
   /** 모바일 요약 버튼 라벨 — 현재 스트림과 기간을 한 줄로 압축해 보여준다. */
-  const streamSummary = useStreamOptionSelector
-    ? Object.entries(streamOptionFilter)
-        .filter(([, selected]) => selected)
-        .map(([id]) => id)
-        .join('+')
-    : (['pulse', 'wave'] as SignalStreamId[])
-        .filter((stream) => streamFilter[stream])
-        .map((stream) => stream.toUpperCase())
-        .join('+');
+  const streamSummary =
+    streamSummaryOverride ??
+    (useStreamOptionSelector
+      ? Object.entries(streamOptionFilter)
+          .filter(([, selected]) => selected)
+          .map(([id]) => id)
+          .join('+')
+      : (['pulse', 'wave'] as SignalStreamId[])
+          .filter((stream) => streamFilter[stream])
+          .map((stream) => stream.toUpperCase())
+          .join('+'));
   const periodSummary = datePeriod ? datePeriodLabel(datePeriod, language, true) : '';
   const mobileFilterSummary = datePeriod ? `${streamSummary} · ${periodSummary}` : streamSummary;
 
@@ -523,8 +537,9 @@ export function TableControlBar({
           (이 그룹은 375px에서 520px를 차지해 화면 밖으로 잘렸다: shrink-0라 줄바꿈도 안 된다.) */}
       <div className="hidden shrink-0 items-center gap-1.5 sm:flex">
         <FavoriteScopeControls symbols={favoriteSymbols} />
+        {renderFavoriteScopeAddon?.()}
         {useStreamOptionSelector ? (
-          <StreamSelector />
+          (renderStreamOptionSelector?.() ?? <StreamSelector />)
         ) : (
           <div className="flex overflow-hidden rounded-lg border border-border bg-muted/20 p-0.5">
             {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
@@ -616,11 +631,16 @@ export function TableControlBar({
           <Button
             type="button"
             variant="outline"
-            className="hidden h-10 min-w-[240px] justify-between gap-2 text-left text-xs sm:flex"
+            className={cn(
+              'hidden h-10 justify-between gap-2 text-left text-xs sm:flex',
+              compactSimulationTrigger ? 'min-w-[112px]' : 'min-w-[240px]'
+            )}
           >
-            <span className="font-medium text-muted-foreground">
-              {copy.actionBar.simulationTitle}
-            </span>
+            {!compactSimulationTrigger ? (
+              <span className="font-medium text-muted-foreground">
+                {copy.actionBar.simulationTitle}
+              </span>
+            ) : null}
             <span className="font-mono tabular-nums">
               {formatSimulationUsd(simulationInput.capital)} · {simulationInput.capitalRatio}% ·{' '}
               {simulationInput.leverage}x
@@ -781,7 +801,7 @@ export function TableControlBar({
                 {language === 'ko' ? '스트림' : 'Stream'}
               </p>
               {useStreamOptionSelector ? (
-                <StreamSelector className="w-full" />
+                (renderStreamOptionSelector?.('w-full') ?? <StreamSelector className="w-full" />)
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   {(['pulse', 'wave'] as SignalStreamId[]).map((stream) => (
@@ -817,6 +837,7 @@ export function TableControlBar({
                 symbols={favoriteSymbols}
                 className="grid w-full grid-cols-2 gap-2 [&>*]:w-full [&_button]:w-full"
               />
+              {renderFavoriteScopeAddon?.('mt-2 w-full')}
             </div>
 
             {datePeriod && onDatePeriodChange ? (

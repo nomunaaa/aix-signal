@@ -1,7 +1,7 @@
 /**
- * AiXSignal 메뉴 설정 — SSOP 중심 플랫 네비게이션
- * @description 5개 1차 탭, 드롭다운 없음
- * @updated 2026-04-10
+ * AiXSignal 메뉴 설정
+ * @description 시그널 관련 화면은 하나의 드롭다운으로 묶는다.
+ * @updated 2026-09-21
  */
 
 // ═══════════════════════════════════════════════════════════
@@ -19,6 +19,7 @@ export type NavItem = {
   disabled?: boolean;
   requiresAuth?: boolean;
   description?: string;
+  children?: NavItem[];
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -27,18 +28,35 @@ export type NavItem = {
 
 export const MAIN_MENU: NavItem[] = [
   {
-    label: '시그널 선택',
-    labelEn: 'Selection',
-    href: '/selection',
-    icon: 'fa-list-check',
-    description: '시그널 전략 선택',
-  },
-  {
-    label: '시그널 보드',
-    labelEn: 'Signal Board',
+    label: '시그널',
+    labelEn: 'Signal',
     href: '/signals',
+    activeHrefs: ['/signals', '/selection', '/stock-selection'],
     icon: 'fa-bolt',
-    description: 'PULSE + WAVE 전략 시그널',
+    description: '시그널 보드·전략·종목 선택',
+    children: [
+      {
+        label: '시그널 보드',
+        labelEn: 'Signal Board',
+        href: '/signals',
+        icon: 'fa-bolt',
+        description: 'PULSE + WAVE 전략 시그널',
+      },
+      {
+        label: '시그널 선택',
+        labelEn: 'Selection',
+        href: '/selection',
+        icon: 'fa-list-check',
+        description: '시그널 전략 선택',
+      },
+      {
+        label: '시그널 종목선택',
+        labelEn: 'Stock Selection',
+        href: '/stock-selection',
+        icon: 'fa-bolt',
+        description: '시그널별 종목 선택',
+      },
+    ],
   },
   {
     label: '추세 보드',
@@ -133,6 +151,7 @@ export const footerMenu = {
  */
 export const isNavItemActive = (item: NavItem, pathname: string): boolean => {
   if (item.disabled) return false;
+  if (item.children?.some((child) => isNavItemActive(child, pathname))) return true;
   const activeHrefs = item.activeHrefs ?? [item.href];
   return activeHrefs.some((href) => pathname === href || pathname.startsWith(href + '/'));
 };
@@ -176,14 +195,12 @@ export const menuConfig: MenuSection[] = MAIN_MENU.map((item) => ({
   id: item.label.toLowerCase().replace(/\s+/g, '-'),
   label: item.label,
   icon: item.icon,
-  items: [
-    {
-      to: item.href,
-      label: item.label,
-      icon: item.icon,
-      description: item.description,
-    },
-  ],
+  items: (item.children ?? [item]).map((child) => ({
+    to: child.href,
+    label: child.label,
+    icon: child.icon,
+    description: child.description,
+  })),
 }));
 
 /**

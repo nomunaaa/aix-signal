@@ -102,7 +102,7 @@ const SIGNAL_CHILDREN: readonly {
   { id: 'W3', selection: { stream: 'WAVE', trendMode: 'nonTrend' } },
 ];
 
-function SymbolMetricCells({
+export function SymbolMetricCells({
   row,
   symbol,
   seed,

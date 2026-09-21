@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export type PulseLanguage = 'ko' | 'en';
@@ -129,7 +130,10 @@ export type PulseCopy = {
     detailAria: (title: string) => string;
     featureDiscount: string;
     featureLocked: string;
-    streams: Record<'pulse' | 'wave', { title: string; badges: readonly string[]; tagline: string; detail: string }>;
+    streams: Record<
+      'pulse' | 'wave',
+      { title: string; badges: readonly string[]; tagline: string; detail: string }
+    >;
   };
 };
 
@@ -159,7 +163,8 @@ const KO_COPY: PulseCopy = {
     },
     waiting: {
       title: '대기중 신호',
-      subtitle: '추세/할인진입·추세/수익실현·비추세 라이브에 올라가 있지 않은 종목. 예상대기는 최근 7일 평균 신호 간격 대비 잔여(분)입니다.',
+      subtitle:
+        '추세/할인진입·추세/수익실현·비추세 라이브에 올라가 있지 않은 종목. 예상대기는 최근 7일 평균 신호 간격 대비 잔여(분)입니다.',
       emptyTitle: '대기 종목 없음',
       emptyDescription: '현재 신호 대기 중인 종목이 없습니다.',
     },
@@ -257,7 +262,8 @@ const KO_COPY: PulseCopy = {
     title: '히스토리',
     expandAria: '히스토리 섹션 펼침. 청산 종료(CLOSED) 목록은 LIVE·WAIT 행 필터와 무관합니다.',
     exportCsv: 'CSV 내보내기',
-    description: '사이클당 진입·중간진입·중간청산·청산 등 최대 4단계가 있을 수 있습니다. 시간 기준 정렬 시 표본에서 승률과 평균 수익 합산이 가장 높은 전략 묶음을 먼저 보여 줍니다. 행을 눌러 다른 전략과 PnL을 비교하세요.',
+    description:
+      '사이클당 진입·중간진입·중간청산·청산 등 최대 4단계가 있을 수 있습니다. 시간 기준 정렬 시 표본에서 승률과 평균 수익 합산이 가장 높은 전략 묶음을 먼저 보여 줍니다. 행을 눌러 다른 전략과 PnL을 비교하세요.',
     filterNote: '청산 종료(CLOSED)는 LIVE·WAIT 행 필터와 무관합니다.',
     searchPlaceholder: '종목 검색...',
     strategyPlaceholder: '전략',
@@ -268,7 +274,18 @@ const KO_COPY: PulseCopy = {
     startDate: '시작일',
     endDate: '종료일',
     reset: '초기화',
-    csvHeaders: ['종목', '방향', '추가매수', '중간청산', '진입가', '청산가', '손익($)', '손익(%)', '보유시간', '청산일시'],
+    csvHeaders: [
+      '종목',
+      '방향',
+      '추가매수',
+      '중간청산',
+      '진입가',
+      '청산가',
+      '손익($)',
+      '손익(%)',
+      '보유시간',
+      '청산일시',
+    ],
     sortNewestFirst: '최신순',
     sortOldestFirst: '오래된순',
     totalRowLabel: '합계',
@@ -284,7 +301,8 @@ const KO_COPY: PulseCopy = {
     maxSignals: '최대 신호',
     estimatedReturn: '전략 기준 추정 수익률',
     estimateOnly: '참고용 추정',
-    disclaimer: '참고용 시뮬레이션입니다. 투자 결정은 본인 책임이며, 표시 수치는 미래 수익을 보장하지 않습니다.',
+    disclaimer:
+      '참고용 시뮬레이션입니다. 투자 결정은 본인 책임이며, 표시 수치는 미래 수익을 보장하지 않습니다.',
     totalAsset: '총자산',
     entryAmountTimes: '진입금',
     countSuffix: '개',
@@ -309,13 +327,15 @@ const KO_COPY: PulseCopy = {
         title: '펄스',
         badges: ['1분', '단기'],
         tagline: '1분마다 갱신 · 초단타에 맞춘 고빈도 시그널',
-        detail: '1분봉에 맞춘 스트림입니다. 신호가 자주 들어와 짧은 호가·초단타에 익숙한 분께 맞고, 포지션을 오래 붙잡지 않는 스타일에 가깝습니다.',
+        detail:
+          '1분봉에 맞춘 스트림입니다. 신호가 자주 들어와 짧은 호가·초단타에 익숙한 분께 맞고, 포지션을 오래 붙잡지 않는 스타일에 가깝습니다.',
       },
       wave: {
         title: '웨이브',
         badges: ['10분', '데이'],
         tagline: '10분마다 갱신 · 덜 촘촘해서 추세 보기 쉬움',
-        detail: '10분봉에 맞춘 스트림입니다. 펄스보다 신호 간격이 넓어 잡음이 줄고, 방향을 가늠하기 쉬운 데이·스윙 성향에 가깝습니다.',
+        detail:
+          '10분봉에 맞춘 스트림입니다. 펄스보다 신호 간격이 넓어 잡음이 줄고, 방향을 가늠하기 쉬운 데이·스윙 성향에 가깝습니다.',
       },
     },
   },
@@ -344,7 +364,8 @@ const EN_COPY: PulseCopy = {
     },
     waiting: {
       title: 'Waiting Signals',
-      subtitle: 'Symbols not live in Trend/Discount, Trend/Profit, or Non-Trend. Estimated wait is the remaining minutes versus the recent 7-day average signal interval.',
+      subtitle:
+        'Symbols not live in Trend/Discount, Trend/Profit, or Non-Trend. Estimated wait is the remaining minutes versus the recent 7-day average signal interval.',
       emptyTitle: 'No waiting symbols',
       emptyDescription: 'There are no symbols currently waiting for a signal.',
     },
@@ -440,9 +461,11 @@ const EN_COPY: PulseCopy = {
     noStreamTitle: 'Please select a signal.',
     noStreamDescription: 'Pick at least one signal (P1–W3) above to see history.',
     title: 'History',
-    expandAria: 'Expand history section. Closed cycles are independent of the LIVE/WAIT row filter.',
+    expandAria:
+      'Expand history section. Closed cycles are independent of the LIVE/WAIT row filter.',
     exportCsv: 'Export CSV',
-    description: 'Each cycle can include up to four steps such as entry, add-entry, partial close, and close. When sorted by time, the strategy group with the strongest sample win rate and average return is shown first. Select a row to compare strategy PnL.',
+    description:
+      'Each cycle can include up to four steps such as entry, add-entry, partial close, and close. When sorted by time, the strategy group with the strongest sample win rate and average return is shown first. Select a row to compare strategy PnL.',
     filterNote: 'Closed cycles are independent of the LIVE/WAIT row filter.',
     searchPlaceholder: 'Search symbol...',
     strategyPlaceholder: 'Strategy',
@@ -453,7 +476,18 @@ const EN_COPY: PulseCopy = {
     startDate: 'Start date',
     endDate: 'End date',
     reset: 'Reset',
-    csvHeaders: ['Symbol', 'Direction', 'Add Buy', 'Partial Close', 'Entry', 'Exit', 'PnL($)', 'PnL(%)', 'Hold Time', 'Closed At'],
+    csvHeaders: [
+      'Symbol',
+      'Direction',
+      'Add Buy',
+      'Partial Close',
+      'Entry',
+      'Exit',
+      'PnL($)',
+      'PnL(%)',
+      'Hold Time',
+      'Closed At',
+    ],
     sortNewestFirst: 'Newest first',
     sortOldestFirst: 'Oldest first',
     totalRowLabel: 'Total',
@@ -469,7 +503,8 @@ const EN_COPY: PulseCopy = {
     maxSignals: 'Max signals',
     estimatedReturn: 'Strategy Estimated Return',
     estimateOnly: 'Reference estimate',
-    disclaimer: 'This simulation is for reference only. Investment decisions are your responsibility, and displayed figures do not guarantee future returns.',
+    disclaimer:
+      'This simulation is for reference only. Investment decisions are your responsibility, and displayed figures do not guarantee future returns.',
     totalAsset: 'Total capital',
     entryAmountTimes: 'Entry amount',
     countSuffix: '',
@@ -494,13 +529,15 @@ const EN_COPY: PulseCopy = {
         title: 'Pulse',
         badges: ['1m', 'Short-term'],
         tagline: 'Refreshes every minute · high-frequency signals for scalping',
-        detail: 'A 1-minute candle stream. Signals arrive more frequently, fitting short order-book or scalping styles that avoid holding positions for long.',
+        detail:
+          'A 1-minute candle stream. Signals arrive more frequently, fitting short order-book or scalping styles that avoid holding positions for long.',
       },
       wave: {
         title: 'Wave',
         badges: ['10m', 'Day'],
         tagline: 'Refreshes every 10 minutes · less noise, easier trend reading',
-        detail: 'A 10-minute candle stream. Signals are less frequent than Pulse, reducing noise and fitting day-trading or light swing styles.',
+        detail:
+          'A 10-minute candle stream. Signals are less frequent than Pulse, reducing noise and fitting day-trading or light swing styles.',
       },
     },
   },
@@ -648,7 +685,8 @@ const STRATEGY_EN: Record<string, { name: string; tagline: string; description: 
   deep: {
     name: 'Deep Buy',
     tagline: 'Average down with one DCA',
-    description: 'Adds one buy in the discount zone to lower the average entry and improve profit potential.',
+    description:
+      'Adds one buy in the discount zone to lower the average entry and improve profit potential.',
   },
   safe: {
     name: 'Safe',
@@ -658,7 +696,8 @@ const STRATEGY_EN: Record<string, { name: string; tagline: string; description: 
   full: {
     name: 'All Plan',
     tagline: 'DCA + partial sell',
-    description: 'Combines DCA in discount zones and partial sells in profit zones for flexible capital use.',
+    description:
+      'Combines DCA in discount zones and partial sells in profit zones for flexible capital use.',
   },
 };
 
@@ -696,7 +735,17 @@ export function pulseLanguageFromCode(code: string | undefined): PulseLanguage {
 
 export function usePulseCopy(): { language: PulseLanguage; copy: PulseCopy } {
   const { i18n } = useTranslation();
-  const language = pulseLanguageFromCode(i18n.resolvedLanguage ?? i18n.language);
+  // The browser language detector may resolve before hydration while the server
+  // always starts with Korean. Use the same server snapshot on the first client
+  // pass, then update to the browser's resolved language after hydration.
+  const language = useSyncExternalStore<PulseLanguage>(
+    (onStoreChange) => {
+      i18n.on('languageChanged', onStoreChange);
+      return () => i18n.off('languageChanged', onStoreChange);
+    },
+    () => pulseLanguageFromCode(i18n.resolvedLanguage ?? i18n.language),
+    () => 'ko'
+  );
   return { language, copy: PULSE_COPY[language] };
 }
 
@@ -724,19 +773,27 @@ export function localizePulseColumnDefs<D>(defs: readonly D[], language: PulseLa
   return defs.map((def) => localizeDef(def as LocalizableDef, language) as D);
 }
 
-export function localizePulseColumnLabel(id: string, fallback: string, language: PulseLanguage): string {
+export function localizePulseColumnLabel(
+  id: string,
+  fallback: string,
+  language: PulseLanguage
+): string {
   if (language === 'ko') return fallback;
   return COLUMN_LABEL_EN[id] ?? COLUMN_HEADER_EN[fallback] ?? fallback;
 }
 
-export function localizePulsePresetLabel(id: string, fallback: string, language: PulseLanguage): string {
+export function localizePulsePresetLabel(
+  id: string,
+  fallback: string,
+  language: PulseLanguage
+): string {
   if (language === 'ko') return fallback;
   return PRESET_LABEL_EN[id] ?? fallback;
 }
 
 export function pulseStrategyName(
   strategy: { id: string; name: string; nameEn?: string },
-  language: PulseLanguage,
+  language: PulseLanguage
 ): string {
   if (language === 'ko') return strategy.name;
   return strategy.nameEn ?? STRATEGY_EN[strategy.id]?.name ?? strategy.name;
@@ -744,7 +801,7 @@ export function pulseStrategyName(
 
 export function pulseStrategyTagline(
   strategy: { id: string; tagline: string },
-  language: PulseLanguage,
+  language: PulseLanguage
 ): string {
   if (language === 'ko') return strategy.tagline;
   return STRATEGY_EN[strategy.id]?.tagline ?? strategy.tagline;
@@ -752,13 +809,17 @@ export function pulseStrategyTagline(
 
 export function pulseStrategyDescription(
   strategy: { id: string; description: string },
-  language: PulseLanguage,
+  language: PulseLanguage
 ): string {
   if (language === 'ko') return strategy.description;
   return STRATEGY_EN[strategy.id]?.description ?? strategy.description;
 }
 
-export function pulseStrategyOneLine(id: string, fallback: string, language: PulseLanguage): string {
+export function pulseStrategyOneLine(
+  id: string,
+  fallback: string,
+  language: PulseLanguage
+): string {
   if (language === 'ko') return fallback;
   return STRATEGY_ONE_LINE_EN[id] ?? fallback;
 }
@@ -782,18 +843,24 @@ export function localizeStrategyExtraText(text: string, language: PulseLanguage)
   if (language === 'ko') return text;
   const exact: Record<string, string> = {
     '이 전략의 추가 신호': 'Additional signals for this strategy',
-    '분할매수 1회 · 상태: pending / triggered / expired (모의)': 'DCA once · status: pending / triggered / expired (mock)',
+    '분할매수 1회 · 상태: pending / triggered / expired (모의)':
+      'DCA once · status: pending / triggered / expired (mock)',
     '분할청산 1회 · 상태: triggered': 'Partial close once · status: triggered',
     '분할매수 1회 · 상태: triggered': 'DCA once · status: triggered',
     '분할청산 1회 · 상태: expired': 'Partial close once · status: expired',
     'DCA 전/후 승률 변화: 62% → 78%': 'Win-rate change before/after DCA: 62% -> 78%',
-    '분할 후 잔여 포지션 평균 PnL: +1.2%': 'Average PnL on remaining position after partial close: +1.2%',
-    '풀사이클 완주율: 45% (두 신호 모두 발동된 비율)': 'Full-cycle completion rate: 45% (both additional signals triggered)',
+    '분할 후 잔여 포지션 평균 PnL: +1.2%':
+      'Average PnL on remaining position after partial close: +1.2%',
+    '풀사이클 완주율: 45% (두 신호 모두 발동된 비율)':
+      'Full-cycle completion rate: 45% (both additional signals triggered)',
   };
   return exact[text] ?? text;
 }
 
-export function formatPulseLastUpdated(d: Date | undefined | null, language: PulseLanguage): string {
+export function formatPulseLastUpdated(
+  d: Date | undefined | null,
+  language: PulseLanguage
+): string {
   if (!d || typeof d.getTime !== 'function') return '—';
   const ms = d.getTime();
   if (!Number.isFinite(ms)) return '—';

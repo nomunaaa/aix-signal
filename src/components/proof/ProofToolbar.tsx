@@ -1,4 +1,4 @@
-import type { Ref } from 'react';
+import type { ReactNode, Ref } from 'react';
 import { getSymbolsFromEnv } from '@/config/symbols';
 import {
   TableControlBar,
@@ -19,13 +19,23 @@ export function ProofToolbar({
   qualityPeriod,
   onQualityPeriodChange,
   containerRef,
+  favoriteSymbols,
+  renderStreamOptionSelector,
+  renderFavoriteScopeAddon,
+  streamSummaryOverride,
+  compactSimulationTrigger,
 }: {
   streamWinRates: Partial<Record<'pulse' | 'wave', number>>;
   qualityPeriod: ProofQualityPeriod;
   onQualityPeriodChange: (period: ProofQualityPeriod) => void;
   containerRef?: Ref<HTMLDivElement>;
+  favoriteSymbols?: readonly string[];
+  renderStreamOptionSelector?: (className?: string) => ReactNode;
+  renderFavoriteScopeAddon?: (className?: string) => ReactNode;
+  streamSummaryOverride?: string;
+  compactSimulationTrigger?: boolean;
 }) {
-  const favoriteSymbols = getSymbolsFromEnv();
+  const resolvedFavoriteSymbols = favoriteSymbols ?? getSymbolsFromEnv();
 
   return (
     <div
@@ -40,9 +50,13 @@ export function ProofToolbar({
         datePeriods={['30d', '90d', 'all']}
         showSignalStateFilter={false}
         showStatusSummary={false}
-        favoriteSymbols={favoriteSymbols}
+        favoriteSymbols={resolvedFavoriteSymbols}
         streamWinRates={streamWinRates}
         useStreamOptionSelector
+        renderStreamOptionSelector={renderStreamOptionSelector}
+        renderFavoriteScopeAddon={renderFavoriteScopeAddon}
+        streamSummaryOverride={streamSummaryOverride}
+        compactSimulationTrigger={compactSimulationTrigger}
       />
     </div>
   );

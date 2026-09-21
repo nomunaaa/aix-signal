@@ -15,7 +15,7 @@ import { Separator } from '@/components/ui/separator';
 import { MAIN_MENU, MORE_MENU, isNavItemActive } from '@/config/menu';
 import { SETTINGS_SECTIONS } from '@/config/settings';
 import { FAIcon } from '@/components/icons/FAIcon';
-import { LogOut } from 'lucide-react';
+import { ChevronDown, LogOut } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 import { publicBrandLogoSrc } from '@/lib/brand-logos';
 import { cn } from '@/lib/utils';
@@ -111,6 +111,60 @@ export function MobileMenu({ onOpenChange }: MobileMenuProps) {
             {mainTabs.map((item) => {
               const isActive = isNavItemActive(item, pathname);
               const label = isKoLanguage ? item.label : (item.labelEn ?? item.label);
+
+              if (item.children?.length) {
+                return (
+                  <details key={item.href} className="group" open={isActive || undefined}>
+                    <summary
+                      className={cn(
+                        'flex cursor-pointer list-none items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors marker:content-none hover:bg-accent/50',
+                        isActive ? 'bg-primary/10 text-primary' : 'text-foreground'
+                      )}
+                    >
+                      {item.icon ? (
+                        <FAIcon
+                          icon={item.icon}
+                          className={cn(
+                            'h-4 w-4',
+                            isActive ? 'text-primary' : 'text-muted-foreground'
+                          )}
+                        />
+                      ) : null}
+                      <span className="flex-1 text-left">{label}</span>
+                      <ChevronDown
+                        className="h-4 w-4 transition-transform group-open:rotate-180"
+                        aria-hidden
+                      />
+                    </summary>
+                    <div className="ml-5 mt-1 space-y-0.5 border-l border-border pl-2">
+                      {item.children.map((child) => {
+                        const childActive = isNavItemActive(child, pathname);
+                        const childLabel = isKoLanguage
+                          ? child.label
+                          : (child.labelEn ?? child.label);
+                        return (
+                          <button
+                            key={child.href}
+                            type="button"
+                            onClick={() => handleNavigation(child.href)}
+                            className={cn(
+                              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent/50',
+                              childActive
+                                ? 'bg-primary/10 font-medium text-primary'
+                                : 'text-foreground'
+                            )}
+                          >
+                            {child.icon ? (
+                              <FAIcon icon={child.icon} className="h-4 w-4 text-muted-foreground" />
+                            ) : null}
+                            <span>{childLabel}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </details>
+                );
+              }
 
               return (
                 <button

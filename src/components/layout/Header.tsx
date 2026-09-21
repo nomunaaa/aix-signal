@@ -170,6 +170,60 @@ const Header = memo(function Header({
                 const label = isKoLanguage ? item.label : (item.labelEn ?? item.label);
                 const active = isNavItemActive(item, pathname);
 
+                if (item.children?.length) {
+                  return (
+                    <DropdownMenu key={item.href}>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          type="button"
+                          className={cn(
+                            'flex shrink-0 items-center gap-1.5 rounded-md px-2.5 text-[13px] font-medium transition-colors xl:px-2 xl:text-sm',
+                            'hover:bg-accent/50 hover:text-foreground',
+                            active ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                          )}
+                          style={{ height: 'var(--header-button-height)' }}
+                          aria-current={active ? 'page' : undefined}
+                        >
+                          {item.icon ? (
+                            <FAIcon icon={item.icon} className="h-4 w-4 shrink-0" aria-hidden />
+                          ) : null}
+                          <span className="whitespace-nowrap">{label}</span>
+                          <ChevronDown className="h-3.5 w-3.5 shrink-0 opacity-60" aria-hidden />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56">
+                        {item.children.map((child) => {
+                          const childActive = isNavItemActive(child, pathname);
+                          const childLabel = isKoLanguage
+                            ? child.label
+                            : (child.labelEn ?? child.label);
+                          return (
+                            <DropdownMenuItem key={child.href} asChild>
+                              <Link
+                                to={child.href}
+                                className={cn(
+                                  'flex cursor-pointer items-center gap-2',
+                                  childActive && 'bg-primary/10 text-primary'
+                                )}
+                                aria-current={childActive ? 'page' : undefined}
+                              >
+                                {child.icon ? (
+                                  <FAIcon
+                                    icon={child.icon}
+                                    className="h-4 w-4 shrink-0"
+                                    aria-hidden
+                                  />
+                                ) : null}
+                                <span>{childLabel}</span>
+                              </Link>
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+
                 return (
                   <Link
                     key={item.href}
@@ -235,7 +289,8 @@ const Header = memo(function Header({
                         </AvatarFallback>
                       </Avatar>
                       <span className="max-w-[120px] truncate whitespace-nowrap text-sm font-medium">
-                        {userName}{isKoLanguage ? '님' : ''}
+                        {userName}
+                        {isKoLanguage ? '님' : ''}
                       </span>
                       <ChevronDown className="h-4 w-4 shrink-0" aria-hidden />
                     </button>
@@ -244,7 +299,8 @@ const Header = memo(function Header({
                     <DropdownMenuLabel className="font-normal">
                       <div className="flex min-w-0 flex-col gap-0.5">
                         <span className="truncate text-sm font-medium text-foreground">
-                          {userName}{isKoLanguage ? '님' : ''}
+                          {userName}
+                          {isKoLanguage ? '님' : ''}
                         </span>
                         {user?.email ? (
                           <span className="truncate text-xs text-muted-foreground">
