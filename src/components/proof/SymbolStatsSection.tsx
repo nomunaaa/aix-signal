@@ -32,7 +32,11 @@ import {
   SIGNAL_OPTION_BADGE_CLASS,
   signalOptionTone,
 } from '@/views/signals/pulse/utils/streamSelector';
-import { hasPositiveLongTermProfit } from './symbolQuality';
+import {
+  hasPositiveLongTermProfit,
+  meetsQualityThresholdsForPeriod,
+  type ProofQualityPeriod,
+} from './symbolQuality';
 
 function symbolStatsSortValue(row: ProofSymbolStatsRow, key: SymbolStatsSortKey): number {
   if (key === 'symbol') return 0;
@@ -199,6 +203,7 @@ export function SymbolStatsSection({
   language,
   buckets,
   selectedOptionIds,
+  qualityPeriod,
 }: {
   rows: ProofSymbolStatsRow[];
   seed: number;
@@ -209,9 +214,23 @@ export function SymbolStatsSection({
   language: ProofLanguage;
   buckets: ProofBuckets;
   selectedOptionIds: readonly SignalStreamOptionId[];
+  qualityPeriod: ProofQualityPeriod;
 }) {
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
+  const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
+  const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
+  // 전략(P1/P2/P3 등)별로 걸러낸 뒤 남은 종목의 데이터만 표에 반영한다 —
+  // 승률/손익비 threshold는 SymbolQualityFilter와 동일 기준을 공유한다.
+  const isChildVisible = (childRow: ProofSymbolStatsRow | undefined): childRow is ProofSymbolStatsRow =>
+    childRow != null &&
+    hasPositiveLongTermProfit(childRow) &&
+    meetsQualityThresholdsForPeriod(
+      childRow,
+      qualityWinRateThreshold,
+      qualityRiskRewardThreshold,
+      qualityPeriod
+    );
   const [sortKey, setSortKey] = useState<SymbolStatsSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [expandedSymbols, setExpandedSymbols] = useState<Set<string>>(() => new Set());
@@ -257,10 +276,7 @@ export function SymbolStatsSection({
     const rowsWithVisibleChildren = rows.flatMap((row) => {
       const visibleChildren = selectedChildren
         .map((child) => childRowsByOption.get(child.id)?.get(row.symbol))
-        .filter(
-          (childRow): childRow is ProofSymbolStatsRow =>
-            childRow != null && hasPositiveLongTermProfit(childRow)
-        );
+        .filter(isChildVisible);
       return visibleChildren.length ? [combineVisibleChildRows(visibleChildren)] : [];
     });
     let filtered = showFavoritesOnly
@@ -289,6 +305,9 @@ export function SymbolStatsSection({
     showFavoritesOnly,
     sortKey,
     sortDirection,
+    qualityWinRateThreshold,
+    qualityRiskRewardThreshold,
+    qualityPeriod,
   ]);
 
   return (
@@ -502,10 +521,9 @@ export function SymbolStatsSection({
             ) : (
               visibleRows.map((row) => {
                 const expanded = expandedSymbols.has(row.symbol);
-                const visibleChildren = selectedChildren.filter((child) => {
-                  const childRow = childRowsByOption.get(child.id)?.get(row.symbol);
-                  return childRow != null && hasPositiveLongTermProfit(childRow);
-                });
+                const visibleChildren = selectedChildren.filter((child) =>
+                  isChildVisible(childRowsByOption.get(child.id)?.get(row.symbol))
+                );
                 const visibleChildSelections = visibleChildren.flatMap((child) =>
                   child.selection ? [child.selection] : []
                 );
