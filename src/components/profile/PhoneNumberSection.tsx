@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,7 +104,13 @@ export function PhoneNumberSection({
 
   return (
     <div className="space-y-2">
-      <Label>{tr('휴대폰 번호', 'Phone number')}</Label>
+      {/* 지갑 주소 블록과 같은 헤더 구조(라벨 + 상태 배지)를 쓴다. */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Label>{tr('휴대폰 번호', 'Phone number')}</Label>
+        <Badge variant={hasVerifiedPhone ? 'secondary' : 'outline'} className="font-normal">
+          {hasVerifiedPhone ? tr('인증됨', 'Verified') : tr('미등록', 'Not set')}
+        </Badge>
+      </div>
 
       {!changing ? (
         <div className="flex items-center gap-2">

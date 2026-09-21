@@ -15,7 +15,7 @@ export type NotifyPreset = 'Conservative' | 'Balanced' | 'Aggressive';
 export type NotifyChannel = '앱 내 알림(기본)';
 
 /**
- * 알림 종류 (4단계 설정). 'all'이면 다른 값과 무관하게 전부 받는다.
+ * 알림 종류 (빠른 시작 2단계에서 채널과 함께 설정). 'all'이면 다른 값과 무관하게 전부 받는다.
  */
 export type NotificationAlertType =
   | 'all'

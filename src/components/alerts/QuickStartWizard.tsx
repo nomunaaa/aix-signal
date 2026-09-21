@@ -10,6 +10,12 @@ import { useBilingualText } from '@/hooks/useBilingualText';
 import { SORTED_SYMBOLS } from '@/config/symbols';
 import { QuickStartWizardProps, NotifyPreset, NotifyChannel, NotificationAlertType } from '@/types/alerts';
 
+/**
+ * 채널과 알림 종류는 원래 2단계 / 4단계로 떨어져 있었지만, 둘 다 "무엇을 어디로
+ * 받을지" 하나의 결정이라 오가는 이동을 줄이려고 2단계에 합쳤다.
+ */
+const TOTAL_STEPS = 3;
+
 const PRESETS: NotifyPreset[] = ['Conservative', 'Balanced', 'Aggressive'];
 const CHANNELS: NotifyChannel[] = ['앱 내 알림(기본)'];
 const DEFAULT_FAVORITES = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
@@ -140,7 +146,7 @@ export const QuickStartWizard = memo(function QuickStartWizard({
   };
 
   const handleNext = async () => {
-    if (step < 4) {
+    if (step < TOTAL_STEPS) {
       setStep(step + 1);
     } else {
       if (isSubmitting) return;
@@ -216,7 +222,7 @@ export const QuickStartWizard = memo(function QuickStartWizard({
     <Card className="glass p-6">
       <div className="flex items-center gap-2 mb-6">
         <div className="flex items-center gap-2">
-          {[1, 2, 3, 4].map(num => (
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map(num => (
             <div
               key={num}
               className={cn(
@@ -263,21 +269,47 @@ export const QuickStartWizard = memo(function QuickStartWizard({
       )}
 
       {step === 2 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">{tr('채널 선택', 'Choose channels')}</h3>
+        <div className="space-y-6">
           <div className="space-y-3">
-            {CHANNELS.map(channel => (
-              <div key={channel} className="flex items-center gap-3">
-                <Checkbox
-                  id={channel}
-                  checked={channels.includes(channel)}
-                  onCheckedChange={() => handleChannelToggle(channel)}
-                />
-                <Label htmlFor={channel} className="cursor-pointer">
-                  {channelLabel(channel)}
-                </Label>
-              </div>
-            ))}
+            <h3 className="text-lg font-semibold">{tr('채널 선택', 'Choose channels')}</h3>
+            <div className="space-y-3">
+              {CHANNELS.map(channel => (
+                <div key={channel} className="flex items-center gap-3">
+                  <Checkbox
+                    id={channel}
+                    checked={channels.includes(channel)}
+                    onCheckedChange={() => handleChannelToggle(channel)}
+                  />
+                  <Label htmlFor={channel} className="cursor-pointer">
+                    {channelLabel(channel)}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3 border-t pt-6">
+            <h3 className="text-lg font-semibold">{tr('알림 종류 선택', 'Choose notification types')}</h3>
+            <p className="text-sm text-muted-foreground">
+              {tr(
+                '받고 싶은 알림 종류를 고르세요. 전체 알림을 선택하면 다른 항목과 무관하게 모두 받습니다.',
+                'Pick which notification types you want. Choosing "All" overrides every other option.'
+              )}
+            </p>
+            <div className="space-y-3">
+              {NOTIFICATION_TYPE_OPTIONS.map((option) => (
+                <div key={option.value} className="flex items-start gap-3">
+                  <Checkbox
+                    id={`notify-type-${option.value}`}
+                    checked={notificationTypes.includes(option.value)}
+                    onCheckedChange={() => handleNotificationTypeToggle(option.value)}
+                  />
+                  <Label htmlFor={`notify-type-${option.value}`} className="cursor-pointer leading-snug">
+                    {tr(option.labelKo, option.labelEn)}
+                  </Label>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -339,32 +371,6 @@ export const QuickStartWizard = memo(function QuickStartWizard({
         </div>
       )}
 
-      {step === 4 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">{tr('알림 종류 선택', 'Choose notification types')}</h3>
-          <p className="text-sm text-muted-foreground">
-            {tr(
-              '받고 싶은 알림 종류를 고르세요. 전체 알림을 선택하면 다른 항목과 무관하게 모두 받습니다.',
-              'Pick which notification types you want. Choosing "All" overrides every other option.'
-            )}
-          </p>
-          <div className="space-y-3">
-            {NOTIFICATION_TYPE_OPTIONS.map((option) => (
-              <div key={option.value} className="flex items-start gap-3">
-                <Checkbox
-                  id={`notify-type-${option.value}`}
-                  checked={notificationTypes.includes(option.value)}
-                  onCheckedChange={() => handleNotificationTypeToggle(option.value)}
-                />
-                <Label htmlFor={`notify-type-${option.value}`} className="cursor-pointer leading-snug">
-                  {tr(option.labelKo, option.labelEn)}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="flex justify-between mt-6 pt-6 border-t">
         <Button
           variant="outline"
@@ -385,7 +391,7 @@ export const QuickStartWizard = memo(function QuickStartWizard({
             </>
           ) : (
             <>
-              {step === 4 ? tr('완료', 'Done') : tr('다음', 'Next')}
+              {step === TOTAL_STEPS ? tr('완료', 'Done') : tr('다음', 'Next')}
               <ChevronRight className="h-4 w-4" />
             </>
           )}
