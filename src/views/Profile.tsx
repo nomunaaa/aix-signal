@@ -384,6 +384,12 @@ const Profile = () => {
     'AIX User';
   const profileInitials = getProfileInitials(profileDisplayName);
 
+  const hasSavedWallet = Boolean(profile?.wallet_address);
+  // 저장 버튼은 실제로 바뀐 게 있을 때만 활성화한다 — 닉네임 저장 버튼과 동작을 맞춘다.
+  const isWalletDirty =
+    walletNetworkInput.trim() !== (profile?.wallet_network || '') ||
+    walletAddressInput.trim() !== (profile?.wallet_address || '');
+
   return (
     <div className="w-full space-y-5">
       <div className="space-y-1.5">
@@ -461,51 +467,65 @@ const Profile = () => {
                     <Input value={user?.email || ''} readOnly className="bg-muted/30" />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>{tr('지갑 주소', 'Wallet address')}</Label>
-                    <p className="text-xs text-muted-foreground">
-                      {tr(
-                        '정산금을 받으실 지갑 주소입니다. 네트워크(예: TRC20)와 주소를 함께 입력해 주세요.',
-                        'The wallet address settlements will be sent to. Enter both the network (e.g. TRC20) and the address.'
-                      )}
-                    </p>
-                    <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)]">
-                      <Input
-                        value={walletNetworkInput}
-                        onChange={(e) => setWalletNetworkInput(e.target.value)}
-                        placeholder={tr('네트워크', 'Network')}
-                        className="min-w-0"
-                      />
-                      <Input
-                        value={walletAddressInput}
-                        onChange={(e) => setWalletAddressInput(e.target.value)}
-                        placeholder={tr('지갑 주소를 입력하세요', 'Enter your wallet address')}
-                        className="min-w-0"
-                      />
+                  {/* 지갑/휴대폰은 "현재 저장된 값 + 변경 액션"이 있는 블록이라,
+                      단순 입력 행(닉네임/이메일)과 섞이면 읽기 어렵다 — 하나의
+                      테두리 안에 같은 구조(라벨+상태 배지 / 설명 / 컨트롤)로 묶는다. */}
+                  <div className="rounded-lg border border-border/60">
+                    <div className="space-y-2 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Label>{tr('지갑 주소', 'Wallet address')}</Label>
+                        <Badge variant={hasSavedWallet ? 'secondary' : 'outline'} className="font-normal">
+                          {hasSavedWallet
+                            ? tr('등록됨', 'Saved')
+                            : tr('미등록', 'Not set')}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {tr(
+                          '정산금을 받으실 지갑 주소입니다. 네트워크(예: TRC20)와 주소를 함께 입력해 주세요.',
+                          'The wallet address settlements will be sent to. Enter both the network (e.g. TRC20) and the address.'
+                        )}
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-[120px_minmax(0,1fr)_auto]">
+                        <Input
+                          value={walletNetworkInput}
+                          onChange={(e) => setWalletNetworkInput(e.target.value)}
+                          placeholder={tr('네트워크', 'Network')}
+                          className="min-w-0"
+                        />
+                        <Input
+                          value={walletAddressInput}
+                          onChange={(e) => setWalletAddressInput(e.target.value)}
+                          placeholder={tr('지갑 주소를 입력하세요', 'Enter your wallet address')}
+                          className="min-w-0"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleSaveWallet}
+                          disabled={isSavingWallet || !isWalletDirty}
+                          className="w-full sm:w-auto"
+                        >
+                          {isSavingWallet ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {tr('저장', 'Save')}
+                        </Button>
+                      </div>
                     </div>
-                    <Button
-                      type="button"
-                      onClick={handleSaveWallet}
-                      disabled={isSavingWallet}
-                      className="w-full sm:w-auto"
-                    >
-                      {isSavingWallet ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                      {tr('저장', 'Save')}
-                    </Button>
-                  </div>
 
-                  {user?.id ? (
-                    <PhoneNumberSection
-                      userId={user.id}
-                      phoneNumber={profile?.phone_number ?? null}
-                      phoneVerified={Boolean(profile?.phone_verified)}
-                      onUpdated={(phoneNumber) =>
-                        setProfile((prev: any) =>
-                          prev ? { ...prev, phone_number: phoneNumber, phone_verified: true } : prev
-                        )
-                      }
-                    />
-                  ) : null}
+                    {user?.id ? (
+                      <div className="border-t border-border/60 p-4">
+                        <PhoneNumberSection
+                          userId={user.id}
+                          phoneNumber={profile?.phone_number ?? null}
+                          phoneVerified={Boolean(profile?.phone_verified)}
+                          onUpdated={(phoneNumber) =>
+                            setProfile((prev: any) =>
+                              prev ? { ...prev, phone_number: phoneNumber, phone_verified: true } : prev
+                            )
+                          }
+                        />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 

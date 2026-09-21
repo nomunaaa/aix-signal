@@ -63,8 +63,8 @@ export function BrowserPushPanel() {
             <h2 className="text-xl font-bold">{tr('브라우저 알림', 'Browser notifications')}</h2>
             <p className="text-sm text-muted-foreground">
               {tr(
-                '사이트를 열어두지 않아도 PULSE/WAVE 시그널을 데스크톱 알림으로 받습니다.',
-                'Get PULSE/WAVE signal alerts as desktop notifications without keeping the site open.'
+                'AiXSignal 탭이 열려 있는 동안 PULSE/WAVE 시그널을 데스크톱 알림으로 받습니다.',
+                'Get PULSE/WAVE signal alerts as desktop notifications while an AiXSignal tab is open.'
               )}
             </p>
           </div>
@@ -76,6 +76,15 @@ export function BrowserPushPanel() {
           aria-label={tr('브라우저 알림 켜기/끄기', 'Toggle browser notifications')}
         />
       </div>
+
+      {/* 백그라운드 웹 푸시(서비스 워커 + VAPID)는 아직 붙지 않았다. 지금은 탭이
+          열려 있을 때만 알림이 뜨므로, 그 한계를 UI에서 분명히 밝힌다. */}
+      <p className="mt-3 rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        {tr(
+          '현재는 AiXSignal 탭이 열려 있을 때만 알림이 표시됩니다. 브라우저를 완전히 닫으면 알림이 오지 않습니다.',
+          'Alerts currently appear only while an AiXSignal tab is open. You will not receive them once the browser is fully closed.'
+        )}
+      </p>
 
       {!supported && (
         <p className="mt-4 text-sm text-muted-foreground">
