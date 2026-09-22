@@ -535,6 +535,7 @@ const Alerts = () => {
               dndEnd={settings.dnd.end}
               onDNDChange={handleDNDChange}
               channelPriority={settings.channelPriority}
+              notificationTypes={settings.notificationTypes}
             />
 
             <BrowserPushPanel />

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { FAIcon } from '@/components/icons/FAIcon';
 import { useBilingualText } from '@/hooks/useBilingualText';
 import { Loader2, Save } from 'lucide-react';
-import { NotifyChannel } from '@/types/alerts';
+import { NotifyChannel, NotificationAlertType } from '@/types/alerts';
+import { NOTIFICATION_TYPE_OPTIONS } from '@/config/notificationTypes';
 
 interface DNDPriorityPanelProps {
   dndStart: string;
@@ -16,6 +17,8 @@ interface DNDPriorityPanelProps {
   onDNDChange: (start: string, end: string) => void | Promise<void>;
   channelPriority: NotifyChannel[];
   onPriorityChange?: (priority: NotifyChannel[]) => void;
+  /** 빠른 시작에서 고른 알림 종류 — 채널 아래에 현재 설정으로 표시한다. */
+  notificationTypes?: NotificationAlertType[];
 }
 
 export const DNDPriorityPanel = memo(function DNDPriorityPanel({
@@ -23,6 +26,7 @@ export const DNDPriorityPanel = memo(function DNDPriorityPanel({
   dndEnd,
   onDNDChange,
   channelPriority,
+  notificationTypes = [],
 }: DNDPriorityPanelProps) {
   const { tr } = useBilingualText();
   const [dndEnabled, setDndEnabled] = useState(true);
@@ -30,6 +34,9 @@ export const DNDPriorityPanel = memo(function DNDPriorityPanel({
   const [draftEnd, setDraftEnd] = useState(dndEnd);
   const [isSaving, setIsSaving] = useState(false);
   const hasDndChanges = draftStart !== dndStart || draftEnd !== dndEnd;
+  const selectedNotificationTypes = NOTIFICATION_TYPE_OPTIONS.filter((option) =>
+    notificationTypes.includes(option.value)
+  );
 
   useEffect(() => {
     setDraftStart(dndStart);
@@ -129,6 +136,26 @@ export const DNDPriorityPanel = memo(function DNDPriorityPanel({
           <p className="text-sm text-muted-foreground">
             {tr('현재는 앱 내 알림 센터만 사용합니다', 'Currently only the in-app notification center is used')}
           </p>
+
+          {/* 알림 종류는 위쪽 빠른 시작에서 고르지만, 저장 후에는 그 화면을 다시
+              펼치지 않는 한 무엇을 켜 뒀는지 확인할 방법이 없었다 — 채널 바로
+              아래에서 현재 설정을 같이 보여 준다. */}
+          <div className="space-y-2 pt-4 border-t border-border/50">
+            <Label className="text-sm font-semibold">{tr('알림 종류', 'Notification types')}</Label>
+            {selectedNotificationTypes.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {tr('선택된 알림 종류가 없습니다', 'No notification types selected')}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {selectedNotificationTypes.map((option) => (
+                  <Badge key={option.value} variant="secondary" className="font-normal">
+                    {tr(option.labelKo, option.labelEn)}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </Card>
