@@ -1,11 +1,12 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import * as PopoverPrimitive from '@radix-ui/react-popover';
 import { Search, Zap } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Popover, PopoverContent } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 import {
   SIGNAL_OPTION_BADGE_CLASS,
@@ -13,6 +14,12 @@ import {
   signalOptionTone,
 } from '@/views/signals/pulse/utils/streamSelector';
 import { useStockSelectionStore } from './stockSelectionStore';
+
+const INACTIVE_OPTION_CLASS = {
+  pulse: 'border-red-500 bg-background text-red-700 dark:text-red-400',
+  beat: 'border-emerald-500 bg-background text-emerald-700 dark:text-emerald-400',
+  wave: 'border-blue-500 bg-background text-blue-700 dark:text-blue-400',
+} as const;
 
 function symbolLabel(symbol: string): string {
   return symbol.replace(/USDT$/i, '');
@@ -28,7 +35,10 @@ function SignalSymbolPicker({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const selected = useStockSelectionStore((state) => state.selectedSignals[optionId]);
-  const toggle = useStockSelectionStore((state) => state.toggleSelectedSignal);
+  const toggleSymbol = useStockSelectionStore((state) => state.toggleSelectedSignal);
+  const active = usePulseStore((state) => state.streamOptionFilter[optionId]);
+  const toggleTrend = usePulseStore((state) => state.toggleStreamOptionFilter);
+  const tone = signalOptionTone(optionId);
   const normalizedSymbols = useMemo(
     () => Array.from(new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))),
     [symbols]
@@ -39,7 +49,6 @@ function SignalSymbolPicker({
       ? normalizedSymbols.filter((symbol) => symbol.includes(needle))
       : normalizedSymbols;
   }, [normalizedSymbols, query]);
-  const topSymbols = useMemo(() => normalizedSymbols.slice(0, 5), [normalizedSymbols]);
   const selectedCount = normalizedSymbols.filter((symbol) => selected.has(symbol)).length;
 
   const renderGroup = (label: string, groupSymbols: readonly string[]) => {
@@ -57,7 +66,7 @@ function SignalSymbolPicker({
               type="button"
               role="option"
               aria-selected={isSelected}
-              onClick={() => toggle(optionId, symbol)}
+              onClick={() => toggleSymbol(optionId, symbol)}
               className={cn(
                 'flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-xs transition-colors',
                 isSelected
@@ -81,20 +90,29 @@ function SignalSymbolPicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
+      <PopoverPrimitive.Anchor asChild>
+        <button
           type="button"
-          variant="outline"
+          aria-pressed={active}
+          aria-label={`${optionId}. Left click toggles the trend. Right click selects symbols.`}
+          title="Left click: show this trend. Right click: choose symbols."
+          onClick={() => {
+            setOpen(false);
+            toggleTrend(optionId);
+          }}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            setOpen(true);
+          }}
           className={cn(
-            'h-10 min-w-9 flex-col gap-0.5 px-2 text-xs font-semibold leading-none',
-            selectedCount > 0 && SIGNAL_OPTION_BADGE_CLASS[signalOptionTone(optionId)]
+            'flex h-8 min-w-9 select-none flex-col items-center justify-center gap-0.5 rounded border px-1.5 text-[12px] font-semibold leading-none transition-colors',
+            active ? SIGNAL_OPTION_BADGE_CLASS[tone] : INACTIVE_OPTION_CLASS[tone]
           )}
-          aria-label={`${optionId} selected symbols`}
         >
           {optionId}
-          <span className="font-mono text-[9px] opacity-75">{selectedCount}</span>
-        </Button>
-      </PopoverTrigger>
+          <span className="font-mono text-[9px] leading-none opacity-75">{selectedCount}</span>
+        </button>
+      </PopoverPrimitive.Anchor>
       <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-2">
         <div className="relative mb-2">
           <Search
@@ -120,14 +138,8 @@ function SignalSymbolPicker({
                   normalizedSymbols.filter((symbol) => selected.has(symbol))
                 )}
                 {renderGroup(
-                  'Top 5',
-                  topSymbols.filter((symbol) => !selected.has(symbol))
-                )}
-                {renderGroup(
-                  'All symbols',
-                  normalizedSymbols.filter(
-                    (symbol) => !selected.has(symbol) && !topSymbols.includes(symbol)
-                  )
+                  'Profitable',
+                  normalizedSymbols.filter((symbol) => !selected.has(symbol))
                 )}
               </>
             )
@@ -141,19 +153,23 @@ function SignalSymbolPicker({
 }
 
 export function StockSignalSelector({
-  symbols,
+  symbolsByOption,
   className,
 }: {
-  symbols: readonly string[];
+  symbolsByOption: Partial<Record<SignalStreamOptionId, readonly string[]>>;
   className?: string;
 }) {
   return (
     <div
-      className={cn('flex min-h-14 flex-wrap items-center gap-1.5 rounded-lg p-2', className)}
-      aria-label="Signal symbol selection"
+      className={cn('flex min-h-8 flex-nowrap items-center gap-1 rounded-lg p-1', className)}
+      aria-label="Signal trend filters"
     >
       {SIGNAL_STREAM_OPTION_IDS.map((optionId) => (
-        <SignalSymbolPicker key={optionId} optionId={optionId} symbols={symbols} />
+        <SignalSymbolPicker
+          key={optionId}
+          optionId={optionId}
+          symbols={symbolsByOption[optionId] ?? []}
+        />
       ))}
     </div>
   );

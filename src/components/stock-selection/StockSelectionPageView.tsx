@@ -15,6 +15,7 @@ import {
 import { PROOF_COPY } from '@/components/proof/proofCopy';
 import { combineProofCycleStats, proofLanguageFromCode } from '@/components/proof/proofFormat';
 import {
+  hasPositiveLongTermProfit,
   meetsQualityThresholdsForPeriod,
   type ProofQualityPeriod,
 } from '@/components/proof/symbolQuality';
@@ -118,6 +119,7 @@ export function StockSelectionPageView() {
   const searchQuery = usePulseStore((state) => state.searchQuery);
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
+  const streamOptionFilter = usePulseStore((state) => state.streamOptionFilter);
   const selectedSignals = useStockSelectionStore((state) => state.selectedSignals);
   const showSelectedOnly = useStockSelectionStore((state) => state.showSelectedOnly);
   const hydrateSelection = useStockSelectionStore((state) => state.hydrate);
@@ -191,13 +193,26 @@ export function StockSelectionPageView() {
     [data.buckets]
   );
 
+  const profitableSymbolsByOption = useMemo(() => {
+    return Object.fromEntries(
+      OPTIONS.map((option) => {
+        const optionRows = rowsByOption.get(option.id);
+        const symbols = allSymbols.filter((symbol) => {
+          const stats = optionRows?.get(symbol);
+          return stats != null && hasPositiveLongTermProfit(stats);
+        });
+        return [option.id, symbols];
+      })
+    ) as Record<SignalStreamOptionId, readonly string[]>;
+  }, [allSymbols, rowsByOption]);
+
   const visibleRows = useMemo(() => {
     const query = searchQuery.trim().toUpperCase();
-    return OPTIONS.flatMap((option) => {
+    return OPTIONS.filter((option) => streamOptionFilter[option.id]).flatMap((option) => {
       const optionRows = rowsByOption.get(option.id)!;
       let rows = allSymbols.flatMap((symbol): StockSelectionRow[] => {
         const stats = optionRows.get(symbol);
-        if (!stats) return [];
+        if (!stats || !hasPositiveLongTermProfit(stats)) return [];
         if (
           !meetsQualityThresholdsForPeriod(
             stats,
@@ -227,6 +242,7 @@ export function StockSelectionPageView() {
     rowsByOption,
     searchQuery,
     selectedSignals,
+    streamOptionFilter,
     showFavoritesOnly,
     showSelectedOnly,
     sortDirection,
@@ -263,7 +279,7 @@ export function StockSelectionPageView() {
         favoriteSymbols={allSymbols}
         renderFavoriteScopeAddon={(className) => <SelectedSignalScope className={className} />}
         renderStreamOptionSelector={(className) => (
-          <StockSignalSelector symbols={allSymbols} className={className} />
+          <StockSignalSelector symbolsByOption={profitableSymbolsByOption} className={className} />
         )}
         streamSummaryOverride="Signal selection"
         compactSimulationTrigger
