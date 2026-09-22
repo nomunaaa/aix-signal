@@ -67,9 +67,9 @@ function createProofSupabaseClient(): SupabaseClient {
 }
 
 function matchesFilter(row: PlatformCycleRow, filter: RiskAnalysisFilter): boolean {
-  if (filter.streams.length && !filter.streams.includes(row.engine as ProofStatsStream)) {
-    return false;
-  }
+  // 스트림은 쿼리에서 signal_name으로 이미 걸렀다. 여기서 row.engine으로 다시
+  // 확인하면 안 된다 — engine은 barinterval에서 나오므로 BEAT가 PULSE로 보여
+  // BEAT만 선택했을 때 전부 탈락한다.
   if (filter.tradingCategories.length) {
     if (!row.tradingCategory) return false;
     if (!filter.tradingCategories.includes(row.tradingCategory)) return false;
@@ -84,10 +84,15 @@ function matchesFilter(row: PlatformCycleRow, filter: RiskAnalysisFilter): boole
   return true;
 }
 
-/** PULSE=1m, WAVE=10m — 스트림 필터를 barinterval로 바꿔 DB에서 거른다. */
-const BAR_INTERVAL_BY_STREAM: Record<ProofStatsStream, string> = {
-  PULSE: '1m',
-  WAVE: '10m',
+/**
+ * 스트림은 barinterval이 아니라 signal_name으로 거른다 — BEAT와 PULSE가 둘 다
+ * 1분봉이라 barinterval로는 구분되지 않는다. proof_stats의 streamFromSignalName과
+ * 같은 값을 쓴다.
+ */
+const SIGNAL_NAME_BY_STREAM: Record<ProofStatsStream, string> = {
+  PULSE: 'pulse_signal-1',
+  BEAT: 'beat_signal-1',
+  WAVE: 'wave_signal-1',
 };
 
 /**
@@ -101,7 +106,9 @@ async function fetchClosedCycles(
   filter: RiskAnalysisFilter
 ): Promise<PlatformCycleRow[]> {
   const rows: PlatformCycleRow[] = [];
-  const barIntervals = filter.streams.map((stream) => BAR_INTERVAL_BY_STREAM[stream]);
+  const signalNames = filter.streams
+    .map((stream) => SIGNAL_NAME_BY_STREAM[stream])
+    .filter(Boolean);
 
   for (let from = 0; ; from += PAGE_SIZE) {
     let query = supabase
@@ -110,7 +117,7 @@ async function fetchClosedCycles(
       .not('exit_time', 'is', null)
       .gte('exit_time', sinceIso);
 
-    if (barIntervals.length) query = query.in('barinterval', barIntervals);
+    if (signalNames.length) query = query.in('signal_name', signalNames);
     if (filter.tradingCategories.length) {
       query = query.in('trading_category', filter.tradingCategories as string[]);
     }
