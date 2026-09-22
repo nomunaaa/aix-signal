@@ -15,6 +15,7 @@ import type {
   WaitingSignal,
   SignalCycleUiState,
   EntryTrendDirection,
+  SignalStreamId,
 } from '../types/pulse.types';
 import type { OpenSignal } from '../utils/section';
 import { CoinIcon } from '../components/CoinIcon';
@@ -81,6 +82,7 @@ import {
 } from './waitingExtendedRenderers';
 import { calculateOpenSignalPnl } from '../utils/historyPnl';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
+import { streamFromSignalName } from '@/lib/signal-stream';
 import {
   optionIdForSignal,
   SIGNAL_OPTION_BADGE_CLASS,
@@ -91,7 +93,7 @@ import {
 
 export interface OpenRowData {
   id: string;
-  stream: 'pulse' | 'wave';
+  stream: SignalStreamId;
   symbol: string;
   tradingCategory?: TradingCategory;
   direction: 'long' | 'short';
@@ -998,15 +1000,25 @@ export function StreamConfidenceRenderer(params: ICellRendererParams) {
 
 export function SignalStreamRenderer(params: ICellRendererParams) {
   const data = params.data as Partial<OpenRowData> | undefined;
-  const stream = data?.stream ?? (data?._raw?.barinterval === '10m' ? 'wave' : 'pulse');
-  const trendMode = data?._raw
+  const raw = data?._raw as Signal | undefined;
+  const stream: SignalStreamId =
+    data?.stream ??
+    raw?.stream ??
+    streamFromSignalName(raw?.signalName, raw?.barinterval);
+  const trendMode = raw
     ? resolveSignalTrendModeFromEntryTrends({
-        direction: data._raw.direction,
-        shortTrend: data._raw.entryTrendShort,
-        longTrend: data._raw.entryTrendLong,
+        direction: raw.direction,
+        shortTrend: raw.entryTrendShort,
+        longTrend: raw.entryTrendLong,
       })
     : null;
-  const label = trendMode ? optionIdForSignal(stream, trendMode) : stream === 'wave' ? 'W' : 'P';
+  const label = trendMode
+    ? optionIdForSignal(stream, trendMode)
+    : stream === 'wave'
+      ? 'W'
+      : stream === 'beat'
+        ? 'B'
+        : 'P';
   return (
     <span
       className={cn(
@@ -2557,8 +2569,9 @@ export function getHistoryColumns(rows?: HistoryRowData[]): ColDef<HistoryRowDat
 
 // ─── Row data builders ──────────────────────────────────────────────
 
-function streamFromSignal(signal: OpenSignal): 'pulse' | 'wave' {
-  return (signal as Signal).barinterval === '10m' ? 'wave' : 'pulse';
+function streamFromSignal(signal: OpenSignal): SignalStreamId {
+  const s = signal as Signal;
+  return s.stream ?? streamFromSignalName(s.signalName, s.barinterval);
 }
 
 function calculateFavorableDiscountRate(signal: OpenSignal, currentPrice: number): number {

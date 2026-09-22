@@ -113,6 +113,7 @@ export interface ProofStatsAggregateRow {
   scope: 'symbol' | 'all_symbols' | string;
   symbol: string | null;
   barinterval: string | null;
+  signal_name?: string | null;
   trading_category: string | null;
   timeinterval: string | null;
   trend: ProofStatsTrendMode | string | null;
@@ -189,10 +190,23 @@ function maxTimestampMs(a: number | null, b: number | null): number | null {
   return Math.max(a, b);
 }
 
+function streamFromSignalName(value: string | null | undefined): ProofStatsStream | null {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (normalized === 'pulse_signal-1') return 'PULSE';
+  if (normalized === 'beat_signal-1') return 'BEAT';
+  if (normalized === 'wave_signal-1') return 'WAVE';
+  return null;
+}
+
+/** Legacy fallback when signal_name is missing from older proof_stats rows. */
 function streamFromBarinterval(value: string | null | undefined): ProofStatsStream | null {
   if (value === '1m') return 'PULSE';
   if (value === '10m') return 'WAVE';
   return null;
+}
+
+function streamFromProofStatsRow(row: ProofStatsAggregateRow): ProofStatsStream | null {
+  return streamFromSignalName(row.signal_name) ?? streamFromBarinterval(row.barinterval);
 }
 
 function trendModeFromDb(value: string | null | undefined): ProofStatsTrendMode | null {
@@ -378,7 +392,7 @@ export function buildProofBuckets(rows: PlatformCycleRow[], nowMs = Date.now()):
   const cutoff3mo = recent3moCutoffMs(nowMs);
 
   for (const row of rows) {
-    if (row.engine !== 'PULSE' && row.engine !== 'WAVE') continue;
+    if (row.engine !== 'PULSE' && row.engine !== 'BEAT' && row.engine !== 'WAVE') continue;
 
     const mode = trendMode(row);
     if (mode == null) continue;
@@ -427,7 +441,7 @@ export function proofStatsRowsToBuckets(rows: ProofStatsAggregateRow[]): ProofBu
   };
 
   for (const row of rows) {
-    const stream = streamFromBarinterval(row.barinterval);
+    const stream = streamFromProofStatsRow(row);
     const mode = trendModeFromDb(row.trend);
     if (stream == null || mode == null) continue;
 

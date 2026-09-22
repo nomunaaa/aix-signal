@@ -38,7 +38,7 @@ export interface ProofKpi {
 }
 
 export interface EngineStats {
-  engine: 'PULSE' | 'WAVE';
+  engine: 'PULSE' | 'BEAT' | 'WAVE';
   barInterval: '1m' | '10m';
   subtitle: string;
   winRate: number;
@@ -84,7 +84,7 @@ export interface SymbolArchiveLink {
 }
 
 export type ProofStatsRowKey = 'standard' | 'discounted';
-export type ProofStatsStream = 'PULSE' | 'WAVE';
+export type ProofStatsStream = 'PULSE' | 'BEAT' | 'WAVE';
 export type ProofStatsTrendMode = SignalTrendMode;
 
 export interface ProofCycleStatsSlice {
@@ -144,7 +144,7 @@ export interface ProofSimulationData {
 export interface ProofPageMock {
   header: ProofHeader;
   kpi: ProofKpi;
-  engines: [EngineStats, EngineStats];
+  engines: [EngineStats, EngineStats, EngineStats];
   strategies: StrategyStats[];
   topSymbols: SymbolPerformance[];
   bottomSymbols: SymbolPerformance[];

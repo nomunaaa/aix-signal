@@ -10,10 +10,10 @@ export { DEFAULT_SIGNAL_TREND_MODE_FILTER, SIGNAL_TREND_MODES } from '@/lib/sign
 // Strategy types
 export type StrategyId = 'oneshot' | 'safe' | 'deep' | 'full';
 
-/** 시그널 스트림 — 펄스(1m) / 웨이브(10m) */
-export type SignalStreamId = 'pulse' | 'wave';
+/** 시그널 스트림 — 펄스(1m) / 비트(1m) / 웨이브(10m). Beat는 signal_name으로 Pulse와 구분. */
+export type SignalStreamId = 'pulse' | 'beat' | 'wave';
 
-/** Signal Board stream + E2X2 trend-mode choices. Beat is UI-only until its feed is defined. */
+/** Signal Board stream + E2X2 trend-mode choices (P/B/W × reversal/trend/non-trend). */
 export type SignalStreamOptionId = 'P1' | 'P2' | 'P3' | 'B1' | 'B2' | 'B3' | 'W1' | 'W2' | 'W3';
 export type SignalStreamOptionFilter = Record<SignalStreamOptionId, boolean>;
 
@@ -191,6 +191,10 @@ export interface Signal {
   signalState?: SignalCycleUiState;
   /** PULSE=1m / WAVE=10m */
   barinterval?: '1m' | '10m';
+  /** signal_cycles.signal_name */
+  signalName?: string;
+  /** Derived board stream (Pulse/Beat/Wave). */
+  stream?: SignalStreamId;
   /** signal_cycles.trading_category */
   tradingCategory?: TradingCategory;
   /** Planned action rows from signal_actions for this open cycle. */
@@ -279,6 +283,8 @@ export interface ClosedSignal {
   cyclePhaseSummary?: string;
   /** PULSE=1m / WAVE=10m */
   barinterval?: '1m' | '10m';
+  signalName?: string;
+  stream?: SignalStreamId;
   /** signal_cycles.trading_category */
   tradingCategory?: TradingCategory;
   /** Raw hold duration in seconds when available from signal_cycles */

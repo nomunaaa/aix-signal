@@ -4,7 +4,7 @@ import { ConfidenceGradeDot } from '@/components/icons/ConfidenceGradeDot';
 import { cn } from '@/lib/utils';
 
 export interface ConfidenceBadgeProps {
-  stream: 'pulse' | 'wave';
+  stream: 'pulse' | 'beat' | 'wave';
   className?: string;
 }
 

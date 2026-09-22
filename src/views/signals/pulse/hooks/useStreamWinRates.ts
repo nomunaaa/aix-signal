@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { streamFromSignalName } from '@/lib/signal-stream';
 import type { SignalStreamId } from '../types/pulse.types';
 import type { HistoryDatePeriod } from '../utils/historyDateRange';
 
@@ -9,6 +10,7 @@ type StreamWinRates = Partial<Record<SignalStreamId, number>>;
 type StreamStatsRow = {
   symbol: string | null;
   barinterval: string | null;
+  signal_name: string | null;
   entries: number | string | null;
   win_count: number | string | null;
 };
@@ -55,7 +57,7 @@ export function useStreamWinRates({
     let cancelled = false;
     void proofStatsClient
       .from('proof_stats')
-      .select('symbol,barinterval,entries,win_count')
+      .select('symbol,barinterval,signal_name,entries,win_count')
       .eq('scope', 'symbol')
       .eq('trading_category', 'E2X2')
       .eq('trend', 'reversal')
@@ -71,10 +73,9 @@ export function useStreamWinRates({
           return;
         }
 
-        const values: Record<SignalStreamId, number[]> = { pulse: [], wave: [] };
+        const values: Record<SignalStreamId, number[]> = { pulse: [], beat: [], wave: [] };
         for (const row of (data ?? []) as StreamStatsRow[]) {
-          const stream =
-            row.barinterval === '1m' ? 'pulse' : row.barinterval === '10m' ? 'wave' : null;
+          const stream = streamFromSignalName(row.signal_name, row.barinterval);
           const entries = finiteNumber(row.entries);
           const wins = finiteNumber(row.win_count);
           if (stream && entries > 0) values[stream].push((wins / entries) * 100);
@@ -82,6 +83,9 @@ export function useStreamWinRates({
         setRates({
           pulse: values.pulse.length
             ? values.pulse.reduce((sum, value) => sum + value, 0) / values.pulse.length
+            : undefined,
+          beat: values.beat.length
+            ? values.beat.reduce((sum, value) => sum + value, 0) / values.beat.length
             : undefined,
           wave: values.wave.length
             ? values.wave.reduce((sum, value) => sum + value, 0) / values.wave.length

@@ -36,6 +36,7 @@ export const PULSE_MOCK_STATS_24H: Record<StrategyId, StrategyStatsWithPeriod> =
 
 export const PULSE_MOCK_STATS_30D_BY_STREAM: Record<SignalStreamId, GateKpi30d> = {
   pulse: { winRate: 71.2, returnRate: 8.4, pnlUsd: 12420, mdd: -6.2 },
+  beat: { winRate: 68.5, returnRate: 7.6, pnlUsd: 10240, mdd: -6.8 },
   wave: { winRate: 66.8, returnRate: 11.1, pnlUsd: 9830, mdd: -8.1 },
 };
 
@@ -45,6 +46,12 @@ export const PULSE_MOCK_STATS_30D_BY_STRATEGY: Record<SignalStreamId, Record<Str
     safe: { winRate: 74.2, returnRate: 5.8, pnlUsd: 6640, mdd: -3.9 },
     deep: { winRate: 62.1, returnRate: 10.2, pnlUsd: 9010, mdd: -7.8 },
     full: { winRate: 72.5, returnRate: 9.0, pnlUsd: 7780, mdd: -5.1 },
+  },
+  beat: {
+    oneshot: { winRate: 67.8, returnRate: 6.8, pnlUsd: 7540, mdd: -5.9 },
+    safe: { winRate: 72.1, returnRate: 5.4, pnlUsd: 6120, mdd: -4.2 },
+    deep: { winRate: 60.4, returnRate: 9.5, pnlUsd: 8680, mdd: -8.0 },
+    full: { winRate: 70.2, returnRate: 8.2, pnlUsd: 7210, mdd: -5.6 },
   },
   wave: {
     oneshot: { winRate: 65.0, returnRate: 9.4, pnlUsd: 6890, mdd: -7.2 },

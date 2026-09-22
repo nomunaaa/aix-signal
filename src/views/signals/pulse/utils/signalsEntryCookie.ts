@@ -15,7 +15,7 @@ function parsePayload(raw: unknown): SignalsEntryPayload | null {
   const o = raw as Record<string, unknown>;
   const stream = o.stream;
   const strategy = o.strategy;
-  if (stream !== 'pulse' && stream !== 'wave') return null;
+  if (stream !== 'pulse' && stream !== 'beat' && stream !== 'wave') return null;
   if (typeof strategy !== 'string' || !STRATEGIES.has(strategy as StrategyId)) return null;
   return { stream, strategy: strategy as StrategyId };
 }

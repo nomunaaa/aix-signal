@@ -1,4 +1,4 @@
-import { Zap, Waves, type LucideIcon } from 'lucide-react';
+import { Activity, Zap, Waves, type LucideIcon } from 'lucide-react';
 import type { SignalStreamId } from '../types/pulse.types';
 
 export const STREAM_GATE_META: Record<
@@ -21,6 +21,15 @@ export const STREAM_GATE_META: Record<
       '1분봉에 맞춘 스트림입니다. 신호가 자주 들어와 짧은 호가·초단타에 익숙한 분께 맞고, 포지션을 오래 붙잡지 않는 스타일에 가깝습니다.',
     Icon: Zap,
     accent: 'hsl(47 96% 53%)',
+  },
+  beat: {
+    title: 'Beat',
+    badges: ['1분', 'Beat'],
+    tagline: '1분봉 · Pulse와 구분되는 Beat 시그널',
+    detail:
+      'Pulse와 같은 1분봉이지만 signal_name으로 분리된 Beat 스트림입니다. 보드·Proof·히스토리에서 Pulse와 독립적으로 필터됩니다.',
+    Icon: Activity,
+    accent: 'hsl(152 76% 40%)',
   },
   wave: {
     title: '웨이브',

@@ -50,6 +50,8 @@ export interface EnhancedSignal {
   exitTimestamp?: number; // 청산 타임스탬프
   hold_sec?: number; // 보유 시간 (초)
   barinterval?: string; // Bar interval ('15s' | '10m' | '1m')
+  /** pulse_signal-1 | beat_signal-1 | wave_signal-1 */
+  signal_name?: string;
 
   /** Per-position strategy (from signal_cycles.strategy_type) */
   strategy_type?: StrategyType;

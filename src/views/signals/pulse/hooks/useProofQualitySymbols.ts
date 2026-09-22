@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { signalNamesForStreamFilter } from '@/lib/signal-stream';
 import type { SignalStreamId } from '../types/pulse.types';
 import type { HistoryDatePeriod } from '../utils/historyDateRange';
 
@@ -63,17 +64,14 @@ export function useProofQualitySymbols({
 
   useEffect(() => {
     const scopedSymbols = symbolsKey ? symbolsKey.split(',') : [];
-    const barIntervals = [
-      streamFilter.pulse ? '1m' : null,
-      streamFilter.wave ? '10m' : null,
-    ].filter((value): value is '1m' | '10m' => value !== null);
+    const signalNames = signalNamesForStreamFilter(streamFilter);
 
     if (!enabled) {
       setRows([]);
       setLoading(false);
       return;
     }
-    if (scopedSymbols.length === 0 || barIntervals.length === 0) {
+    if (scopedSymbols.length === 0 || signalNames.length === 0) {
       setRows([]);
       setLoading(false);
       return;
@@ -85,14 +83,14 @@ export function useProofQualitySymbols({
     void proofStatsClient
       .from('proof_stats')
       .select(
-        'symbol,entries,win_count,loss_count,wins_per_entry_notional_rate_sum,losses_per_entry_notional_rate_abs_sum'
+        'symbol,entries,win_count,loss_count,wins_per_entry_notional_rate_sum,losses_per_entry_notional_rate_abs_sum,signal_name'
       )
       .eq('scope', 'symbol')
       .eq('trading_category', 'E2X2')
       .eq('trend', 'reversal')
       .eq('timeinterval', proofTimeinterval(period))
       .in('category', ['standard', 'discounted'])
-      .in('barinterval', barIntervals)
+      .in('signal_name', signalNames)
       .in('symbol', scopedSymbols)
       .then(({ data, error }) => {
         if (cancelled) return;
@@ -108,7 +106,14 @@ export function useProofQualitySymbols({
     return () => {
       cancelled = true;
     };
-  }, [enabled, period, streamFilter.pulse, streamFilter.wave, symbolsKey]);
+  }, [
+    enabled,
+    period,
+    streamFilter.beat,
+    streamFilter.pulse,
+    streamFilter.wave,
+    symbolsKey,
+  ]);
 
   const qualifiedSymbols = useMemo(() => {
     if (!enabled) return new Set(symbolsKey ? symbolsKey.split(',') : []);

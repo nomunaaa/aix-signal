@@ -47,7 +47,7 @@ export function optionIdForSignal(
   stream: SignalStreamId,
   trendMode: SignalTrendMode
 ): SignalStreamOptionId {
-  const prefix = stream === 'pulse' ? 'P' : 'W';
+  const prefix = stream === 'pulse' ? 'P' : stream === 'beat' ? 'B' : 'W';
   const suffix = trendMode === 'reversal' ? '1' : trendMode === 'trend' ? '2' : '3';
   return `${prefix}${suffix}` as SignalStreamOptionId;
 }
@@ -65,6 +65,7 @@ export function baseStreamFilterFromOptions(
 ): Record<SignalStreamId, boolean> {
   return {
     pulse: filter.P1 || filter.P2 || filter.P3,
+    beat: filter.B1 || filter.B2 || filter.B3,
     wave: filter.W1 || filter.W2 || filter.W3,
   };
 }
@@ -73,8 +74,8 @@ export function trendModeFilterFromOptions(
   filter: SignalStreamOptionFilter
 ): SignalTrendModeFilter {
   return {
-    reversal: filter.P1 || filter.W1,
-    trend: filter.P2 || filter.W2,
-    nonTrend: filter.P3 || filter.W3,
+    reversal: filter.P1 || filter.B1 || filter.W1,
+    trend: filter.P2 || filter.B2 || filter.W2,
+    nonTrend: filter.P3 || filter.B3 || filter.W3,
   };
 }

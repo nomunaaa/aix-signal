@@ -96,6 +96,8 @@ import {
   signalOptionTone,
 } from '../utils/streamSelector';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
+import { streamFromSignalName } from '@/lib/signal-stream';
+import type { SignalStreamId } from '../types/pulse.types';
 import {
   dateInputEndExclusiveMs,
   dateInputStartMs,
@@ -456,26 +458,34 @@ function SymbolRenderer(params: ICellRendererParams<ClosedSignal>) {
   );
 }
 
+function streamLabelForClosedSignal(signal: ClosedSignal): SignalStreamId {
+  return signal.stream ?? streamFromSignalName(signal.signalName, signal.barinterval);
+}
+
 function StreamBadgeRenderer(params: ICellRendererParams<ClosedSignal>) {
   if (!params.data) return null;
-  const isWave = params.data.barinterval === '10m';
+  const stream = streamLabelForClosedSignal(params.data);
   const trendMode = resolveSignalTrendModeFromEntryTrends({
     direction: params.data.direction,
     shortTrend: params.data.entryTrendShort,
     longTrend: params.data.entryTrendLong,
   });
   const streamCode = trendMode
-    ? optionIdForSignal(isWave ? 'wave' : 'pulse', trendMode)
-    : isWave
+    ? optionIdForSignal(stream, trendMode)
+    : stream === 'wave'
       ? 'W'
-      : 'P';
+      : stream === 'beat'
+        ? 'B'
+        : 'P';
+  const title =
+    stream === 'wave' ? 'Wave' : stream === 'beat' ? 'Beat' : 'Pulse';
   return (
     <span
       className={cn(
         'inline-flex h-5 items-center justify-center rounded px-1.5 text-[10px] font-semibold leading-none text-white',
         SIGNAL_OPTION_BADGE_CLASS[signalOptionTone(streamCode)]
       )}
-      title={isWave ? 'Wave' : 'Pulse'}
+      title={title}
     >
       {streamCode}
     </span>

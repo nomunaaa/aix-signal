@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ProofStatsAggregateRow } from '@/lib/proof/proof-buckets';
 
 export const PROOF_STATS_SELECT_FIELDS =
-  'scope,symbol,barinterval,trading_category,timeinterval,trend,category,entries,pnl_pct_sum,pnl_per_entry_notional_rate_sum,entry_leg_count_sum,win_count,loss_count,wins_pnl_pct_sum,wins_per_entry_notional_rate_sum,losses_pnl_pct_abs_sum,losses_per_entry_notional_rate_abs_sum,highest_profit_pct,highest_loss_pct,highest_profit_per_entry_notional_rate,highest_loss_per_entry_notional_rate,hold_sec_sum,updated_at';
+  'scope,symbol,barinterval,signal_name,trading_category,timeinterval,trend,category,entries,pnl_pct_sum,pnl_per_entry_notional_rate_sum,entry_leg_count_sum,win_count,loss_count,wins_pnl_pct_sum,wins_per_entry_notional_rate_sum,losses_pnl_pct_abs_sum,losses_per_entry_notional_rate_abs_sum,highest_profit_pct,highest_loss_pct,highest_profit_per_entry_notional_rate,highest_loss_per_entry_notional_rate,hold_sec_sum,updated_at';
 
 const PAGE_SIZE = 1000;
 

@@ -6,11 +6,15 @@ import { TRADING_CATEGORY_ORDER, type TradingCategory } from '@/lib/trading-cate
 import { exactHistoryPeriodRange } from '@/views/signals/pulse/utils/historyDateRange';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 
-export const ALL_STREAMS: ProofStatsStream[] = ['PULSE', 'WAVE'];
+export const ALL_STREAMS: ProofStatsStream[] = ['PULSE', 'BEAT', 'WAVE'];
 export const ALL_TREND_MODES: ProofStatsTrendMode[] = ['trend', 'nonTrend', 'reversal'];
 
-export const PROOF_STREAM_TO_HISTORY_STREAM: Record<ProofStatsStream, 'pulse' | 'wave'> = {
+export const PROOF_STREAM_TO_HISTORY_STREAM: Record<
+  ProofStatsStream,
+  'pulse' | 'beat' | 'wave'
+> = {
   PULSE: 'pulse',
+  BEAT: 'beat',
   WAVE: 'wave',
 };
 

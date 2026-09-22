@@ -90,14 +90,21 @@ function writeFavoritesToStorage(favorites: Set<string>): void {
 }
 
 function readStreamFilterFromStorage(): Record<SignalStreamId, boolean> {
-  const fallback: Record<SignalStreamId, boolean> = { pulse: true, wave: true };
+  const fallback: Record<SignalStreamId, boolean> = { pulse: true, beat: true, wave: true };
   const raw = readPulseStorageItem(STREAM_FILTER_STORAGE_KEY);
   if (!raw) return fallback;
   try {
     const parsed = JSON.parse(raw) as Partial<Record<SignalStreamId, unknown>>;
     const pulse = parsed?.pulse === true;
+    const beat = parsed?.beat === true;
     const wave = parsed?.wave === true;
-    return pulse || wave ? { pulse, wave } : fallback;
+    const hasBeatKey = Object.prototype.hasOwnProperty.call(parsed, 'beat');
+    const next = {
+      pulse,
+      beat: hasBeatKey ? beat : false,
+      wave,
+    };
+    return next.pulse || next.beat || next.wave ? next : fallback;
   } catch {
     return fallback;
   }
@@ -378,8 +385,12 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     set({ selectedStream: stream });
     const { hasCompletedGate, selectedStrategy } = get();
     if (hasCompletedGate) writeSignalsEntryCookie({ stream, strategy: selectedStrategy });
-    // Sync global streamStore so Sidebar/BottomNav chart link follows PULSE/WAVE selection
-    useStreamStore.getState().setStream(stream);
+    // Chart routes only distinguish pulse (1m) vs wave (10m); Beat shares the 1m chart lane.
+    if (stream === 'pulse' || stream === 'wave') {
+      useStreamStore.getState().setStream(stream);
+    } else if (stream === 'beat') {
+      useStreamStore.getState().setStream('pulse');
+    }
   },
   setDirectionFilter: (direction) => set({ directionFilter: direction }),
   setSignalStateFilter: (signalStateFilter) => set({ signalStateFilter }),
@@ -412,8 +423,10 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     set((state) => {
       const next = !state.streamFilter[stream];
       if (!next) {
-        const other: SignalStreamId = stream === 'pulse' ? 'wave' : 'pulse';
-        if (!state.streamFilter[other]) return {};
+        const remainingOn = (['pulse', 'beat', 'wave'] as const).some(
+          (id) => id !== stream && state.streamFilter[id]
+        );
+        if (!remainingOn) return {};
       }
       const nextFilter = { ...state.streamFilter, [stream]: next };
       writePulseStorageItem(STREAM_FILTER_STORAGE_KEY, JSON.stringify(nextFilter));
@@ -486,7 +499,7 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
       updates.selectedStrategy = strategy as StrategyId;
     }
     const stream = params.get('stream');
-    if (stream === 'pulse' || stream === 'wave') {
+    if (stream === 'pulse' || stream === 'beat' || stream === 'wave') {
       updates.selectedStream = stream;
     }
     const symbol = params.get('symbol');

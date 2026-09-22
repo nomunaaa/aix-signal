@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-export type SignalStreamId = 'pulse' | 'wave';
+export type SignalStreamId = 'pulse' | 'beat' | 'wave';
 
 /**
  * Periodic refetch for open signal cycles (CoinGlass-style table refresh).

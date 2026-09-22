@@ -24,6 +24,7 @@ export interface SignalPair {
   pnlPct: number; // Net ROE (PnL 계산용, 시뮬레이션 의존)
   pnlAmount: number;
   barinterval?: '1m' | '10m';
+  signal_name?: string;
   tradingCategory?: TradingCategory;
   pnlBreakdown?: PnlBreakdown; // 상세 분석
   flow: string | null; // 마지막 위치 (청산 당시 고정된 값)

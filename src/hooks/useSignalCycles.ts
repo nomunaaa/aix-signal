@@ -27,6 +27,11 @@ import {
 } from '@/views/signals/pulse/utils/historyDateRange';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
 import { isBatchUploadRealtimeRow } from '@/lib/realtime/ingestMode';
+import {
+  normalizeSignalStreamName,
+  STREAM_TO_SIGNAL_NAME,
+  type SignalStreamName,
+} from '@/lib/signal-stream';
 
 type BarInterval = '1m' | '10m';
 type PriceSource = NonNullable<EnhancedSignal['priceSource']>;
@@ -51,6 +56,8 @@ type UseSignalCyclesOptions = {
    * 내려받는다('all'과 동일).
    */
   historyPeriod?: HistoryDatePeriod;
+  /** Filter by signal_name (stream id or DB value). Required to split Pulse vs Beat on 1m. */
+  signalName?: SignalStreamName | 'pulse' | 'beat' | 'wave';
 };
 
 const HISTORY_PAGE_SIZE = 1000;
@@ -72,7 +79,7 @@ const HISTORY_MAX_FETCH_ROWS = 5000;
 // 하나의 문자열 리터럴이어야 supabase-js가 컬럼 목록을 파싱해 행 타입을 추론한다
 // (배열 .join(',')이나 '+' 연결은 타입이 string으로 넓어져 GenericStringError가 된다).
 // prettier-ignore
-const HISTORY_CYCLE_COLUMNS = 'id,cycle_id,symbol,side,entry_price,exit_price,entry_time,exit_time,hold_sec,realized_pnl_pct,barinterval,trading_category,strategy_type,flow,is_open,entry_trend_short,entry_trend_long,added_entry_event_id,added_entry_cycle_id,added_entry_price,added_entry_timestamp,partial_exit_event_id,partial_exit_cycle_id,partial_exit_price,partial_exit_timestamp';
+const HISTORY_CYCLE_COLUMNS = 'id,cycle_id,symbol,side,entry_price,exit_price,entry_time,exit_time,hold_sec,realized_pnl_pct,barinterval,signal_name,trading_category,strategy_type,flow,is_open,entry_trend_short,entry_trend_long,added_entry_event_id,added_entry_cycle_id,added_entry_price,added_entry_timestamp,partial_exit_event_id,partial_exit_cycle_id,partial_exit_price,partial_exit_timestamp';
 
 const DEFAULT_SYMBOLS = [
   'BTCUSDT',
@@ -139,6 +146,27 @@ function normalizeSide(value: unknown): Side {
 
 function normalizeBarInterval(value: unknown, fallback: BarInterval): BarInterval {
   return value === '1m' || value === '10m' ? value : fallback;
+}
+
+function resolveSignalNameOption(
+  value: UseSignalCyclesOptions['signalName'],
+  barinterval: BarInterval
+): SignalStreamName | undefined {
+  if (!value) return undefined;
+  if (value === 'pulse' || value === 'beat' || value === 'wave') {
+    return STREAM_TO_SIGNAL_NAME[value];
+  }
+  return normalizeSignalStreamName(value, barinterval);
+}
+
+function cycleMatchesSignalName(cycle: CycleRow, signalName?: SignalStreamName): boolean {
+  if (!signalName) return true;
+  return (
+    normalizeSignalStreamName(
+      typeof cycle.signal_name === 'string' ? cycle.signal_name : null,
+      typeof cycle.barinterval === 'string' ? cycle.barinterval : null
+    ) === signalName
+  );
 }
 
 function normalizeSection(value: unknown): Section | undefined {
@@ -414,6 +442,10 @@ function convertCycleToSignal(
     exitTimestamp: exitTime ? new Date(exitTime).getTime() : undefined,
     hold_sec: toNumber(cycle.hold_sec) ?? undefined,
     barinterval: snapshot.barinterval,
+    signal_name: normalizeSignalStreamName(
+      typeof cycle.signal_name === 'string' ? cycle.signal_name : null,
+      snapshot.barinterval
+    ),
     strategy_type: cycle.strategy_type as EnhancedSignal['strategy_type'],
     trading_category: normalizeTradingCategory(cycle.trading_category),
     actions,
@@ -437,6 +469,7 @@ function signalToCycleInput(signal: EnhancedSignal): CycleRow {
     realized_pnl_pct: signal.realized_pnl_pct,
     hold_sec: signal.hold_sec,
     barinterval: signal.barinterval,
+    signal_name: signal.signal_name,
     strategy_type: signal.strategy_type,
     trading_category: signal.trading_category,
     signal_actions: signal.actions ?? [],
@@ -477,10 +510,11 @@ function refreshSignalFromStore(
 function makeChannelName(
   barinterval: BarInterval,
   symbolsKey: string,
-  categoryKey: string
+  categoryKey: string,
+  signalNameKey: string
 ): string {
   let hash = 0;
-  const key = `${symbolsKey}|${categoryKey}`;
+  const key = `${symbolsKey}|${categoryKey}|${signalNameKey}`;
   for (let i = 0; i < key.length; i += 1) {
     hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   }
@@ -504,6 +538,8 @@ export const useSignalCycles = (
       ? tradingCategory
       : (options.openTradingCategory ?? undefined);
   const historyPeriod = options.historyPeriod;
+  const signalName = resolveSignalNameOption(options.signalName, barinterval);
+  const signalNameKey = signalName ?? 'all';
   const categoryKey = `${openTradingCategory ?? 'all'}|${historyTradingCategory ?? 'all'}`;
   const symbols = useMemo(
     () => normalizeSymbols(optionSymbols ?? DEFAULT_SYMBOLS),
@@ -599,6 +635,10 @@ export const useSignalCycles = (
           pnlPct,
           pnlAmount,
           barinterval: normalizeBarInterval(cycle.barinterval, barinterval),
+          signal_name: normalizeSignalStreamName(
+            typeof cycle.signal_name === 'string' ? cycle.signal_name : null,
+            normalizeBarInterval(cycle.barinterval, barinterval)
+          ),
           tradingCategory: normalizeTradingCategory(cycle.trading_category),
           flow: typeof cycle.flow === 'string' ? cycle.flow : null,
           entryTrendShort,
@@ -641,6 +681,7 @@ export const useSignalCycles = (
           .eq('barinterval', barinterval)
           .in('symbol', symbols);
 
+        if (signalName) query = query.eq('signal_name', signalName);
         if (periodStartIso) query = query.gte('exit_time', periodStartIso);
 
         return applyTradingCategoryFilter(query, historyTradingCategory);
@@ -654,6 +695,7 @@ export const useSignalCycles = (
           .eq('barinterval', barinterval)
           .in('symbol', symbols);
 
+        if (signalName) query = query.eq('signal_name', signalName);
         if (periodStartIso) query = query.gte('exit_time', periodStartIso);
 
         query = query.order('exit_time', { ascending: false }).range(from, from + limit - 1);
@@ -698,6 +740,7 @@ export const useSignalCycles = (
     historyPeriod,
     historyTradingCategory,
     loadHistory,
+    signalName,
     symbolsKey,
   ]);
 
@@ -715,6 +758,7 @@ export const useSignalCycles = (
       const { data: cycles, error } = await fetchOpenSignalCyclesWithActions(barinterval, {
         symbols,
         tradingCategory: openTradingCategory,
+        signalName,
       });
       if (error) throw error;
 
@@ -728,7 +772,7 @@ export const useSignalCycles = (
     } finally {
       setOpenSignalsLoading(false);
     }
-  }, [barinterval, enabled, openTradingCategory, symbolsKey]);
+  }, [barinterval, enabled, openTradingCategory, signalName, symbolsKey]);
 
   const updatePrices = useCallback(
     (prices: Record<string, number>) => {
@@ -755,7 +799,7 @@ export const useSignalCycles = (
     setOpenSignals([]);
     setLoading(Boolean(enabled && loadHistory && symbols.length > 0));
     setOpenSignalsLoading(Boolean(enabled && symbols.length > 0));
-  }, [barinterval, categoryKey, enabled, loadHistory, symbols.length, symbolsKey]);
+  }, [barinterval, categoryKey, enabled, loadHistory, signalNameKey, symbols.length, symbolsKey]);
 
   useEffect(() => {
     if (!enabled || symbols.length === 0) return;
@@ -797,7 +841,7 @@ export const useSignalCycles = (
     if (!enabled || symbols.length === 0) return;
 
     const channel = supabase
-      .channel(makeChannelName(barinterval, symbolsKey, categoryKey))
+      .channel(makeChannelName(barinterval, symbolsKey, categoryKey, signalNameKey))
       .on(
         'postgres_changes',
         {
@@ -812,6 +856,7 @@ export const useSignalCycles = (
           const symbol = String(cycle.symbol ?? '').toUpperCase();
           if (!symbolSet.has(symbol)) return;
           if (normalizeBarInterval(cycle.barinterval, barinterval) !== barinterval) return;
+          if (!cycleMatchesSignalName(cycle, signalName)) return;
           if (!cycleMatchesTradingCategory(cycle, openTradingCategory)) return;
 
           const [enrichedCycle] = await enrichSignalCyclesWithLifecycleActions([cycle]);
@@ -836,6 +881,10 @@ export const useSignalCycles = (
           const symbol = String(cycle.symbol ?? '').toUpperCase();
           if (!symbolSet.has(symbol)) return;
           if (normalizeBarInterval(cycle.barinterval, barinterval) !== barinterval) return;
+          if (!cycleMatchesSignalName(cycle, signalName)) {
+            setOpenSignals((prev) => prev.filter((signal) => signal.id !== String(cycle.id ?? '')));
+            return;
+          }
           const matchesOpenCategory = cycleMatchesTradingCategory(cycle, openTradingCategory);
           const matchesHistoryCategory = cycleMatchesTradingCategory(cycle, historyTradingCategory);
 
@@ -887,6 +936,8 @@ export const useSignalCycles = (
     historyTradingCategory,
     loadHistory,
     openTradingCategory,
+    signalName,
+    signalNameKey,
     symbolSet,
     symbolsKey,
   ]);

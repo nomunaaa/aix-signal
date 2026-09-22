@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TRADING_CATEGORY_ORDER, type TradingCategory } from '@/lib/trading-category';
 import { enrichSignalCyclesWithLifecycleActions } from '@/lib/queries/signals';
+import {
+  barIntervalsForStreamFilter,
+  signalNamesForStreamFilter,
+} from '@/lib/signal-stream';
 import type {
   ClosedSignal,
   HistoryQueryState,
@@ -125,15 +129,18 @@ export function postgrestStreamOptionOrFilter(
 ): string | null {
   const clauses: string[] = [];
   const options = [
-    ['P1', '1m', 'reversal'],
-    ['P2', '1m', 'trend'],
-    ['P3', '1m', 'nonTrend'],
-    ['W1', '10m', 'reversal'],
-    ['W2', '10m', 'trend'],
-    ['W3', '10m', 'nonTrend'],
+    ['P1', '1m', 'pulse_signal-1', 'reversal'],
+    ['P2', '1m', 'pulse_signal-1', 'trend'],
+    ['P3', '1m', 'pulse_signal-1', 'nonTrend'],
+    ['B1', '1m', 'beat_signal-1', 'reversal'],
+    ['B2', '1m', 'beat_signal-1', 'trend'],
+    ['B3', '1m', 'beat_signal-1', 'nonTrend'],
+    ['W1', '10m', 'wave_signal-1', 'reversal'],
+    ['W2', '10m', 'wave_signal-1', 'trend'],
+    ['W3', '10m', 'wave_signal-1', 'nonTrend'],
   ] as const;
 
-  for (const [optionId, barinterval, mode] of options) {
+  for (const [optionId, barinterval, signalName, mode] of options) {
     if (!optionFilter[optionId]) continue;
     for (const pair of HISTORY_TREND_MODE_PAIRS[mode]) {
       const shortTrendFilter =
@@ -141,7 +148,7 @@ export function postgrestStreamOptionOrFilter(
           ? 'or(entry_trend_short.eq.NEUTRAL,entry_trend_short.is.null)'
           : `entry_trend_short.eq.${pair.shortTrend}`;
       clauses.push(
-        `and(barinterval.eq.${barinterval},entry_trend_long.eq.${pair.longTrend},${shortTrendFilter})`
+        `and(barinterval.eq.${barinterval},signal_name.eq.${signalName},entry_trend_long.eq.${pair.longTrend},${shortTrendFilter})`
       );
     }
   }
@@ -169,7 +176,9 @@ export function useClosedSignalHistoryPage({
     [favorites]
   );
   const categoriesKey = tradingCategories.join(',');
-  const streamKey = `${streamFilter.pulse ? 'pulse' : ''}|${streamFilter.wave ? 'wave' : ''}`;
+  const streamKey = `${streamFilter.pulse ? 'pulse' : ''}|${streamFilter.beat ? 'beat' : ''}|${
+    streamFilter.wave ? 'wave' : ''
+  }`;
   const trendModeKey = `${trendModeFilter.trend ? 'trend' : ''}|${
     trendModeFilter.nonTrend ? 'nonTrend' : ''
   }|${trendModeFilter.reversal ? 'reversal' : ''}`;
@@ -179,10 +188,8 @@ export function useClosedSignalHistoryPage({
     async (queryState: HistoryQueryState): Promise<ClosedSignal[]> => {
       const normalizedSymbols = symbolsKey ? symbolsKey.split(',') : [];
       const normalizedFavorites = new Set(favoritesKey ? favoritesKey.split(',') : []);
-      const barIntervals = [
-        streamFilter.pulse ? ('1m' as const) : null,
-        streamFilter.wave ? ('10m' as const) : null,
-      ].filter((item): item is '1m' | '10m' => Boolean(item));
+      const barIntervals = barIntervalsForStreamFilter(streamFilter);
+      const signalNames = signalNamesForStreamFilter(streamFilter);
       const selectedCategories = TRADING_CATEGORY_ORDER.filter((category) =>
         tradingCategories.includes(category)
       );
@@ -196,6 +203,7 @@ export function useClosedSignalHistoryPage({
       if (
         scopedSymbols.length === 0 ||
         barIntervals.length === 0 ||
+        signalNames.length === 0 ||
         selectedCategories.length === 0 ||
         !trendModeOrFilter
       ) {
@@ -209,6 +217,7 @@ export function useClosedSignalHistoryPage({
           .not('exit_time', 'is', null)
           .in('symbol', scopedSymbols)
           .in('barinterval', barIntervals)
+          .in('signal_name', signalNames)
           .or(trendModeOrFilter);
 
         if (selectedCategories.length !== TRADING_CATEGORY_ORDER.length) {
@@ -256,6 +265,7 @@ export function useClosedSignalHistoryPage({
       favoritesKey,
       searchQuery,
       streamFilter.pulse,
+      streamFilter.beat,
       streamFilter.wave,
       symbolsKey,
       tradingCategories,
@@ -269,10 +279,8 @@ export function useClosedSignalHistoryPage({
     const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1;
     const normalizedSymbols = symbolsKey ? symbolsKey.split(',') : [];
     const normalizedFavorites = new Set(favoritesKey ? favoritesKey.split(',') : []);
-    const barIntervals = [
-      streamFilter.pulse ? ('1m' as const) : null,
-      streamFilter.wave ? ('10m' as const) : null,
-    ].filter((item): item is '1m' | '10m' => Boolean(item));
+    const barIntervals = barIntervalsForStreamFilter(streamFilter);
+    const signalNames = signalNamesForStreamFilter(streamFilter);
     const selectedCategories = TRADING_CATEGORY_ORDER.filter((category) =>
       tradingCategories.includes(category)
     );
@@ -285,6 +293,7 @@ export function useClosedSignalHistoryPage({
       !queryState ||
       normalizedSymbols.length === 0 ||
       barIntervals.length === 0 ||
+      signalNames.length === 0 ||
       selectedCategories.length === 0 ||
       !trendModeOrFilter
     ) {
@@ -315,8 +324,13 @@ export function useClosedSignalHistoryPage({
           .eq('is_open', false)
           .not('exit_time', 'is', null)
           .in('symbol', scopedSymbols)
-          .in('barinterval', barIntervals)
-          .or(trendModeOrFilter);
+          .in('barinterval', barIntervals);
+
+        if (!streamOptionFilter) {
+          next = next.in('signal_name', signalNames);
+        }
+
+        next = next.or(trendModeOrFilter);
 
         if (selectedCategories.length !== TRADING_CATEGORY_ORDER.length) {
           next = next.in('trading_category', selectedCategories);
@@ -411,6 +425,7 @@ export function useClosedSignalHistoryPage({
     queryState,
     searchQuery,
     streamFilter.pulse,
+    streamFilter.beat,
     streamFilter.wave,
     streamKey,
     streamOptionKey,

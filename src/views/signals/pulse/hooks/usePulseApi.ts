@@ -22,6 +22,7 @@ const ALL_STRATEGY_IDS: readonly StrategyId[] = ['oneshot', 'deep', 'safe', 'ful
 
 const STREAM_TO_BAR_INTERVAL: Record<SignalStreamId, PulseBarInterval> = {
   pulse: '1m',
+  beat: '1m',
   wave: '10m',
 };
 

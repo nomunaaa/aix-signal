@@ -19,6 +19,7 @@ import type {
 } from '../types/pulse.types';
 import { formatDuration } from '../utils/formatters';
 import { resolveSignalTrendModeFromEntryTrends } from '@/lib/signal-trend-mode';
+import { STREAM_TO_SIGNAL_NAME, streamFromSignalName } from '@/lib/signal-stream';
 
 const ALL_SYMBOLS = [
   'ADAUSDT',
@@ -57,6 +58,7 @@ type BarInterval = '1m' | '10m';
 
 const STREAM_TO_BAR_INTERVAL: Record<SignalStreamId, BarInterval> = {
   pulse: '1m',
+  beat: '1m',
   wave: '10m',
 };
 
@@ -109,6 +111,8 @@ function adaptSignal(es: EnhancedSignal): Signal {
     entryTrendShort: es.entryTrendShort ?? undefined,
     entryTrendLong: es.entryTrendLong ?? undefined,
     barinterval: es.barinterval === '10m' ? '10m' : '1m',
+    signalName: es.signal_name,
+    stream: streamFromSignalName(es.signal_name, es.barinterval),
     tradingCategory: normalizeTradingCategory(es.trading_category),
     actions: es.actions,
     additionalEntryPrice: additionalEntry?.price,
@@ -135,6 +139,8 @@ function signalTrendMode(signal: Signal) {
 /** SignalPair → ClosedSignal 변환 */
 function pairToClosedSignal(p: SignalPair): ClosedSignal {
   const tradingCategory = normalizeTradingCategory(p.tradingCategory);
+  const barinterval = p.barinterval;
+  const signalName = p.signal_name;
   return {
     id: p.id,
     cycle_id: p.cycle_id ?? null,
@@ -157,7 +163,9 @@ function pairToClosedSignal(p: SignalPair): ClosedSignal {
     strategyId:
       p.strategyId ?? (tradingCategory ? TRADING_CATEGORY_TO_STRATEGY[tradingCategory] : undefined),
     strategyVariants: p.strategyVariants,
-    barinterval: p.barinterval,
+    barinterval,
+    signalName,
+    stream: streamFromSignalName(signalName, barinterval),
     tradingCategory,
     holdSeconds: p.holdTimeSec,
     flow: p.flow,
@@ -203,6 +211,7 @@ export function usePulseSignals(
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const allowedSymbolSet = useMemo(() => new Set(allowedSymbols), [allowedSymbols]);
   const barInterval = STREAM_TO_BAR_INTERVAL[stream];
+  const signalName = STREAM_TO_SIGNAL_NAME[stream];
   const tradingCategory = strategy ? tradingCategoryForStrategy(strategy) : undefined;
   // History 기간을 SQL 하한으로 넘겨 전체 히스토리 다운로드를 막는다.
   const historyPeriod = usePulseStore((state) => state.historyDatePeriod);
@@ -218,6 +227,7 @@ export function usePulseSignals(
     loadHistory: options.loadHistory,
     symbols: allowedSymbols,
     tradingCategory,
+    signalName,
     historyTradingCategory: null,
     historyPeriod,
   });

@@ -22,7 +22,7 @@ export { TRADING_CATEGORY_ORDER, type TradingCategory } from '@/lib/trading-cate
 
 export type ProofPeriod = '7d' | '30d' | '90d' | 'all';
 
-export type ProofEngine = 'PULSE' | 'WAVE' | 'OTHER';
+export type ProofEngine = 'PULSE' | 'BEAT' | 'WAVE' | 'OTHER';
 export type ProofEntryTrendDirection = 'UP' | 'DOWN' | 'NEUTRAL';
 
 const PROOF_BASE_SIMULATION_INPUT = {
@@ -93,6 +93,7 @@ export interface SymbolRankRow {
 export interface ProofBoardStats {
   overall: EngineStats;
   pulse: EngineStats;
+  beat: EngineStats;
   wave: EngineStats;
   best: SymbolRankRow[];
   worst: SymbolRankRow[];
@@ -100,8 +101,16 @@ export interface ProofBoardStats {
   tradingCategoryWinRates: Record<TradingCategory, { winRate: number; count: number }>;
 }
 
-/** Map barinterval to engine */
-function engineFromBarinterval(bi: string | null | undefined): ProofEngine {
+/** Prefer signal_name; fall back to barinterval for legacy rows. */
+function engineFromCycle(
+  signalName: unknown,
+  bi: string | null | undefined
+): ProofEngine {
+  const normalized =
+    typeof signalName === 'string' ? signalName.trim().toLowerCase() : '';
+  if (normalized === 'beat_signal-1') return 'BEAT';
+  if (normalized === 'pulse_signal-1') return 'PULSE';
+  if (normalized === 'wave_signal-1') return 'WAVE';
   if (bi === '1m') return 'PULSE';
   if (bi === '10m') return 'WAVE';
   return 'OTHER';
@@ -343,7 +352,7 @@ export function mapSignalCycleRow(raw: Record<string, unknown>): PlatformCycleRo
     exitTime,
     entryTime: String(raw.entry_time ?? exitTime),
     holdSec: raw.hold_sec != null ? Number(raw.hold_sec) : null,
-    engine: engineFromBarinterval(bi),
+    engine: engineFromCycle(raw.signal_name, bi),
     tradingCategory: tc,
     flow: raw.flow != null ? String(raw.flow) : null,
     entryTrendShort: parseEntryTrendSnapshot(raw.entry_trend_short),
@@ -377,6 +386,7 @@ export function filterByPeriod(rows: PlatformCycleRow[], period: ProofPeriod): P
 /** Aggregate proof board stats */
 export function aggregateProofBoard(rows: PlatformCycleRow[]): ProofBoardStats {
   const pulseRows = rows.filter((r) => r.engine === 'PULSE');
+  const beatRows = rows.filter((r) => r.engine === 'BEAT');
   const waveRows = rows.filter((r) => r.engine === 'WAVE');
 
   const bySymbol = new Map<string, number[]>();
@@ -411,6 +421,7 @@ export function aggregateProofBoard(rows: PlatformCycleRow[]): ProofBoardStats {
   return {
     overall: computeEngineStats(rows),
     pulse: computeEngineStats(pulseRows),
+    beat: computeEngineStats(beatRows),
     wave: computeEngineStats(waveRows),
     best,
     worst,

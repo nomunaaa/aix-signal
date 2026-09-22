@@ -6,12 +6,13 @@ import {
 import type { SignalAction } from '@/types/signal-action';
 import { buildHistoryStrategyVariants, historyVariantKeyForStrategy } from './historyPnl';
 import { formatDuration } from './formatters';
+import { normalizeSignalStreamName, streamFromSignalName } from '@/lib/signal-stream';
 import type { ClosedSignal, EntryTrendDirection, StrategyId } from '../types/pulse.types';
 
 export type ClosedSignalCycleRow = Record<string, unknown>;
 
 export const HISTORY_CLOSED_CYCLE_COLUMNS =
-  'id,cycle_id,symbol,side,entry_price,exit_price,entry_time,exit_time,hold_sec,realized_pnl_pct,barinterval,trading_category,strategy_type,flow,is_open,entry_trend_short,entry_trend_long,added_entry_event_id,added_entry_cycle_id,added_entry_price,added_entry_timestamp,partial_exit_event_id,partial_exit_cycle_id,partial_exit_price,partial_exit_timestamp';
+  'id,cycle_id,symbol,side,entry_price,exit_price,entry_time,exit_time,hold_sec,realized_pnl_pct,barinterval,signal_name,trading_category,strategy_type,flow,is_open,entry_trend_short,entry_trend_long,added_entry_event_id,added_entry_cycle_id,added_entry_price,added_entry_timestamp,partial_exit_event_id,partial_exit_cycle_id,partial_exit_price,partial_exit_timestamp';
 
 function toNumber(value: unknown): number | null {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
@@ -184,6 +185,11 @@ export function mapCycleRowsToClosedSignals(rows: ClosedSignalCycleRow[]): Close
       : (realizedPnlPct ?? strategyVariants.basic.pnlPct);
     const holdSeconds = toNumber(cycle.hold_sec) ?? 0;
     const tradingCategory = normalizeTradingCategory(cycle.trading_category);
+    const barinterval = normalizeBarInterval(cycle.barinterval);
+    const signalName = normalizeSignalStreamName(
+      typeof cycle.signal_name === 'string' ? cycle.signal_name : null,
+      barinterval
+    );
 
     return {
       id: String(cycle.id ?? ''),
@@ -213,7 +219,9 @@ export function mapCycleRowsToClosedSignals(rows: ClosedSignalCycleRow[]): Close
         additionalEntryPrice == null ? undefined : strategyVariants.dca.averageEntryPrice,
       strategyId,
       strategyVariants: hasLifecycleAdjustment ? strategyVariants : undefined,
-      barinterval: normalizeBarInterval(cycle.barinterval),
+      barinterval,
+      signalName,
+      stream: streamFromSignalName(signalName, barinterval),
       tradingCategory: tradingCategory as TradingCategory | undefined,
       holdSeconds,
       flow: typeof cycle.flow === 'string' ? cycle.flow : null,

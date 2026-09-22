@@ -7,7 +7,7 @@ import { PulseEntryGate } from './components/PulseEntryGate';
 import { PulseSingleColumnLayout } from './components/PulseSingleColumnLayout';
 import { KairosPanel } from './components/KairosPanel';
 import { usePulseSignals } from './hooks/usePulseSignals';
-import { isPulseApiEnabled, usePulseApi } from './hooks/usePulseApi';
+import { isPulseApiEnabled, usePulseApiAllCategories } from './hooks/usePulseApi';
 import { usePulseRealtime } from './hooks/usePulseRealtime';
 import { useSignalFilter } from './hooks/useSignalFilter';
 import { useProofQualitySymbols } from './hooks/useProofQualitySymbols';
@@ -136,24 +136,32 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
     tradingCategoryFilters,
   ]);
 
-  const pulseApi = usePulseApi({
-    strategyId: 'full',
+  const pulseApi = usePulseApiAllCategories({
     stream: 'pulse',
     enabled: pulseApiEnabled && allowedSymbols.length > 0,
   });
-  const waveApi = usePulseApi({
-    strategyId: 'full',
+  const beatApi = usePulseApiAllCategories({
+    stream: 'beat',
+    enabled: pulseApiEnabled && allowedSymbols.length > 0,
+  });
+  const waveApi = usePulseApiAllCategories({
     stream: 'wave',
     enabled: pulseApiEnabled && allowedSymbols.length > 0,
   });
 
   const refetchBothStreamsAsync = useCallback(async () => {
     if (!pulseApiEnabled || allowedSymbols.length === 0) return;
-    await Promise.all([pulseApi.refetch?.(), waveApi.refetch?.()]);
-  }, [allowedSymbols.length, pulseApi.refetch, pulseApiEnabled, waveApi.refetch]);
+    await Promise.all([pulseApi.refetch?.(), beatApi.refetch?.(), waveApi.refetch?.()]);
+  }, [
+    allowedSymbols.length,
+    beatApi.refetch,
+    pulseApi.refetch,
+    pulseApiEnabled,
+    waveApi.refetch,
+  ]);
 
   useSignalPolling({
-    stream: selectedStream,
+    stream: selectedStream === 'beat' ? 'pulse' : selectedStream,
     refetchSignals: refetchBothStreamsAsync,
     intervalMs: 10_000,
   });
@@ -162,11 +170,16 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
   // 넘기지 않으면 내부적으로 인터벌을 만들지 않는다(usePulseRealtime.ts 참고).
   const { isReconnecting } = usePulseRealtime({
     enabled:
-      pulseApiEnabled && allowedSymbols.length > 0 && (!!pulseApi.refetch || !!waveApi.refetch),
+      pulseApiEnabled &&
+      allowedSymbols.length > 0 &&
+      (!!pulseApi.refetch || !!beatApi.refetch || !!waveApi.refetch),
   });
   // HistoryTable owns its server-paginated fetch. Do not hydrate up to 5,000 legacy history rows
   // per stream before the board can paint.
   const legacyPulse = usePulseSignals(allowedSymbols, 'pulse', 'full', {
+    loadHistory: USE_MOCK_SIGNALS || historyNeedsFullClientData,
+  });
+  const legacyBeat = usePulseSignals(allowedSymbols, 'beat', 'full', {
     loadHistory: USE_MOCK_SIGNALS || historyNeedsFullClientData,
   });
   const legacyWave = usePulseSignals(allowedSymbols, 'wave', 'full', {
@@ -174,18 +187,23 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
   });
 
   const usePulseApiData = pulseApi.isEnabled && !pulseApi.isLoading && !pulseApi.isError;
+  const useBeatApiData = beatApi.isEnabled && !beatApi.isLoading && !beatApi.isError;
   const useWaveApiData = waveApi.isEnabled && !waveApi.isLoading && !waveApi.isError;
   const openSignalsForPanel = useMemo(
     () =>
       [
         ...(usePulseApiData ? pulseApi.openSignals : legacyPulse.signals),
+        ...(useBeatApiData ? beatApi.openSignals : legacyBeat.signals),
         ...(useWaveApiData ? waveApi.openSignals : legacyWave.signals),
       ].filter((s) => allowedSymbolSet.has(s.symbol)),
     [
       allowedSymbolSet,
+      beatApi.openSignals,
+      legacyBeat.signals,
       legacyPulse.signals,
       legacyWave.signals,
       pulseApi.openSignals,
+      useBeatApiData,
       usePulseApiData,
       useWaveApiData,
       waveApi.openSignals,
@@ -193,10 +211,17 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
   );
   const closedSignalsRaw = useMemo(
     () =>
-      [...legacyPulse.closedSignals, ...legacyWave.closedSignals].filter((s) =>
-        allowedSymbolSet.has(s.symbol)
-      ),
-    [allowedSymbolSet, legacyPulse.closedSignals, legacyWave.closedSignals]
+      [
+        ...legacyPulse.closedSignals,
+        ...legacyBeat.closedSignals,
+        ...legacyWave.closedSignals,
+      ].filter((s) => allowedSymbolSet.has(s.symbol)),
+    [
+      allowedSymbolSet,
+      legacyBeat.closedSignals,
+      legacyPulse.closedSignals,
+      legacyWave.closedSignals,
+    ]
   );
   const closedSignalsForPanel = useMemo(() => {
     if (USE_MOCK_SIGNALS && closedSignalsRaw.length === 0 && allowedSymbols.length > 0) {
@@ -215,23 +240,27 @@ function PulseDashboard({ historyOnly = false }: { historyOnly?: boolean }) {
   // 깜빡이지 않는다.
   const panelLoading =
     openSignalsForPanel.length === 0 &&
-    ((pulseApiEnabled && (pulseApi.isLoading || waveApi.isLoading)) ||
+    ((pulseApiEnabled && (pulseApi.isLoading || beatApi.isLoading || waveApi.isLoading)) ||
       legacyPulse.isOpenSignalsLoading ||
+      legacyBeat.isOpenSignalsLoading ||
       legacyWave.isOpenSignalsLoading);
 
-  const total24hSignals = legacyPulse.total24hSignals + legacyWave.total24hSignals;
+  const total24hSignals =
+    legacyPulse.total24hSignals + legacyBeat.total24hSignals + legacyWave.total24hSignals;
   const closedSignalsTotalCount =
-    legacyPulse.closedSignalsTotalCount + legacyWave.closedSignalsTotalCount;
+    legacyPulse.closedSignalsTotalCount +
+    legacyBeat.closedSignalsTotalCount +
+    legacyWave.closedSignalsTotalCount;
 
   const legacyPriceMap = useMemo(() => {
     const prices = new Map<string, number>();
-    for (const signal of [...legacyPulse.signals, ...legacyWave.signals]) {
+    for (const signal of [...legacyPulse.signals, ...legacyBeat.signals, ...legacyWave.signals]) {
       if (Number.isFinite(signal.currentPrice) && signal.currentPrice > 0) {
         prices.set(signal.symbol, signal.currentPrice);
       }
     }
     return prices;
-  }, [legacyPulse.signals, legacyWave.signals]);
+  }, [legacyBeat.signals, legacyPulse.signals, legacyWave.signals]);
 
   // API rows keep their section fields; centralized useSignalCycles provides the live price snapshot.
   const openWithLivePrices = useMemo(() => {

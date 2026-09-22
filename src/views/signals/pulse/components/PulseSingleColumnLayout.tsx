@@ -19,6 +19,7 @@ import { SignalDetailCard } from './SignalDetailCard';
 import { TableControlBar, type SignalDatePeriod } from './TableControlBar';
 import { useNavigate, useSearchParams } from '@/lib/navigation-compat';
 import { USE_MOCK_SIGNALS } from '@/lib/env/mock';
+import { streamFromSignalName } from '@/lib/signal-stream';
 import { type FeedSignal, type OpenSignal } from '../utils/section';
 import {
   type Signal,
@@ -107,16 +108,13 @@ function parseHistoryPeriodParam(value: string | null): SignalDatePeriod | null 
   return value === '30d' || value === '90d' || value === 'all' ? value : null;
 }
 
-function streamFromBarinterval(barinterval?: '1m' | '10m'): SignalStreamId {
-  return barinterval === '10m' ? 'wave' : 'pulse';
-}
-
 function streamFromOpenSignal(signal: OpenSignal): SignalStreamId {
-  return streamFromBarinterval((signal as Signal).barinterval);
+  const raw = signal as Signal;
+  return raw.stream ?? streamFromSignalName(raw.signalName, raw.barinterval);
 }
 
 function streamFromClosedSignal(signal: ClosedSignal): SignalStreamId {
-  return streamFromBarinterval(signal.barinterval);
+  return signal.stream ?? streamFromSignalName(signal.signalName, signal.barinterval);
 }
 
 function trendModeFromOpenSignal(signal: OpenSignal): SignalTrendMode | null {
@@ -403,6 +401,7 @@ export function PulseSingleColumnLayout({
   const fallbackStreamWinRates = useMemo(() => {
     const totals: Record<SignalStreamId, Map<string, { wins: number; count: number }>> = {
       pulse: new Map(),
+      beat: new Map(),
       wave: new Map(),
     };
     const qualifiedSet = new Set(qualityScopedSymbols.map(favoriteSymbolKey));
@@ -425,6 +424,7 @@ export function PulseSingleColumnLayout({
     };
     return {
       pulse: averageRate(totals.pulse),
+      beat: averageRate(totals.beat),
       wave: averageRate(totals.wave),
     };
   }, [closedForActivePeriod, qualityScopedSymbols]);
@@ -465,7 +465,7 @@ export function PulseSingleColumnLayout({
     !isSymbolLocked &&
     historyQueryState !== null &&
     !hasUnsupportedHistoryServerFilter &&
-    (historyStreamFilter.pulse || historyStreamFilter.wave) &&
+    (historyStreamFilter.pulse || historyStreamFilter.beat || historyStreamFilter.wave) &&
     deferredHistorySymbols.length > 0;
   const serverHistoryPage = useClosedSignalHistoryPage({
     enabled: canUseHistoryServerPagination,

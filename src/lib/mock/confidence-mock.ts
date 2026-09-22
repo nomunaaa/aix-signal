@@ -19,9 +19,10 @@ export function getCurrentMarketType(): MarketType {
 }
 
 /** 최근 3일 롤링 평균 기준 목 승률·모멘텀 (추후 API 교체) */
-export function getStreamConfidence(stream: 'pulse' | 'wave'): StreamConfidence {
+export function getStreamConfidence(stream: 'pulse' | 'beat' | 'wave'): StreamConfidence {
   const data = {
     pulse: { win_rate: 86, streak: 4, avg_pnl: 3.2, sample_size: 24 },
+    beat: { win_rate: 81, streak: 3, avg_pnl: 2.9, sample_size: 20 },
     wave: { win_rate: 74, streak: 1, avg_pnl: 2.6, sample_size: 22 },
   }[stream];
 

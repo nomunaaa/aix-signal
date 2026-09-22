@@ -2,11 +2,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { applyTradingCategoryFilter, type TradingCategory } from '@/lib/trading-category';
 import type { SignalAction } from '@/types/signal-action';
 
-export type SignalStream = 'pulse' | 'wave';
+import type { SignalStreamName } from '@/lib/signal-stream';
+import { STREAM_TO_SIGNAL_NAME, type SignalBoardStreamId } from '@/lib/signal-stream';
+
+export type SignalStream = SignalBoardStreamId;
 
 export type FetchOpenSignalCyclesOptions = {
   symbols?: string[];
   tradingCategory?: TradingCategory;
+  signalName?: SignalStreamName | SignalBoardStreamId;
 };
 
 type SignalCycleLifecycleRow = Record<string, unknown> & {
@@ -31,8 +35,19 @@ type SignalLifecycleEventRow = {
 
 const STREAM_TO_BAR: Record<SignalStream, '1m' | '10m'> = {
   pulse: '1m',
+  beat: '1m',
   wave: '10m',
 };
+
+function resolveSignalName(
+  value: FetchOpenSignalCyclesOptions['signalName']
+): SignalStreamName | undefined {
+  if (!value) return undefined;
+  if (value === 'pulse' || value === 'beat' || value === 'wave') {
+    return STREAM_TO_SIGNAL_NAME[value];
+  }
+  return value;
+}
 
 const LIFECYCLE_EVENT_CHUNK_SIZE = 100;
 
@@ -223,7 +238,11 @@ export async function fetchSignals(
   options?: string[] | FetchOpenSignalCyclesOptions,
 ) {
   const barinterval = STREAM_TO_BAR[stream];
-  return fetchOpenSignalCyclesWithActions(barinterval, options);
+  const normalized = normalizeFetchOptions(options);
+  return fetchOpenSignalCyclesWithActions(barinterval, {
+    ...normalized,
+    signalName: normalized.signalName ?? STREAM_TO_SIGNAL_NAME[stream],
+  });
 }
 
 /** Same as {@link fetchSignals} but accepts the stored `barinterval` directly. */
@@ -231,7 +250,8 @@ export async function fetchOpenSignalCyclesWithActions(
   barinterval: '1m' | '10m',
   options?: string[] | FetchOpenSignalCyclesOptions,
 ) {
-  const { symbols, tradingCategory } = normalizeFetchOptions(options);
+  const { symbols, tradingCategory, signalName } = normalizeFetchOptions(options);
+  const resolvedSignalName = resolveSignalName(signalName);
 
   if (symbols && symbols.length === 0) {
     return { data: [], error: null };
@@ -243,6 +263,10 @@ export async function fetchOpenSignalCyclesWithActions(
     .eq('is_open', true)
     .eq('barinterval', barinterval)
     .order('entry_time', { ascending: false });
+
+  if (resolvedSignalName) {
+    query = query.eq('signal_name', resolvedSignalName);
+  }
 
   query = applyTradingCategoryFilter(query, tradingCategory);
 

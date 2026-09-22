@@ -1767,6 +1767,7 @@ export type Database = {
           partial_exit_timestamp: string | null
           realized_pnl_pct: number | null
           side: string
+          signal_name: string | null
           strategy_type: string | null
           trading_category: string | null
           symbol: string
@@ -1800,6 +1801,7 @@ export type Database = {
           partial_exit_timestamp?: string | null
           realized_pnl_pct?: number | null
           side: string
+          signal_name?: string | null
           strategy_type?: string | null
           trading_category?: string | null
           symbol: string
@@ -1833,6 +1835,7 @@ export type Database = {
           partial_exit_timestamp?: string | null
           realized_pnl_pct?: number | null
           side?: string
+          signal_name?: string | null
           strategy_type?: string | null
           trading_category?: string | null
           symbol?: string

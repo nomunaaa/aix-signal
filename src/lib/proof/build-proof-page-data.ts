@@ -34,7 +34,7 @@ import {
 const TIMELINE_DISPLAY = 50;
 const SYMBOL_RANK_COUNT = 5;
 const ARCHIVE_TOP_COUNT = 19;
-const DEFAULT_STATS_STREAMS: readonly ProofStatsStream[] = ['PULSE', 'WAVE'];
+const DEFAULT_STATS_STREAMS: readonly ProofStatsStream[] = ['PULSE', 'BEAT', 'WAVE'];
 const DEFAULT_STATS_TREND_MODES: readonly ProofStatsTrendMode[] = ['trend', 'nonTrend', 'reversal'];
 const EMPTY_BUCKETS: ProofBuckets = {
   total: {},
@@ -44,6 +44,16 @@ const EMPTY_BUCKETS: ProofBuckets = {
   bySymbolRecent30: {},
   bySymbolRecent3mo: {},
 };
+
+function streamFromStatsRow(row: ProofStatsAggregateRow): ProofStatsStream | null {
+  const signalName = typeof row.signal_name === 'string' ? row.signal_name.trim().toLowerCase() : '';
+  if (signalName === 'pulse_signal-1') return 'PULSE';
+  if (signalName === 'beat_signal-1') return 'BEAT';
+  if (signalName === 'wave_signal-1') return 'WAVE';
+  if (row.barinterval === '1m') return 'PULSE';
+  if (row.barinterval === '10m') return 'WAVE';
+  return null;
+}
 
 function formatGeneratedAtLabel(): string {
   const formatted = new Intl.DateTimeFormat('ko-KR', {
@@ -209,8 +219,15 @@ function buildEnginesFromStats(
   period: ProofPeriod
 ): ProofPageMock['engines'] {
   const periodRows = standardStatsRowsForPeriod(rows, period);
-  const pulse = aggregateStatsRows(periodRows.filter((row) => row.barinterval === '1m'));
-  const wave = aggregateStatsRows(periodRows.filter((row) => row.barinterval === '10m'));
+  const pulse = aggregateStatsRows(
+    periodRows.filter((row) => streamFromStatsRow(row) === 'PULSE')
+  );
+  const beat = aggregateStatsRows(
+    periodRows.filter((row) => streamFromStatsRow(row) === 'BEAT')
+  );
+  const wave = aggregateStatsRows(
+    periodRows.filter((row) => streamFromStatsRow(row) === 'WAVE')
+  );
 
   return [
     {
@@ -220,6 +237,14 @@ function buildEnginesFromStats(
       winRate: winRateDecimal(pulse.wins, pulse.totalCycles),
       avgPnlPct: pulse.avgPnl,
       cycleCount: pulse.totalCycles,
+    },
+    {
+      engine: 'BEAT' as const,
+      barInterval: '1m' as const,
+      subtitle: '1분 봉 · Beat',
+      winRate: winRateDecimal(beat.wins, beat.totalCycles),
+      avgPnlPct: beat.avgPnl,
+      cycleCount: beat.totalCycles,
     },
     {
       engine: 'WAVE' as const,
@@ -326,6 +351,14 @@ export function buildEmptyProofPage(period: ProofPeriod): ProofPageMock {
         cycleCount: 0,
       },
       {
+        engine: 'BEAT',
+        barInterval: '1m',
+        subtitle: '1분 봉 · Beat',
+        winRate: 0,
+        avgPnlPct: 0,
+        cycleCount: 0,
+      },
+      {
         engine: 'WAVE',
         barInterval: '10m',
         subtitle: '10분 봉 · 중기',
@@ -366,7 +399,11 @@ export function buildProofPageData(rows: PlatformCycleRow[], period: ProofPeriod
   }
 
   const periodRows = filterByPeriod(rows, period);
-  const defaultRows = filterStatsRows(rows, ['PULSE', 'WAVE'], ['trend', 'nonTrend', 'reversal']);
+  const defaultRows = filterStatsRows(
+    rows,
+    ['PULSE', 'BEAT', 'WAVE'],
+    ['trend', 'nonTrend', 'reversal']
+  );
   const totalStats = buildTotalStats(defaultRows);
   const symbolStats = buildSymbolStats(defaultRows);
   const stats = aggregateProofBoard(periodRows);
@@ -407,6 +444,14 @@ export function buildProofPageData(rows: PlatformCycleRow[], period: ProofPeriod
         winRate: winRateDecimal(stats.pulse.wins, stats.pulse.totalCycles),
         avgPnlPct: stats.pulse.avgPnl,
         cycleCount: stats.pulse.totalCycles,
+      },
+      {
+        engine: 'BEAT',
+        barInterval: '1m',
+        subtitle: '1분 봉 · Beat',
+        winRate: winRateDecimal(stats.beat.wins, stats.beat.totalCycles),
+        avgPnlPct: stats.beat.avgPnl,
+        cycleCount: stats.beat.totalCycles,
       },
       {
         engine: 'WAVE',
