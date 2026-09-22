@@ -2,7 +2,7 @@ import type { ProofTotalStatsRow } from '@/lib/mock/proof-mock';
 import type { ProofCopy } from './proofCopy';
 import type { ProofLanguage } from './proofFormat';
 import { ExpectedReturnDashboard } from './ExpectedReturnDashboard';
-import { RiskAnalysisPanel } from './RiskAnalysisPanel';
+import { RiskAnalysisPanel, RiskAnalysisPanelSkeleton } from './RiskAnalysisPanel';
 import type { RiskAnalysisByPeriod } from '@/lib/proof/risk-analysis';
 
 export function ProofSimulatorCard({
@@ -13,6 +13,7 @@ export function ProofSimulatorCard({
   copy,
   language,
   risk,
+  riskLoading = false,
 }: {
   rows: [ProofTotalStatsRow, ProofTotalStatsRow];
   seed: number;
@@ -22,6 +23,7 @@ export function ProofSimulatorCard({
   language: ProofLanguage;
   /** 아직 로딩 중이면 undefined — 그동안 리스크 패널은 그리지 않는다. */
   risk?: RiskAnalysisByPeriod;
+  riskLoading?: boolean;
 }) {
   // rows[0]/rows[1] (standard/discounted) are two accounting bases over the SAME
   // closed cycles, not two disjoint trade sets — summing them (as this used to)
@@ -58,6 +60,8 @@ export function ProofSimulatorCard({
               leverage={leverage}
               language={language}
             />
+          ) : riskLoading ? (
+            <RiskAnalysisPanelSkeleton />
           ) : null}
         </div>
       ))}

@@ -38,6 +38,17 @@ export const SIGNAL_OPTION_BADGE_CLASS: Record<SignalOptionTone, string> = {
   wave: 'bg-blue-500 text-white',
 };
 
+/**
+ * 선택되지 않은 시그널 배지 — 테두리만 있는 형태. 채워진 배지는 "선택됨"을
+ * 뜻하므로, 단순히 어떤 시그널인지 라벨로만 보여 주는 곳에서도 이 스타일을 쓴다.
+ * 테두리 두께는 쓰는 쪽에서 `border`로 준다.
+ */
+export const SIGNAL_OPTION_OUTLINE_CLASS: Record<SignalOptionTone, string> = {
+  pulse: 'border-red-500 bg-background text-red-700 dark:text-red-400',
+  beat: 'border-emerald-500 bg-background text-emerald-700 dark:text-emerald-400',
+  wave: 'border-blue-500 bg-background text-blue-700 dark:text-blue-400',
+};
+
 export function signalOptionTone(optionId: string): SignalOptionTone {
   if (optionId.startsWith('B')) return 'beat';
   return optionId.startsWith('W') ? 'wave' : 'pulse';
