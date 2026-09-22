@@ -29,6 +29,7 @@ import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
 import type { ProofQualityPeriod } from './symbolQuality';
+import type { RiskAnalysisByPeriod } from '@/lib/proof/risk-analysis';
 import { SIGNAL_STREAM_OPTION_IDS } from '@/views/signals/pulse/utils/streamSelector';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 
@@ -90,6 +91,7 @@ export function ProofPageView() {
   const [toolbarHeight, setToolbarHeight] = useState(0);
   const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
   const [data, setData] = useState<ProofPageMock>(() => buildEmptyProofPage('30d'));
+  const [risk, setRisk] = useState<RiskAnalysisByPeriod | undefined>(undefined);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -116,6 +118,7 @@ export function ProofPageView() {
         symbolStats: data.symbolStats,
         streamWinRates: {},
         buckets: data.buckets,
+        qualifiedSymbols: [] as string[],
       };
     }
     // Each selected P/W trend qualifies independently against BOTH the long-term
@@ -197,6 +200,7 @@ export function ProofPageView() {
       symbolStats: qualifiedSymbolStats,
       streamWinRates,
       buckets: data.buckets,
+      qualifiedSymbols: aggregateSymbols,
     };
   }, [
     data,
@@ -211,6 +215,41 @@ export function ProofPageView() {
     selections,
     qualityPeriod,
   ]);
+
+  // 연속 기록/MDD는 순서에 의존해서 proof_stats 합계로는 못 만든다 — 필터가 확정된
+  // 뒤 별도 엔드포인트로 가져온다. 시드/레버리지는 비율에 곱하기만 하면 되므로
+  // 의존성에 넣지 않는다(설정만 바꿨을 때 불필요한 재조회를 막는다).
+  const riskQuery = useMemo(() => {
+    const params = new URLSearchParams();
+    if (streams.length) params.set('streams', streams.join(','));
+    if (trendModes.length) params.set('trendModes', trendModes.join(','));
+    if (tradingCategories.length) params.set('categories', tradingCategories.join(','));
+    if (activeStats.qualifiedSymbols.length) {
+      params.set('symbols', activeStats.qualifiedSymbols.join(','));
+    }
+    return params.toString();
+  }, [streams, trendModes, tradingCategories, activeStats.qualifiedSymbols]);
+
+  useEffect(() => {
+    // 종목이 하나도 안 남은 상태에서 부르면 서버가 전 종목을 훑게 되므로 건너뛴다.
+    if (!activeStats.qualifiedSymbols.length) {
+      setRisk(undefined);
+      return;
+    }
+    const controller = new AbortController();
+    void fetch(`/api/proof/risk?${riskQuery}`, { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Risk request failed: ${response.status}`);
+        return (await response.json()) as RiskAnalysisByPeriod;
+      })
+      .then(setRisk)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        console.error('[proof] risk analysis fetch failed:', error);
+        setRisk(undefined);
+      });
+    return () => controller.abort();
+  }, [riskQuery, activeStats.qualifiedSymbols.length]);
 
   useEffect(() => {
     const applySharedSimulation = (input: ReturnType<typeof readSharedSimulationInput>) => {
@@ -268,6 +307,7 @@ export function ProofPageView() {
           {copy.simulator.step2Title}
         </h2>
         <ProofSimulatorCard
+          risk={risk}
           rows={activeStats.totalStats}
           seed={seed}
           entryRatio={entryRatio}

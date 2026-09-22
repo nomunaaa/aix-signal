@@ -2,6 +2,8 @@ import type { ProofTotalStatsRow } from '@/lib/mock/proof-mock';
 import type { ProofCopy } from './proofCopy';
 import type { ProofLanguage } from './proofFormat';
 import { ExpectedReturnDashboard } from './ExpectedReturnDashboard';
+import { RiskAnalysisPanel } from './RiskAnalysisPanel';
+import type { RiskAnalysisByPeriod } from '@/lib/proof/risk-analysis';
 
 export function ProofSimulatorCard({
   rows,
@@ -10,6 +12,7 @@ export function ProofSimulatorCard({
   leverage,
   copy,
   language,
+  risk,
 }: {
   rows: [ProofTotalStatsRow, ProofTotalStatsRow];
   seed: number;
@@ -17,6 +20,8 @@ export function ProofSimulatorCard({
   leverage: number;
   copy: ProofCopy;
   language: ProofLanguage;
+  /** 아직 로딩 중이면 undefined — 그동안 리스크 패널은 그리지 않는다. */
+  risk?: RiskAnalysisByPeriod;
 }) {
   // rows[0]/rows[1] (standard/discounted) are two accounting bases over the SAME
   // closed cycles, not two disjoint trade sets — summing them (as this used to)
@@ -27,32 +32,35 @@ export function ProofSimulatorCard({
   const recent3mo = standardRow.recent3mo;
   const total = standardRow.total;
 
+  const columns = [
+    { period: copy.simulator.basisRecent30, slice: recent30, risk: risk?.recent30 },
+    { period: copy.simulator.basisRecent3mo, slice: recent3mo, risk: risk?.recent3mo },
+    { period: copy.simulator.basisTotal, slice: total, risk: risk?.total },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-      <ExpectedReturnDashboard
-        language={language}
-        period={copy.simulator.basisRecent30}
-        slice={recent30}
-        seed={seed}
-        entryRatio={entryRatio}
-        leverage={leverage}
-      />
-      <ExpectedReturnDashboard
-        language={language}
-        period={copy.simulator.basisRecent3mo}
-        slice={recent3mo}
-        seed={seed}
-        entryRatio={entryRatio}
-        leverage={leverage}
-      />
-      <ExpectedReturnDashboard
-        language={language}
-        period={copy.simulator.basisTotal}
-        slice={total}
-        seed={seed}
-        entryRatio={entryRatio}
-        leverage={leverage}
-      />
+      {columns.map((column) => (
+        <div key={column.period} className="flex min-w-0 flex-col gap-3">
+          <ExpectedReturnDashboard
+            language={language}
+            period={column.period}
+            slice={column.slice}
+            seed={seed}
+            entryRatio={entryRatio}
+            leverage={leverage}
+          />
+          {column.risk ? (
+            <RiskAnalysisPanel
+              result={column.risk}
+              seed={seed}
+              entryRatio={entryRatio}
+              leverage={leverage}
+              language={language}
+            />
+          ) : null}
+        </div>
+      ))}
     </div>
   );
 }
