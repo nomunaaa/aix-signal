@@ -3,16 +3,11 @@
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 import {
   SIGNAL_OPTION_BADGE_CLASS,
+  SIGNAL_OPTION_OUTLINE_CLASS,
   SIGNAL_STREAM_OPTION_IDS,
   signalOptionTone,
 } from '@/views/signals/pulse/utils/streamSelector';
 import { cn } from '@/lib/utils';
-
-const INACTIVE_OPTION_CLASS: Record<ReturnType<typeof signalOptionTone>, string> = {
-  pulse: 'border-red-500 bg-background text-red-700 dark:text-red-400',
-  beat: 'border-emerald-500 bg-background text-emerald-700 dark:text-emerald-400',
-  wave: 'border-blue-500 bg-background text-blue-700 dark:text-blue-400',
-};
 
 interface ChartSignalOptionSelectorProps {
   readonly selectedOptions: readonly SignalStreamOptionId[];
@@ -47,7 +42,7 @@ export function ChartSignalOptionSelector({
             aria-pressed={active}
             className={cn(
               'flex h-8 select-none items-center justify-center rounded border px-2 text-xs font-semibold transition-colors',
-              active ? SIGNAL_OPTION_BADGE_CLASS[tone] : INACTIVE_OPTION_CLASS[tone]
+              active ? SIGNAL_OPTION_BADGE_CLASS[tone] : SIGNAL_OPTION_OUTLINE_CLASS[tone]
             )}
           >
             {option}
