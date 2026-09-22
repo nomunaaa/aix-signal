@@ -331,13 +331,13 @@ export function SelectionPageView() {
               const selected = optionFilter[option.id];
               const showGroupLabel =
                 index === 0 || sortedRows[index - 1].option.group !== option.group;
+              // 선택된 행 강조는 이 파일에만 있던 노란색이었다 — 디자인 토큰
+              // 밖의 색이라 경고/오류처럼 보였다. 다른 화면에서 쓰는 primary
+              // 틴트로 바꿔 두 테마 모두에서 자연스럽게 보이게 한다.
               return (
                 <tr
                   key={option.id}
-                  className={cn(
-                    'transition-colors',
-                    selected && 'bg-yellow-100/80 dark:bg-yellow-500/15'
-                  )}
+                  className={cn('transition-colors', selected && 'bg-primary/10')}
                 >
                   <td className="px-2 py-3 font-semibold">{showGroupLabel ? option.group : ''}</td>
                   <td className="px-2 py-3">
