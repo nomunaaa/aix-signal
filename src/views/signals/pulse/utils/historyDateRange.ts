@@ -41,18 +41,31 @@ function subtractUtcMonths(date: Date, months: number): Date {
   return result;
 }
 
+/**
+ * Build the [from, to] window that history should use to match a proof slice.
+ *
+ * `asOfIso` is the latest contributing proof_stats `updated_at` (window end).
+ * `asOfFromIso` is the earliest — needed when multi-symbol aggregates merge
+ * rows refreshed at different times, otherwise the older symbols' last_30d /
+ * last_3mo tails fall outside `asOfIso - period` and history under-counts.
+ */
 export function exactHistoryPeriodRange(
   period: HistoryDatePeriod,
-  asOfIso: string | null | undefined
+  asOfIso: string | null | undefined,
+  asOfFromIso?: string | null | undefined
 ): { fromIso: string | null; toIso: string } | null {
   const normalizedAsOf = normalizeIsoTimestamp(asOfIso);
   if (!normalizedAsOf) return null;
-  const asOf = new Date(normalizedAsOf);
   if (period === 'all') {
     return { fromIso: null, toIso: normalizedAsOf };
   }
+
+  const normalizedFrom = normalizeIsoTimestamp(asOfFromIso) ?? normalizedAsOf;
+  const fromAnchor = new Date(normalizedFrom);
   const from =
-    period === '90d' ? subtractUtcMonths(asOf, 3) : new Date(asOf.getTime() - 30 * DAY_MS);
+    period === '90d'
+      ? subtractUtcMonths(fromAnchor, 3)
+      : new Date(fromAnchor.getTime() - 30 * DAY_MS);
 
   return {
     fromIso: from.toISOString(),

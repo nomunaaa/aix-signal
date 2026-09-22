@@ -66,6 +66,7 @@ export function emptyStatsSlice(): ProofCycleStatsSlice {
   return {
     cycleCount: 0,
     asOfIso: null,
+    asOfFromIso: null,
     pnlPctSum: 0,
     pnlPerEntryNotionalRateSum: 0,
     entryLegCountSum: 0,
@@ -97,9 +98,11 @@ function asOfIsoForRows(rows: PlatformCycleRow[], asOfMs: number): string | null
 }
 
 function cycleStats(rows: PlatformCycleRow[], asOfMs = Date.now()): ProofCycleStatsSlice {
+  const asOf = asOfIsoForRows(rows, asOfMs);
   return {
     ...cycleStatsFromPoints(rows.map((row) => pointFromRow(row))),
-    asOfIso: asOfIsoForRows(rows, asOfMs),
+    asOfIso: asOf,
+    asOfFromIso: asOf,
     avgHoldSec: computeAvgHoldSec(rows),
   };
 }
@@ -182,6 +185,7 @@ export function discountRatePct(row: PlatformCycleRow): number {
 }
 
 function discountedCycleStats(rows: PlatformCycleRow[], asOfMs = Date.now()): ProofCycleStatsSlice {
+  const asOf = asOfIsoForRows(rows, asOfMs);
   return {
     ...cycleStatsFromPoints(
       rows.map((row) => {
@@ -194,7 +198,8 @@ function discountedCycleStats(rows: PlatformCycleRow[], asOfMs = Date.now()): Pr
         };
       })
     ),
-    asOfIso: asOfIsoForRows(rows, asOfMs),
+    asOfIso: asOf,
+    asOfFromIso: asOf,
     avgHoldSec: computeAvgHoldSec(rows),
   };
 }

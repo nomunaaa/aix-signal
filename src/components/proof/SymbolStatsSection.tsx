@@ -141,6 +141,7 @@ export function SymbolMetricCells({
             count={slice.cycleCount}
             period={period}
             asOfIso={slice.asOfIso}
+            asOfFromIso={slice.asOfFromIso}
             streams={streams}
             trendModes={trendModes}
             tradingCategories={tradingCategories}
