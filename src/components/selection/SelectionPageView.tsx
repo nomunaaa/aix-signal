@@ -22,6 +22,7 @@ import { HistoricalMoneyCell, HistoricalPctCell } from '@/components/proof/Proof
 import { formatHoldSec, formatRatio, projectedPct, projectedUsd, proofLanguageFromCode } from '@/components/proof/proofFormat';
 import { formatWinRate } from '@/lib/proof/format-proof';
 import { PROOF_COPY } from '@/components/proof/proofCopy';
+import { TableHeaderLabel } from '@/components/proof/SortableTh';
 import { SymbolQualityFilter } from '@/components/proof/SymbolQualityFilter';
 import {
   hasPositiveLongTermProfit,
@@ -49,17 +50,28 @@ type SelectionOptionStats = {
 };
 
 type SelectionPeriod = 'recent30' | 'recent3mo' | 'total';
-type SelectionMetric = 'symbols' | 'accountReturn' | 'accountProfit' | 'winRate' | 'ratio' | 'holdTime';
+type SelectionMetric =
+  | 'symbols'
+  | 'entries'
+  | 'accountReturn'
+  | 'accountProfit'
+  | 'winRate'
+  | 'ratio'
+  | 'holdTime';
 type SelectionSortKey = `${SelectionPeriod}:${SelectionMetric}`;
+type ProofCopy = (typeof PROOF_COPY)[keyof typeof PROOF_COPY];
 
-const METRIC_COLUMNS: { metric: SelectionMetric; label: string }[] = [
-  { metric: 'symbols', label: 'Symbols' },
-  { metric: 'accountReturn', label: 'Account Return' },
-  { metric: 'accountProfit', label: 'Account Profit' },
-  { metric: 'winRate', label: 'Win Rate' },
-  { metric: 'ratio', label: 'Ratio' },
-  { metric: 'holdTime', label: 'Hold Time' },
-];
+function selectionMetricColumns(copy: ProofCopy): { metric: SelectionMetric; label: string }[] {
+  return [
+    { metric: 'symbols', label: copy.filters.symbol },
+    { metric: 'entries', label: copy.table.entries },
+    { metric: 'accountReturn', label: copy.table.accountReturn },
+    { metric: 'accountProfit', label: copy.table.accountProfit },
+    { metric: 'winRate', label: copy.table.avgWinRate },
+    { metric: 'ratio', label: copy.table.avgRatio },
+    { metric: 'holdTime', label: copy.table.avgHoldTime },
+  ];
+}
 
 /** Mirrors the same seed/entryRatio/leverage the Account Return/Profit cells project with. */
 function selectionSortValue(entry: SelectionOptionStats, key: SelectionSortKey): number {
@@ -75,6 +87,8 @@ function selectionSortValue(entry: SelectionOptionStats, key: SelectionSortKey):
     : emptyStatsSlice();
   const { capital, capitalRatio, leverage } = DEFAULT_SHARED_SIMULATION_INPUT;
   switch (metric) {
+    case 'entries':
+      return slice.cycleCount;
     case 'accountReturn':
       return projectedPct(slice, capital, capitalRatio, leverage);
     case 'accountProfit':
@@ -108,7 +122,7 @@ function SortableHeaderCell({
     <th
       scope="col"
       aria-sort={isActive ? (direction === 'asc' ? 'ascending' : 'descending') : 'none'}
-      className="cursor-pointer select-none border-l border-border/60 px-1 py-2 transition-colors hover:bg-muted/80"
+      className="cursor-pointer select-none overflow-hidden border-l border-border/60 px-0.5 py-2 text-center align-middle font-medium transition-colors hover:bg-muted/80"
       onClick={() => onSort(sortKey)}
       role="button"
       tabIndex={0}
@@ -119,16 +133,19 @@ function SortableHeaderCell({
         }
       }}
     >
-      <span className="inline-flex items-center justify-center gap-0.5">
-        {label}
+      <span
+        className="inline-flex min-w-0 max-w-full flex-col items-center justify-center overflow-hidden"
+        title={label}
+      >
+        <TableHeaderLabel label={label} />
         {isActive ? (
           direction === 'desc' ? (
-            <ChevronDown className="h-3 w-3" />
+            <ChevronDown className="h-2.5 w-2.5 shrink-0" />
           ) : (
-            <ChevronUp className="h-3 w-3" />
+            <ChevronUp className="h-2.5 w-2.5 shrink-0" />
           )
         ) : (
-          <ChevronDown className="h-3 w-3 opacity-30" />
+          <ChevronDown className="h-2.5 w-2.5 shrink-0 opacity-30" />
         )}
       </span>
     </th>
@@ -153,25 +170,65 @@ function MetricCells({
   const present = slice.cycleCount > 0;
   const streams: ProofStatsStream[] = selection ? [selection.stream] : [];
   const trends: ProofStatsTrendMode[] = selection ? [selection.trendMode] : [];
-  return <>
-    <td className="border-l border-border/60 px-1 py-3 text-right">
-      <HistorySymbolCountLink
-        symbols={symbols}
-        count={Math.max(1, slice.cycleCount)}
-        period={period}
-        asOfIso={slice.asOfIso}
-        streams={streams}
-        trendModes={trends}
-        tradingCategories={['E2X2']}
-        signalOptions={[id]}
-      />
-    </td>
-    <td className="px-1 py-3 text-right"><HistoricalPctCell slice={slice} seed={DEFAULT_SHARED_SIMULATION_INPUT.capital} entryRatio={DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio} leverage={DEFAULT_SHARED_SIMULATION_INPUT.leverage} tone="standard" /></td>
-    <td className="px-1 py-3 text-right"><HistoricalMoneyCell slice={slice} seed={DEFAULT_SHARED_SIMULATION_INPUT.capital} entryRatio={DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio} leverage={DEFAULT_SHARED_SIMULATION_INPUT.leverage} tone="standard" /></td>
-    <td className="px-1 py-3 text-right font-mono font-semibold">{present ? formatWinRate(slice.winRate) : '—'}</td>
-    <td className="px-1 py-3 text-right font-mono font-semibold">{formatRatio(slice.winLossRatio, present)}</td>
-    <td className="px-1 py-3 text-right font-mono font-semibold">{formatHoldSec(slice.avgHoldSec, present, language)}</td>
-  </>;
+  return (
+    <>
+      <td className="border-l border-border/60 px-1 py-3 text-right">
+        <HistorySymbolCountLink
+          symbols={symbols}
+          count={Math.max(1, slice.cycleCount)}
+          period={period}
+          asOfIso={slice.asOfIso}
+          asOfFromIso={slice.asOfFromIso}
+          streams={streams}
+          trendModes={trends}
+          tradingCategories={['E2X2']}
+          signalOptions={[id]}
+          display="symbols"
+        />
+      </td>
+      <td className="px-1 py-3 text-right">
+        <HistorySymbolCountLink
+          symbols={symbols}
+          count={slice.cycleCount}
+          period={period}
+          asOfIso={slice.asOfIso}
+          asOfFromIso={slice.asOfFromIso}
+          streams={streams}
+          trendModes={trends}
+          tradingCategories={['E2X2']}
+          signalOptions={[id]}
+          display="entries"
+        />
+      </td>
+      <td className="px-1 py-3 text-right">
+        <HistoricalPctCell
+          slice={slice}
+          seed={DEFAULT_SHARED_SIMULATION_INPUT.capital}
+          entryRatio={DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio}
+          leverage={DEFAULT_SHARED_SIMULATION_INPUT.leverage}
+          tone="standard"
+        />
+      </td>
+      <td className="px-1 py-3 text-right">
+        <HistoricalMoneyCell
+          slice={slice}
+          seed={DEFAULT_SHARED_SIMULATION_INPUT.capital}
+          entryRatio={DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio}
+          leverage={DEFAULT_SHARED_SIMULATION_INPUT.leverage}
+          tone="standard"
+        />
+      </td>
+      <td className="px-1 py-3 text-right font-mono font-semibold">
+        {present ? formatWinRate(slice.winRate) : '—'}
+      </td>
+      <td className="px-1 py-3 text-right font-mono font-semibold">
+        {formatRatio(slice.winLossRatio, present)}
+      </td>
+      <td className="px-1 py-3 text-right font-mono font-semibold">
+        {formatHoldSec(slice.avgHoldSec, present, language)}
+      </td>
+    </>
+  );
 }
 
 export function SelectionPageView() {
@@ -227,6 +284,7 @@ export function SelectionPageView() {
   ]);
   const [sortKey, setSortKey] = useState<SelectionSortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const metricColumns = selectionMetricColumns(copy);
   const handleSort = (key: SelectionSortKey) => {
     if (sortKey === key) {
       setSortDirection((prev) => (prev === 'desc' ? 'asc' : 'desc'));
@@ -267,34 +325,34 @@ export function SelectionPageView() {
         </div>
       </div>
       <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full min-w-[1120px] table-fixed border-collapse text-[10px] xl:text-xs">
+        <table className="w-full table-fixed border-collapse text-[10px] xl:text-xs">
           <colgroup>
-            <col className="w-[8%]" />
-            <col className="w-[5%]" />
-            {Array.from({ length: 18 }).map((_, index) => (
-              <col key={index} className="w-[4.83%]" />
+            <col className="w-[3.5%]" />
+            <col className="w-[3%]" />
+            {Array.from({ length: 21 }).map((_, index) => (
+              <col key={index} className="w-[4.5%]" />
             ))}
           </colgroup>
           <thead className="bg-muted text-muted-foreground">
             <tr>
-              <th rowSpan={2} className="px-2 py-2">
-                Signal
+              <th rowSpan={2} className="px-1 py-2 text-center font-medium">
+                {copy.filters.signal}
               </th>
-              <th rowSpan={2} className="px-2 py-2">
-                Trend
+              <th rowSpan={2} className="px-1 py-2 text-center font-medium">
+                {copy.filters.trend}
               </th>
-              <th colSpan={6} className="border-l border-border/60 px-1 py-2">
-                Last 30 days
+              <th colSpan={7} className="border-l border-border/60 px-1 py-2">
+                {copy.table.recent30}
               </th>
-              <th colSpan={6} className="border-l border-border/60 px-1 py-2">
-                Last 3 months
+              <th colSpan={7} className="border-l border-border/60 px-1 py-2">
+                {copy.table.recent3mo}
               </th>
-              <th colSpan={6} className="border-l border-border/60 px-1 py-2">
-                All time
+              <th colSpan={7} className="border-l border-border/60 px-1 py-2">
+                {copy.table.cumulative}
               </th>
             </tr>
             <tr>
-              {METRIC_COLUMNS.map(({ metric, label }) => (
+              {metricColumns.map(({ metric, label }) => (
                 <SortableHeaderCell
                   key={`recent30:${metric}`}
                   label={label}
@@ -304,7 +362,7 @@ export function SelectionPageView() {
                   onSort={handleSort}
                 />
               ))}
-              {METRIC_COLUMNS.map(({ metric, label }) => (
+              {metricColumns.map(({ metric, label }) => (
                 <SortableHeaderCell
                   key={`recent3mo:${metric}`}
                   label={label}
@@ -314,7 +372,7 @@ export function SelectionPageView() {
                   onSort={handleSort}
                 />
               ))}
-              {METRIC_COLUMNS.map(({ metric, label }) => (
+              {metricColumns.map(({ metric, label }) => (
                 <SortableHeaderCell
                   key={`total:${metric}`}
                   label={label}
@@ -341,8 +399,10 @@ export function SelectionPageView() {
                   key={option.id}
                   className={cn('transition-colors', selected && 'bg-primary/10')}
                 >
-                  <td className="px-2 py-3 font-semibold">{showGroupLabel ? option.group : ''}</td>
-                  <td className="px-2 py-3">
+                  <td className="px-1 py-3 text-center font-semibold">
+                    {showGroupLabel ? option.group : ''}
+                  </td>
+                  <td className="px-1 py-3 text-center">
                     <span
                       className={cn(
                         'inline-flex rounded px-1.5 py-0.5 text-[10px] font-bold',

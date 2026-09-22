@@ -13,6 +13,7 @@ import {
   SIGNAL_STREAM_OPTION_IDS,
   signalOptionTone,
 } from '@/views/signals/pulse/utils/streamSelector';
+import { useBilingualText } from '@/hooks/useBilingualText';
 import { useStockSelectionStore } from './stockSelectionStore';
 
 const INACTIVE_OPTION_CLASS = {
@@ -39,6 +40,7 @@ function SignalSymbolPicker({
   const active = usePulseStore((state) => state.streamOptionFilter[optionId]);
   const toggleTrend = usePulseStore((state) => state.toggleStreamOptionFilter);
   const tone = signalOptionTone(optionId);
+  const { tr } = useBilingualText();
   const normalizedSymbols = useMemo(
     () => Array.from(new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))),
     [symbols]
@@ -105,12 +107,12 @@ function SignalSymbolPicker({
             setOpen(true);
           }}
           className={cn(
-            'flex h-8 min-w-9 select-none flex-col items-center justify-center gap-0.5 rounded border px-1.5 text-[12px] font-semibold leading-none transition-colors',
+            'flex h-8 min-w-8 select-none flex-col items-center justify-center gap-0.5 rounded border px-1.5 text-[12px] font-semibold leading-none transition-colors',
             active ? SIGNAL_OPTION_BADGE_CLASS[tone] : INACTIVE_OPTION_CLASS[tone]
           )}
         >
           {optionId}
-          <span className="font-mono text-[9px] leading-none opacity-75">{selectedCount}</span>
+          <span className="font-mono text-[10px] leading-none opacity-75">{selectedCount}</span>
         </button>
       </PopoverPrimitive.Anchor>
       <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-2">
@@ -122,29 +124,31 @@ function SignalSymbolPicker({
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search symbol"
+            placeholder={tr('심볼 검색', 'Search symbol')}
             className="h-8 pl-8 text-xs"
-            aria-label={`Search ${optionId} symbols`}
+            aria-label={tr(`${optionId} 심볼 검색`, `Search ${optionId} symbols`)}
           />
         </div>
         <div className="max-h-80 space-y-2 overflow-y-auto pr-1" role="listbox">
           {filteredSymbols.length ? (
             query.trim() ? (
-              renderGroup('Results', filteredSymbols)
+              renderGroup(tr('결과', 'Results'), filteredSymbols)
             ) : (
               <>
                 {renderGroup(
-                  'Selected',
+                  tr('선택', 'Selected'),
                   normalizedSymbols.filter((symbol) => selected.has(symbol))
                 )}
                 {renderGroup(
-                  'Profitable',
+                  tr('기타', 'Others'),
                   normalizedSymbols.filter((symbol) => !selected.has(symbol))
                 )}
               </>
             )
           ) : (
-            <div className="px-2 py-8 text-center text-xs text-muted-foreground">No symbols</div>
+            <div className="px-2 py-8 text-center text-xs text-muted-foreground">
+              {tr('심볼 없음', 'No symbols')}
+            </div>
           )}
         </div>
       </PopoverContent>

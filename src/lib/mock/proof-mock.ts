@@ -89,7 +89,10 @@ export type ProofStatsTrendMode = SignalTrendMode;
 
 export interface ProofCycleStatsSlice {
   cycleCount: number;
+  /** Latest proof_stats `updated_at` contributing to this slice (window end). */
   asOfIso?: string | null;
+  /** Earliest proof_stats `updated_at` contributing to this slice (for multi-symbol ranges). */
+  asOfFromIso?: string | null;
   pnlPctSum: number;
   /**
    * Sum of each cycle's realized PnL divided by the configured single-entry

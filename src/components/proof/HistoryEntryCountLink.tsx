@@ -24,6 +24,7 @@ export function signalBoardHistoryHref({
   count,
   period,
   asOfIso,
+  asOfFromIso,
   streams,
   trendModes,
   tradingCategories,
@@ -34,6 +35,7 @@ export function signalBoardHistoryHref({
   count: number;
   period: '30d' | '90d' | 'all';
   asOfIso?: string | null;
+  asOfFromIso?: string | null;
   streams: readonly ProofStatsStream[];
   trendModes: readonly ProofStatsTrendMode[];
   tradingCategories: readonly TradingCategory[];
@@ -57,7 +59,7 @@ export function signalBoardHistoryHref({
   }
   const historyPeriod = period;
   params.set('historyPeriod', historyPeriod);
-  const exactRange = exactHistoryPeriodRange(historyPeriod, asOfIso);
+  const exactRange = exactHistoryPeriodRange(historyPeriod, asOfIso, asOfFromIso);
 
   if (signalOptions?.length) {
     params.set('historyStreamOptions', signalOptions.join(','));
@@ -86,6 +88,7 @@ export function HistoryEntryCountLink({
   count,
   period,
   asOfIso,
+  asOfFromIso,
   streams,
   trendModes,
   tradingCategories,
@@ -96,6 +99,7 @@ export function HistoryEntryCountLink({
   count: number;
   period: '30d' | '90d' | 'all';
   asOfIso?: string | null;
+  asOfFromIso?: string | null;
   streams: readonly ProofStatsStream[];
   trendModes: readonly ProofStatsTrendMode[];
   tradingCategories: readonly TradingCategory[];
@@ -111,6 +115,7 @@ export function HistoryEntryCountLink({
         count,
         period,
         asOfIso,
+        asOfFromIso,
         streams,
         trendModes,
         tradingCategories,
@@ -136,31 +141,40 @@ export function HistorySymbolCountLink({
   count,
   period,
   asOfIso,
+  asOfFromIso,
   streams,
   trendModes,
   tradingCategories,
   signalOptions,
   className,
+  display = 'symbols',
 }: {
   symbols: readonly string[];
   count: number;
   period: '30d' | '90d' | 'all';
   asOfIso?: string | null;
+  asOfFromIso?: string | null;
   streams: readonly ProofStatsStream[];
   trendModes: readonly ProofStatsTrendMode[];
   tradingCategories: readonly TradingCategory[];
   signalOptions?: readonly SignalStreamOptionId[];
   className?: string;
+  /** `symbols` shows qualifying symbol count; `entries` shows closed-cycle count. */
+  display?: 'symbols' | 'entries';
 }) {
   if (symbols.length <= 0) return <span>—</span>;
+  if (display === 'entries' && count <= 0) return <span>0</span>;
+
+  const shown = display === 'entries' ? count : symbols.length;
 
   return (
     <Link
       to={signalBoardHistoryHref({
         symbols,
-        count,
+        count: Math.max(1, count),
         period,
         asOfIso,
+        asOfFromIso,
         streams,
         trendModes,
         tradingCategories,
@@ -172,7 +186,7 @@ export function HistorySymbolCountLink({
       )}
       aria-label={`${symbols.length} qualifying symbols, ${count} closed signal entries`}
     >
-      <span className="min-w-0 truncate">{symbols.length}</span>
+      <span className="min-w-0 truncate">{shown}</span>
       <ChevronRight
         className="hidden h-3 w-3 shrink-0 text-muted-foreground sm:block"
         aria-hidden

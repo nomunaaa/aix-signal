@@ -24,18 +24,21 @@ const HEADER_LINE_PARTS: Record<string, string[]> = {
   'Avg Win Rate': ['Avg', 'Win Rate'],
   'Avg P/L Ratio': ['Avg', 'P/L Ratio'],
   'Avg Hold Time': ['Avg', 'Hold Time'],
+  Symbol: ['Symbol'],
   계좌수익률: ['계좌', '수익률'],
   계좌수익금: ['계좌', '수익금'],
   진입횟수: ['진입', '횟수'],
   평균승률: ['평균', '승률'],
   평균손익비: ['평균', '손익비'],
   평균보유시간: ['평균', '보유시간'],
+  종목: ['종목'],
   収益率: ['収益', '率'],
   口座収益率: ['口座', '収益率'],
   口座収益額: ['口座', '収益額'],
   平均勝率: ['平均', '勝率'],
   平均損益比: ['平均', '損益比'],
   平均保有時間: ['平均', '保有時間'],
+  銘柄: ['銘柄'],
 };
 
 export function TableHeaderLabel({ label }: { label: string }) {

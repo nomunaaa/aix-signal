@@ -55,10 +55,15 @@ export function combineProofCycleStats(
     .map((slice) => slice.asOfIso)
     .filter((value): value is string => Boolean(value))
     .sort();
+  const fromTimestamps = slices
+    .map((slice) => slice.asOfFromIso ?? slice.asOfIso)
+    .filter((value): value is string => Boolean(value))
+    .sort();
 
   return {
     cycleCount,
     asOfIso: timestamps.at(-1) ?? null,
+    asOfFromIso: fromTimestamps[0] ?? null,
     pnlPctSum: slices.reduce((sum, slice) => sum + slice.pnlPctSum, 0),
     pnlPerEntryNotionalRateSum: slices.reduce(
       (sum, slice) => sum + slice.pnlPerEntryNotionalRateSum,

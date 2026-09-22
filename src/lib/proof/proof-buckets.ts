@@ -55,6 +55,8 @@ type CategoryKey = TradingCategory | typeof UNCATEGORIZED;
 export interface ProofBucketAccumulator {
   count: number;
   asOfMs: number | null;
+  /** Earliest updated_at across rows merged into this accumulator. */
+  asOfFromMs: number | null;
   pnlSum: number;
   pnlPerEntryNotionalRateSum: number;
   entryLegCountSum: number;
@@ -140,6 +142,7 @@ function emptyAcc(): ProofBucketAccumulator {
   return {
     count: 0,
     asOfMs: null,
+    asOfFromMs: null,
     pnlSum: 0,
     pnlPerEntryNotionalRateSum: 0,
     entryLegCountSum: 0,
@@ -188,6 +191,12 @@ function maxTimestampMs(a: number | null, b: number | null): number | null {
   if (a === null) return b;
   if (b === null) return a;
   return Math.max(a, b);
+}
+
+function minTimestampMs(a: number | null, b: number | null): number | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return Math.min(a, b);
 }
 
 function streamFromSignalName(value: string | null | undefined): ProofStatsStream | null {
@@ -239,6 +248,7 @@ function applyDbRowToAccumulator(acc: ProofBucketAccumulator, row: ProofStatsAgg
   const winCount = numberFromDb(row.win_count);
   const lossCount = numberFromDb(row.loss_count);
   acc.asOfMs = maxTimestampMs(acc.asOfMs, timestampMsFromDb(row.updated_at));
+  acc.asOfFromMs = minTimestampMs(acc.asOfFromMs, timestampMsFromDb(row.updated_at));
 
   acc.count = Math.max(acc.count, entries);
   acc.entryLegCountSum = Math.max(acc.entryLegCountSum, entryLegCountSum);
@@ -284,6 +294,7 @@ function addRowToAcc(acc: ProofBucketAccumulator, row: PlatformCycleRow, asOfMs:
   const discRate = normalizeProofRate(pnlRate + (discountPct / 100) * entryLegCount);
 
   acc.asOfMs = maxTimestampMs(acc.asOfMs, asOfMs);
+  acc.asOfFromMs = minTimestampMs(acc.asOfFromMs, asOfMs);
   acc.count += 1;
   acc.pnlSum += pnl;
   acc.pnlPerEntryNotionalRateSum += pnlRate;
@@ -325,6 +336,7 @@ function mergeAcc(a: ProofBucketAccumulator, b: ProofBucketAccumulator): ProofBu
   return {
     count: a.count + b.count,
     asOfMs: maxTimestampMs(a.asOfMs, b.asOfMs),
+    asOfFromMs: minTimestampMs(a.asOfFromMs, b.asOfFromMs),
     pnlSum: a.pnlSum + b.pnlSum,
     pnlPerEntryNotionalRateSum: a.pnlPerEntryNotionalRateSum + b.pnlPerEntryNotionalRateSum,
     entryLegCountSum: a.entryLegCountSum + b.entryLegCountSum,
@@ -572,6 +584,7 @@ function finalizeSlice(
   return {
     cycleCount: isCombined ? acc.count * 2 : acc.count,
     asOfIso: isoFromTimestampMs(acc.asOfMs),
+    asOfFromIso: isoFromTimestampMs(acc.asOfFromMs),
     pnlPctSum: round2(pnlSum),
     pnlPerEntryNotionalRateSum: round8(pnlRateSum),
     entryLegCountSum: round8(isCombined ? acc.entryLegCountSum * 2 : acc.entryLegCountSum),
