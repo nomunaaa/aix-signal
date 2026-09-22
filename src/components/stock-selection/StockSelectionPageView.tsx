@@ -194,16 +194,15 @@ export function StockSelectionPageView() {
   );
 
   const profitableSymbolsByOption = useMemo(() => {
-    return Object.fromEntries(
-      OPTIONS.map((option) => {
-        const optionRows = rowsByOption.get(option.id);
-        const symbols = allSymbols.filter((symbol) => {
-          const stats = optionRows?.get(symbol);
-          return stats != null && hasPositiveLongTermProfit(stats);
-        });
-        return [option.id, symbols];
-      })
-    ) as Record<SignalStreamOptionId, readonly string[]>;
+    const result = {} as Record<SignalStreamOptionId, readonly string[]>;
+    for (const option of OPTIONS) {
+      const optionRows = rowsByOption.get(option.id);
+      result[option.id] = allSymbols.filter((symbol) => {
+        const stats = optionRows?.get(symbol);
+        return stats != null && hasPositiveLongTermProfit(stats);
+      });
+    }
+    return result;
   }, [allSymbols, rowsByOption]);
 
   const visibleRows = useMemo(() => {

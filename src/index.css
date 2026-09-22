@@ -275,42 +275,6 @@
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-drawer-bounce: cubic-bezier(0.45, 1.005, 0, 1.005);
 
-  /* Dropdown Animation */
-  @keyframes dropdown-fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Money Flow Bar Fill Animation */
-  @keyframes bar-fill {
-    from {
-      opacity: 0;
-      transform: scaleX(0);
-      transform-origin: left;
-    }
-    to {
-      opacity: 1;
-      transform: scaleX(1);
-    }
-  }
-
-  /* Subtle Pulse Animation */
-  @keyframes subtle-pulse {
-    0%,
-    100% {
-      opacity: 0.8;
-    }
-    50% {
-      opacity: 1;
-    }
-  }
-
   /* Semantic Colors (Global Standard: Green=Bull, Red=Bear) */
   --semantic-bull: 142 71% 45%; /* Green for up/profit */
   --semantic-bull-foreground: 0 0% 98%;
@@ -3049,6 +3013,40 @@ html.abB .emph {
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Dropdown / bar / pulse — must be top-level (not nested in :root) */
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bar-fill {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes subtle-pulse {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
