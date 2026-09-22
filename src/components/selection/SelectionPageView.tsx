@@ -15,7 +15,11 @@ import type { ProofPageMock, ProofStatsStream, ProofStatsTrendMode, ProofTotalSt
 import { DEFAULT_SHARED_SIMULATION_INPUT } from '@/lib/simulationStorage';
 import { usePulseStore } from '@/views/signals/pulse/stores/pulseStore';
 import { StreamSelector } from '@/views/signals/pulse/components/StreamSelector';
-import { SIGNAL_OPTION_OUTLINE_CLASS, signalOptionTone } from '@/views/signals/pulse/utils/streamSelector';
+import {
+  SIGNAL_OPTION_BADGE_CLASS,
+  SIGNAL_OPTION_OUTLINE_CLASS,
+  signalOptionTone,
+} from '@/views/signals/pulse/utils/streamSelector';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
 import { HistorySymbolCountLink } from '@/components/proof/HistoryEntryCountLink';
 import { HistoricalMoneyCell, HistoricalPctCell } from '@/components/proof/ProofStatCells';
@@ -343,13 +347,16 @@ export function SelectionPageView() {
                 >
                   <td className="px-2 py-3 font-semibold">{showGroupLabel ? option.group : ''}</td>
                   <td className="px-2 py-3">
-                    {/* 이 배지는 행이 어떤 시그널인지 알려 주는 라벨일 뿐 토글이 아니다.
-                        꽉 찬 배지는 상단 필터에서 "선택됨"을 뜻하므로, 여기서 같은
-                        모양을 쓰면 전부 선택된 것처럼 보인다 — 테두리 형태로 둔다. */}
+                    {/* 배지 모양은 상단 필터와 같은 뜻을 가진다 — 꽉 참은 "선택됨",
+                        테두리만 있는 것은 "선택되지 않음". 표는 선택 여부와 무관하게
+                        모든 시그널 행을 보여 주므로, 여기서 상태를 반영하지 않으면
+                        상단에서 P2·P3을 켜 두고도 표에서는 꺼진 것처럼 보인다. */}
                     <span
                       className={cn(
                         'inline-flex rounded border px-1.5 py-0.5 text-[10px] font-bold',
-                        SIGNAL_OPTION_OUTLINE_CLASS[signalOptionTone(option.id)]
+                        selected
+                          ? SIGNAL_OPTION_BADGE_CLASS[signalOptionTone(option.id)]
+                          : SIGNAL_OPTION_OUTLINE_CLASS[signalOptionTone(option.id)]
                       )}
                     >
                       {option.id}
