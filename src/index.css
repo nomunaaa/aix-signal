@@ -3052,108 +3052,106 @@ html.abB .emph {
   }
 }
 
-@theme inline {
-  @keyframes shine {
-    0% {
-      background-position: 0% 0%;
-    }
-    50% {
-      background-position: 100% 100%;
-    }
-    to {
-      background-position: 0% 0%;
-    }
+@keyframes shine {
+  0% {
+    background-position: 0% 0%;
   }
-  @keyframes blink-cursor {
-    0%,
-    49% {
-      opacity: 1;
-    }
-    50%,
-    100% {
-      opacity: 0;
-    }
+  50% {
+    background-position: 100% 100%;
   }
-  @keyframes line-shadow {
-    0% {
-      background-position: 0 0;
-    }
-    100% {
-      background-position: 100% -100%;
-    }
+  to {
+    background-position: 0% 0%;
   }
-  @keyframes aurora {
-    0% {
-      background-position: 0% 50%;
-      transform: rotate(-5deg) scale(0.9);
-    }
-    25% {
-      background-position: 50% 100%;
-      transform: rotate(5deg) scale(1.1);
-    }
-    50% {
-      background-position: 100% 50%;
-      transform: rotate(-3deg) scale(0.95);
-    }
-    75% {
-      background-position: 50% 0%;
-      transform: rotate(3deg) scale(1.05);
-    }
-    100% {
-      background-position: 0% 50%;
-      transform: rotate(-5deg) scale(0.9);
-    }
+}
+@keyframes blink-cursor {
+  0%,
+  49% {
+    opacity: 1;
   }
-  @keyframes rainbow {
-    0% {
-      background-position: 0%;
-    }
-    100% {
-      background-position: 200%;
-    }
+  50%,
+  100% {
+    opacity: 0;
   }
-  @keyframes rippling {
-    0% {
-      opacity: 1;
-    }
-    100% {
-      transform: scale(2);
-      opacity: 0;
-    }
+}
+@keyframes line-shadow {
+  0% {
+    background-position: 0 0;
   }
-  @keyframes grid {
-    0% {
-      transform: translateY(-50%);
-    }
-    100% {
-      transform: translateY(0);
-    }
+  100% {
+    background-position: 100% -100%;
   }
-  @keyframes ripple {
-    0%,
-    100% {
-      transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-      transform: translate(-50%, -50%) scale(0.9);
-    }
+}
+@keyframes aurora {
+  0% {
+    background-position: 0% 50%;
+    transform: rotate(-5deg) scale(0.9);
   }
-  @keyframes background-position-spin {
-    0% {
-      background-position: top center;
-    }
-    100% {
-      background-position: bottom center;
-    }
+  25% {
+    background-position: 50% 100%;
+    transform: rotate(5deg) scale(1.1);
   }
-  @keyframes pulse {
-    0%,
-    100% {
-      boxshadow: 0 0 0 0 var(--pulse-color);
-    }
-    50% {
-      boxshadow: 0 0 0 8px var(--pulse-color);
-    }
+  50% {
+    background-position: 100% 50%;
+    transform: rotate(-3deg) scale(0.95);
+  }
+  75% {
+    background-position: 50% 0%;
+    transform: rotate(3deg) scale(1.05);
+  }
+  100% {
+    background-position: 0% 50%;
+    transform: rotate(-5deg) scale(0.9);
+  }
+}
+@keyframes rainbow {
+  0% {
+    background-position: 0%;
+  }
+  100% {
+    background-position: 200%;
+  }
+}
+@keyframes rippling {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+@keyframes grid {
+  0% {
+    transform: translateY(-50%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes ripple {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+@keyframes background-position-spin {
+  0% {
+    background-position: top center;
+  }
+  100% {
+    background-position: bottom center;
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    boxshadow: 0 0 0 0 var(--pulse-color);
+  }
+  50% {
+    boxshadow: 0 0 0 8px var(--pulse-color);
   }
 }
 
