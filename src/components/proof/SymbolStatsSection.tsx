@@ -43,7 +43,7 @@ function symbolStatsSortValue(row: ProofSymbolStatsRow, key: SymbolStatsSortKey)
 
   const [period, metric] = key.split(':') as [
     'recent30' | 'recent3mo' | 'total',
-    'entries' | 'pnl' | 'winRate' | 'avgRatio' | 'holdTime',
+    'entries' | 'pnl' | 'accountProfit' | 'winRate' | 'avgRatio' | 'holdTime',
   ];
   const slice =
     period === 'recent30'
@@ -54,7 +54,10 @@ function symbolStatsSortValue(row: ProofSymbolStatsRow, key: SymbolStatsSortKey)
   switch (metric) {
     case 'entries':
       return slice.cycleCount;
+    // 계좌수익률과 계좌수익금은 같은 값을 시드·비중·레버리지로 환산한 것이라 정렬
+    // 순서가 같다. 그래도 키를 나눠 둬야 어느 열을 눌렀는지 화살표가 한 곳에만 뜬다.
     case 'pnl':
+    case 'accountProfit':
       return slice.pnlPerEntryNotionalRateSum;
     case 'winRate':
       return slice.winRate;
@@ -412,7 +415,7 @@ export function SymbolStatsSection({
               />
               <SortableTh
                 label={copy.table.accountProfit}
-                sortKey="recent30:pnl"
+                sortKey="recent30:accountProfit"
                 activeKey={sortKey}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -460,7 +463,7 @@ export function SymbolStatsSection({
               />
               <SortableTh
                 label={copy.table.accountProfit}
-                sortKey="recent3mo:pnl"
+                sortKey="recent3mo:accountProfit"
                 activeKey={sortKey}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -508,7 +511,7 @@ export function SymbolStatsSection({
               />
               <SortableTh
                 label={copy.table.accountProfit}
-                sortKey="total:pnl"
+                sortKey="total:accountProfit"
                 activeKey={sortKey}
                 direction={sortDirection}
                 onSort={handleSort}

@@ -1,19 +1,23 @@
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type SymbolStatsSortKey =
   | 'symbol'
   | 'recent30:entries'
   | 'recent30:pnl'
+  | 'recent30:accountProfit'
   | 'recent30:winRate'
   | 'recent30:avgRatio'
   | 'recent30:holdTime'
   | 'recent3mo:entries'
   | 'recent3mo:pnl'
+  | 'recent3mo:accountProfit'
   | 'recent3mo:winRate'
   | 'recent3mo:avgRatio'
   | 'recent3mo:holdTime'
   | 'total:entries'
   | 'total:pnl'
+  | 'total:accountProfit'
   | 'total:winRate'
   | 'total:avgRatio'
   | 'total:holdTime';
@@ -97,11 +101,23 @@ export function SortableTh({
         }
       }}
     >
+      {/* 정렬 가능한 열이라는 것과 현재 방향을 함께 보여 준다. 표시가 없으면
+          눌러 보기 전까지는 정렬이 되는지조차 알 수 없다. 비활성 열에 흐린
+          아래 화살표를 두는 것은 '누르면 내림차순부터'라는 뜻이다. */}
       <span
-        className="inline-flex min-w-0 max-w-full items-center justify-center overflow-hidden"
+        className="inline-flex min-w-0 max-w-full flex-col items-center justify-center overflow-hidden"
         title={label}
       >
         <TableHeaderLabel label={label} />
+        {isActive ? (
+          direction === 'desc' ? (
+            <ChevronDown className="h-2.5 w-2.5 shrink-0" />
+          ) : (
+            <ChevronUp className="h-2.5 w-2.5 shrink-0" />
+          )
+        ) : (
+          <ChevronDown className="h-2.5 w-2.5 shrink-0 opacity-30" />
+        )}
       </span>
     </th>
   );
