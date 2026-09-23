@@ -137,48 +137,6 @@ function formatCount(count: number, present: boolean, suffix: string): string {
   return `${count}${suffix}`;
 }
 
-/**
- * 로딩 중 자리표시자 — 실제 패널과 같은 뼈대/높이를 그려서, 데이터가 들어올 때
- * 아래 내용이 밀리지 않게 한다. 요청이 몇 초 걸리므로 빈 화면 대신 이걸 띄운다.
- */
-export function RiskAnalysisPanelSkeleton() {
-  return (
-    <div
-      className="rounded-xl border border-amber-300/60 bg-amber-50/60 p-2.5 dark:border-amber-500/40 dark:bg-amber-950/20"
-      aria-busy="true"
-      aria-live="polite"
-    >
-      <div className="mb-2 flex min-w-0 items-center gap-2">
-        <div className="size-7 shrink-0 animate-pulse rounded-md bg-amber-200/70 dark:bg-amber-700/50" />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="h-3 w-2/5 animate-pulse rounded bg-amber-200/70 dark:bg-amber-700/50" />
-          <div className="h-2 w-3/5 animate-pulse rounded bg-amber-200/50 dark:bg-amber-700/30" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        {[0, 1, 2, 3].map((index) => (
-          <div
-            key={index}
-            className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-2 py-2"
-          >
-            <div className="flex items-center gap-1.5">
-              <div className="size-5 shrink-0 animate-pulse rounded bg-muted-foreground/20" />
-              <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted-foreground/20" />
-            </div>
-            <div className="space-y-1">
-              <div className="h-2 w-full animate-pulse rounded bg-muted-foreground/15" />
-              <div className="h-2 w-4/5 animate-pulse rounded bg-muted-foreground/15" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 h-2 w-3/4 animate-pulse rounded bg-muted-foreground/15" />
-    </div>
-  );
-}
-
 export function RiskAnalysisPanel({
   result,
   seed,

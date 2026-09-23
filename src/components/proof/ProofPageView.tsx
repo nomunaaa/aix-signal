@@ -316,7 +316,6 @@ export function ProofPageView() {
         </h2>
         <ProofSimulatorCard
           risk={risk?.query === riskQuery ? risk.data : undefined}
-          riskLoading={activeStats.qualifiedSymbols.length > 0 && risk?.query !== riskQuery}
           rows={activeStats.totalStats}
           seed={seed}
           entryRatio={entryRatio}
