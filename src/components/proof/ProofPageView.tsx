@@ -237,6 +237,28 @@ export function ProofPageView() {
     return params.toString();
   }, [streams, trendModes, tradingCategories, activeStats.qualifiedSymbols]);
 
+  // 필터를 바꾸면 버킷 합산(위 카드·표)은 그 자리에서 끝나지만 리스크는 별도 요청이라
+  // 몇 초 걸린다. 각자 준비되는 대로 그리면 같은 화면에서 위쪽은 새 필터 숫자, 아래쪽은
+  // 아직 '—'인 상태가 된다. 그래서 '리스크까지 도착한 조합'만 통째로 커밋하고, 화면은
+  // 그 커밋본만 읽는다 — 셋이 항상 같은 필터의 값을 보여 준다.
+  //
+  // 자격 종목이 없으면 애초에 조회하지 않으므로 기다릴 것도 없다.
+  const riskPending =
+    activeStats.qualifiedSymbols.length > 0 && risk?.query !== riskQuery;
+
+  const [view, setView] = useState<{
+    stats: typeof activeStats;
+    risk?: RiskAnalysisByPeriod;
+  } | null>(null);
+
+  useEffect(() => {
+    if (riskPending) return;
+    setView({ stats: activeStats, risk: risk?.query === riskQuery ? risk.data : undefined });
+  }, [riskPending, activeStats, risk, riskQuery]);
+
+  // 첫 렌더에는 커밋본이 아직 없다. 이때 activeStats는 빈 페이지라 그대로 써도 된다.
+  const shown = view ?? { stats: activeStats, risk: undefined };
+
   useEffect(() => {
     // 종목이 하나도 안 남은 상태에서 부르면 서버가 전 종목을 훑게 되므로 건너뛴다.
     if (!activeStats.qualifiedSymbols.length) {
@@ -299,24 +321,24 @@ export function ProofPageView() {
     <div className="mx-auto min-h-screen w-full max-w-[1400px] bg-background px-4 py-8 pb-20 text-foreground md:px-5">
       <ProofToolbar
         containerRef={toolbarRef}
-        streamWinRates={activeStats.streamWinRates}
+        streamWinRates={shown.stats.streamWinRates}
         qualityPeriod={qualityPeriod}
         onQualityPeriodChange={setQualityPeriod}
       />
 
       <ProofStatBar
-        rows={activeStats.totalStats}
+        rows={shown.stats.totalStats}
         copy={copy}
         stickyTopOffsetPx={toolbarHeight}
       />
 
-      <section className="mt-8">
+      <section className="mt-8" aria-busy={riskPending}>
         <h2 className="mb-4 text-xl font-semibold tracking-tight text-foreground">
           {copy.simulator.step2Title}
         </h2>
         <ProofSimulatorCard
-          risk={risk?.query === riskQuery ? risk.data : undefined}
-          rows={activeStats.totalStats}
+          risk={shown.risk}
+          rows={shown.stats.totalStats}
           seed={seed}
           entryRatio={entryRatio}
           leverage={leverage}
@@ -326,12 +348,12 @@ export function ProofPageView() {
       </section>
 
       <SymbolStatsSection
-        rows={activeStats.symbolStats}
+        rows={shown.stats.symbolStats}
         seed={seed}
         entryRatio={entryRatio}
         leverage={leverage}
         tradingCategories={tradingCategories}
-        buckets={activeStats.buckets}
+        buckets={shown.stats.buckets}
         selectedOptionIds={selectedOptionIds}
         language={language}
         copy={copy}
