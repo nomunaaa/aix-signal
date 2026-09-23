@@ -28,7 +28,6 @@ import { ProofToolbar } from './ProofToolbar';
 import { ProofStatBar } from './ProofStatBar';
 import { ProofSimulatorCard } from './ProofSimulatorCard';
 import { SymbolStatsSection } from './SymbolStatsSection';
-import type { ProofQualityPeriod } from './symbolQuality';
 import type { RiskAnalysisByPeriod } from '@/lib/proof/risk-analysis';
 import { SIGNAL_STREAM_OPTION_IDS } from '@/views/signals/pulse/utils/streamSelector';
 import type { SignalStreamOptionId } from '@/views/signals/pulse/types/pulse.types';
@@ -89,7 +88,10 @@ export function ProofPageView() {
   const [entryRatio, setEntryRatio] = useState(DEFAULT_ENTRY_RATIO);
   const [leverage, setLeverage] = useState(DEFAULT_LEVERAGE);
   const [toolbarHeight, setToolbarHeight] = useState(0);
-  const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
+  // 기간은 화면마다 따로 들지 않고 스토어 하나만 본다 — 히스토리의 기간 선택과
+  // 같은 값이라, 로컬 state로 두면 화면을 옮길 때마다 기간이 되돌아간다.
+  const qualityPeriod = usePulseStore((state) => state.qualityPeriod);
+  const setQualityPeriod = usePulseStore((state) => state.setQualityPeriod);
   const [data, setData] = useState<ProofPageMock>(() => buildEmptyProofPage('30d'));
   // 결과에 '어떤 필터로 받은 것인지'를 같이 들고 다닌다. 로딩 여부를 별도 boolean으로
   // 두면 필터가 바뀐 직후에도 이전 숫자가 그대로 남는다 — 위쪽 카드들은 즉시 바뀌므로

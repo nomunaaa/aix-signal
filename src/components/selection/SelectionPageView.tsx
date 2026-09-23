@@ -31,7 +31,6 @@ import { SymbolQualityFilter } from '@/components/proof/SymbolQualityFilter';
 import {
   hasPositiveLongTermProfit,
   meetsQualityThresholdsForPeriod,
-  type ProofQualityPeriod,
 } from '@/components/proof/symbolQuality';
 import { FavoriteScopeControls } from '@/views/signals/pulse/components/FavoriteScopeControls';
 
@@ -246,7 +245,10 @@ export function SelectionPageView() {
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
   const [data, setData] = useState<ProofPageMock>(() => buildEmptyProofPage('30d'));
-  const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
+  // 기간은 화면마다 따로 들지 않고 스토어 하나만 본다 — 히스토리의 기간 선택과
+  // 같은 값이라, 로컬 state로 두면 화면을 옮길 때마다 기간이 되돌아간다.
+  const qualityPeriod = usePulseStore((state) => state.qualityPeriod);
+  const setQualityPeriod = usePulseStore((state) => state.setQualityPeriod);
   useEffect(() => { void fetch('/api/proof').then((response) => response.ok ? response.json() as Promise<ProofPageMock> : Promise.reject()).then(setData).catch(() => undefined); }, []);
   const allSymbols = useMemo(() => Array.from(new Set([
     ...Object.keys(data.buckets.bySymbolTotal),
