@@ -106,6 +106,15 @@ export interface ProofCycleStatsSlice {
   minPnlPerEntryNotionalRate: number;
   winRate: number;
   winLossRatio: number | null;
+  /**
+   * 승패 건수와 승/패 금액 합계. 손익비는 비율이라 여러 슬라이스를 합칠 때 그대로
+   * 더하거나 평균 낼 수 없다 — 합산 가능한 이 네 값을 들고 다녀야 합친 뒤에
+   * 다시 정확히 계산할 수 있다. 없으면 상위 합계와 개별 행의 손익비가 어긋난다.
+   */
+  winCount: number;
+  lossCount: number;
+  winsPerEntryNotionalRateSum: number;
+  lossesPerEntryNotionalRateAbsSum: number;
   avgHoldSec: number | null;
 }
 

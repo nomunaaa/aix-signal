@@ -76,6 +76,10 @@ export function emptyStatsSlice(): ProofCycleStatsSlice {
     minPnlPerEntryNotionalRate: 0,
     winRate: 0,
     winLossRatio: null,
+    winCount: 0,
+    lossCount: 0,
+    winsPerEntryNotionalRateSum: 0,
+    lossesPerEntryNotionalRateAbsSum: 0,
     avgHoldSec: null,
   };
 }
@@ -164,6 +168,12 @@ function cycleStatsFromPoints(sourcePoints: CyclePnlPoint[]): ProofCycleStatsSli
     avgHoldSec: null,
     winRate: winRateDecimal(wins.length, points.length),
     winLossRatio: winLossRatioFromAverages(avgWin, avgLossAbs),
+    // 손익비를 다시 계산할 수 있도록 원재료를 같이 싣는다 — 위에서 구한 비율만
+    // 들고 가면 여러 슬라이스를 합칠 때 정확한 값을 복원할 수 없다.
+    winCount: wins.length,
+    lossCount: losses.length,
+    winsPerEntryNotionalRateSum: round8(avgWin * wins.length),
+    lossesPerEntryNotionalRateAbsSum: round8(avgLossAbs * losses.length),
   };
 }
 
