@@ -240,6 +240,7 @@ export function SelectionPageView() {
   const language = proofLanguageFromCode(i18n.resolvedLanguage ?? i18n.language);
   const copy = PROOF_COPY[language];
   const optionFilter = usePulseStore((state) => state.streamOptionFilter);
+  const toggleOptionFilter = usePulseStore((state) => state.toggleStreamOptionFilter);
   const favorites = usePulseStore((state) => state.favorites);
   const showFavoritesOnly = usePulseStore((state) => state.showFavoritesOnly);
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
@@ -408,19 +409,36 @@ export function SelectionPageView() {
                   </td>
                   <td className="px-1 py-3 text-center">
                     {/* 배지 모양은 상단 필터와 같은 뜻을 가진다 — 꽉 참은 "선택됨",
-                        테두리만 있는 것은 "선택되지 않음". 표는 선택 여부와 무관하게
-                        모든 시그널 행을 보여 주므로, 여기서 상태를 반영하지 않으면
-                        상단에서 P2·P3을 켜 두고도 표에서는 꺼진 것처럼 보인다. */}
-                    <span
+                        테두리만 있는 것은 "선택되지 않음". 상단 필터와 같은 스토어
+                        액션을 부르므로 어느 쪽을 눌러도 양쪽이 함께 바뀐다. */}
+                    <button
+                      type="button"
+                      onClick={() => toggleOptionFilter(option.id)}
+                      aria-pressed={selected}
+                      title={`${option.id} ${
+                        language === 'ko'
+                          ? selected
+                            ? '필터 끄기'
+                            : '필터 켜기'
+                          : language === 'ja'
+                            ? selected
+                              ? 'フィルター解除'
+                              : 'フィルター適用'
+                            : selected
+                              ? 'filter off'
+                              : 'filter on'
+                      }`}
                       className={cn(
-                        'inline-flex rounded border px-1.5 py-0.5 text-[10px] font-bold',
+                        'inline-flex rounded border px-1.5 py-0.5 text-[10px] font-bold transition-colors',
+                        'cursor-pointer hover:opacity-80',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                         selected
                           ? SIGNAL_OPTION_BADGE_CLASS[signalOptionTone(option.id)]
                           : SIGNAL_OPTION_OUTLINE_CLASS[signalOptionTone(option.id)]
                       )}
                     >
                       {option.id}
-                    </span>
+                    </button>
                   </td>
                   <MetricCells
                     slice={row?.recent30 ?? emptyStatsSlice()}
