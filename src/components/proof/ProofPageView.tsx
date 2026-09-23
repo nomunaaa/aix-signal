@@ -91,10 +91,14 @@ export function ProofPageView() {
   const [toolbarHeight, setToolbarHeight] = useState(0);
   const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
   const [data, setData] = useState<ProofPageMock>(() => buildEmptyProofPage('30d'));
-  const [risk, setRisk] = useState<RiskAnalysisByPeriod | undefined>(undefined);
-  // 원본 사이클을 훑는 요청이라 몇 초씩 걸린다 — 그동안 빈 자리만 두면
-  // 기능이 없는 것처럼 보이므로 로딩 상태를 따로 들고 스켈레톤을 띄운다.
-  const [riskLoading, setRiskLoading] = useState(false);
+  // 결과에 '어떤 필터로 받은 것인지'를 같이 들고 다닌다. 로딩 여부를 별도 boolean으로
+  // 두면 필터가 바뀐 직후에도 이전 숫자가 그대로 남는다 — 위쪽 카드들은 즉시 바뀌므로
+  // 이 칸만 옛날 값으로 남아 더 눈에 띈다. 질의 문자열이 지금 필터와 같을 때만 그린다.
+  // data가 비어 있는 채로 query만 맞으면 '그 필터로는 실패했다'는 뜻이라 계속 스켈레톤을
+  // 띄우지 않고 비운다.
+  const [risk, setRisk] = useState<{ query: string; data?: RiskAnalysisByPeriod } | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     const controller = new AbortController();
@@ -237,26 +241,20 @@ export function ProofPageView() {
     // 종목이 하나도 안 남은 상태에서 부르면 서버가 전 종목을 훑게 되므로 건너뛴다.
     if (!activeStats.qualifiedSymbols.length) {
       setRisk(undefined);
-      setRiskLoading(false);
       return;
     }
     const controller = new AbortController();
-    setRiskLoading(true);
     void fetch(`/api/proof/risk?${riskQuery}`, { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Risk request failed: ${response.status}`);
         return (await response.json()) as RiskAnalysisByPeriod;
       })
-      .then((next) => {
-        setRisk(next);
-        setRiskLoading(false);
-      })
+      .then((next) => setRisk({ query: riskQuery, data: next }))
       .catch((error: unknown) => {
-        // 필터가 바뀌어 취소된 경우에는 곧바로 다음 요청이 뒤따르므로 로딩을 유지한다.
+        // 필터가 바뀌어 취소된 경우에는 곧바로 다음 요청이 뒤따르므로 그대로 둔다.
         if (error instanceof DOMException && error.name === 'AbortError') return;
         console.error('[proof] risk analysis fetch failed:', error);
-        setRisk(undefined);
-        setRiskLoading(false);
+        setRisk({ query: riskQuery });
       });
     return () => controller.abort();
   }, [riskQuery, activeStats.qualifiedSymbols.length]);
@@ -317,8 +315,8 @@ export function ProofPageView() {
           {copy.simulator.step2Title}
         </h2>
         <ProofSimulatorCard
-          risk={risk}
-          riskLoading={riskLoading}
+          risk={risk?.query === riskQuery ? risk.data : undefined}
+          riskLoading={activeStats.qualifiedSymbols.length > 0 && risk?.query !== riskQuery}
           rows={activeStats.totalStats}
           seed={seed}
           entryRatio={entryRatio}

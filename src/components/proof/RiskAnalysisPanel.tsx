@@ -68,17 +68,17 @@ type Accent = 'green' | 'red' | 'amber';
 
 const ACCENTS: Record<Accent, { tile: string; icon: string; value: string }> = {
   green: {
-    tile: 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/50 dark:!bg-[linear-gradient(90deg,rgba(6,95,70,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    tile: 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/50 dark:!bg-[linear-gradient(90deg,rgb(6,78,59)_0%,rgb(15,23,42)_100%)]',
     icon: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-700 dark:text-emerald-100',
     value: 'text-emerald-600 dark:text-emerald-400',
   },
   red: {
-    tile: 'border-red-200 bg-red-50 dark:border-red-500/50 dark:!bg-[linear-gradient(90deg,rgba(127,29,29,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    tile: 'border-red-200 bg-red-50 dark:border-red-500/50 dark:!bg-[linear-gradient(90deg,rgb(127,29,29)_0%,rgb(15,23,42)_100%)]',
     icon: 'bg-red-200 text-red-800 dark:bg-red-700 dark:text-red-100',
     value: 'text-red-600 dark:text-red-400',
   },
   amber: {
-    tile: 'border-amber-200 bg-amber-50 dark:border-amber-500/50 dark:!bg-[linear-gradient(90deg,rgba(120,53,15,0.45)_0%,rgba(15,23,42,0.9)_100%)]',
+    tile: 'border-amber-200 bg-amber-50 dark:border-amber-500/50 dark:!bg-[linear-gradient(90deg,rgb(120,53,15)_0%,rgb(15,23,42)_100%)]',
     icon: 'bg-amber-200 text-amber-900 dark:bg-amber-700 dark:text-amber-100',
     value: 'text-amber-600 dark:text-amber-400',
   },
@@ -111,7 +111,7 @@ function MetricTile({
       <div className="space-y-0.5">
         {rows.map((row) => (
           <div key={row.label} className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-[10px] leading-4 text-muted-foreground dark:text-slate-400">
+            <span className="truncate text-[10px] leading-4 text-muted-foreground dark:text-slate-300">
               {row.label}
             </span>
             <span
@@ -269,7 +269,7 @@ export function RiskAnalysisPanel({
         />
       </div>
 
-      <p className="mt-2 text-[10px] leading-4 text-muted-foreground dark:text-slate-400">
+      <p className="mt-2 text-[10px] leading-4 text-muted-foreground dark:text-slate-300">
         ⓘ {copy.footnote}
       </p>
     </div>

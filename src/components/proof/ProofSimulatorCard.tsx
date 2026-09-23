@@ -52,7 +52,11 @@ export function ProofSimulatorCard({
             entryRatio={entryRatio}
             leverage={leverage}
           />
-          {column.risk ? (
+          {/* 로딩이 먼저다 — 반대로 두면 필터를 바꾼 뒤에도 이전 결과가 남아 있는 동안
+              옛날 숫자를 계속 보여 준다. 스켈레톤은 첫 조회에서만 보이게 된다. */}
+          {riskLoading ? (
+            <RiskAnalysisPanelSkeleton />
+          ) : column.risk ? (
             <RiskAnalysisPanel
               result={column.risk}
               seed={seed}
@@ -60,8 +64,6 @@ export function ProofSimulatorCard({
               leverage={leverage}
               language={language}
             />
-          ) : riskLoading ? (
-            <RiskAnalysisPanelSkeleton />
           ) : null}
         </div>
       ))}
