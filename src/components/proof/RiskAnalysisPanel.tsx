@@ -68,17 +68,17 @@ type Accent = 'green' | 'red' | 'amber';
 
 const ACCENTS: Record<Accent, { tile: string; icon: string; value: string }> = {
   green: {
-    tile: 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/50 dark:!bg-[linear-gradient(90deg,rgba(6,95,70,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    tile: 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/50 dark:!bg-[linear-gradient(90deg,rgb(6,78,59)_0%,rgb(15,23,42)_100%)]',
     icon: 'bg-emerald-200 text-emerald-800 dark:bg-emerald-700 dark:text-emerald-100',
     value: 'text-emerald-600 dark:text-emerald-400',
   },
   red: {
-    tile: 'border-red-200 bg-red-50 dark:border-red-500/50 dark:!bg-[linear-gradient(90deg,rgba(127,29,29,0.4)_0%,rgba(15,23,42,0.9)_100%)]',
+    tile: 'border-red-200 bg-red-50 dark:border-red-500/50 dark:!bg-[linear-gradient(90deg,rgb(127,29,29)_0%,rgb(15,23,42)_100%)]',
     icon: 'bg-red-200 text-red-800 dark:bg-red-700 dark:text-red-100',
     value: 'text-red-600 dark:text-red-400',
   },
   amber: {
-    tile: 'border-amber-200 bg-amber-50 dark:border-amber-500/50 dark:!bg-[linear-gradient(90deg,rgba(120,53,15,0.45)_0%,rgba(15,23,42,0.9)_100%)]',
+    tile: 'border-amber-200 bg-amber-50 dark:border-amber-500/50 dark:!bg-[linear-gradient(90deg,rgb(120,53,15)_0%,rgb(15,23,42)_100%)]',
     icon: 'bg-amber-200 text-amber-900 dark:bg-amber-700 dark:text-amber-100',
     value: 'text-amber-600 dark:text-amber-400',
   },
@@ -111,7 +111,7 @@ function MetricTile({
       <div className="space-y-0.5">
         {rows.map((row) => (
           <div key={row.label} className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-[10px] leading-4 text-muted-foreground dark:text-slate-400">
+            <span className="truncate text-[10px] leading-4 text-muted-foreground dark:text-slate-300">
               {row.label}
             </span>
             <span
@@ -135,48 +135,6 @@ function formatMoney(value: number, present: boolean): string {
 function formatCount(count: number, present: boolean, suffix: string): string {
   if (!present) return '—';
   return `${count}${suffix}`;
-}
-
-/**
- * 로딩 중 자리표시자 — 실제 패널과 같은 뼈대/높이를 그려서, 데이터가 들어올 때
- * 아래 내용이 밀리지 않게 한다. 요청이 몇 초 걸리므로 빈 화면 대신 이걸 띄운다.
- */
-export function RiskAnalysisPanelSkeleton() {
-  return (
-    <div
-      className="rounded-xl border border-amber-300/60 bg-amber-50/60 p-2.5 dark:border-amber-500/40 dark:bg-amber-950/20"
-      aria-busy="true"
-      aria-live="polite"
-    >
-      <div className="mb-2 flex min-w-0 items-center gap-2">
-        <div className="size-7 shrink-0 animate-pulse rounded-md bg-amber-200/70 dark:bg-amber-700/50" />
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="h-3 w-2/5 animate-pulse rounded bg-amber-200/70 dark:bg-amber-700/50" />
-          <div className="h-2 w-3/5 animate-pulse rounded bg-amber-200/50 dark:bg-amber-700/30" />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        {[0, 1, 2, 3].map((index) => (
-          <div
-            key={index}
-            className="flex min-w-0 flex-col gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-2 py-2"
-          >
-            <div className="flex items-center gap-1.5">
-              <div className="size-5 shrink-0 animate-pulse rounded bg-muted-foreground/20" />
-              <div className="h-2.5 w-2/3 animate-pulse rounded bg-muted-foreground/20" />
-            </div>
-            <div className="space-y-1">
-              <div className="h-2 w-full animate-pulse rounded bg-muted-foreground/15" />
-              <div className="h-2 w-4/5 animate-pulse rounded bg-muted-foreground/15" />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-2 h-2 w-3/4 animate-pulse rounded bg-muted-foreground/15" />
-    </div>
-  );
 }
 
 export function RiskAnalysisPanel({
@@ -269,7 +227,7 @@ export function RiskAnalysisPanel({
         />
       </div>
 
-      <p className="mt-2 text-[10px] leading-4 text-muted-foreground dark:text-slate-400">
+      <p className="mt-2 text-[10px] leading-4 text-muted-foreground dark:text-slate-300">
         ⓘ {copy.footnote}
       </p>
     </div>
