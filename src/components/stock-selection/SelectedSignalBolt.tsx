@@ -21,7 +21,9 @@ export function SelectedSignalBolt({
   symbol: string;
   className?: string;
 }) {
-  const selected = useStockSelectionStore((state) => state.selectedSignals[optionId].has(symbol));
+  const excluded = useStockSelectionStore((state) => state.excludedSignals[optionId]);
+  // 해제하지 않은 것은 모두 켜진 상태다 — 기본값이 전체 선택이라 그렇다.
+  const selected = !excluded.has(symbol.trim().toUpperCase());
   const toggle = useStockSelectionStore((state) => state.toggleSelectedSignal);
 
   return (
@@ -35,7 +37,8 @@ export function SelectedSignalBolt({
         'flex h-6 w-6 shrink-0 items-center justify-center rounded transition-colors',
         selected
           ? 'text-yellow-400 hover:bg-yellow-400/10'
-          : 'text-yellow-500/55 hover:bg-yellow-400/10 hover:text-yellow-400',
+          // 해제한 종목도 목록에는 그대로 남고, 번개만 빈 번개로 바뀐다.
+          : 'text-muted-foreground/45 hover:bg-yellow-400/10 hover:text-yellow-400/70',
         className
       )}
       aria-pressed={selected}
