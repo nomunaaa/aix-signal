@@ -35,7 +35,7 @@ function SignalSymbolPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const selected = useStockSelectionStore((state) => state.selectedSignals[optionId]);
+  const excluded = useStockSelectionStore((state) => state.excludedSignals[optionId]);
   const toggleSymbol = useStockSelectionStore((state) => state.toggleSelectedSignal);
   const active = usePulseStore((state) => state.streamOptionFilter[optionId]);
   const toggleTrend = usePulseStore((state) => state.toggleStreamOptionFilter);
@@ -44,6 +44,11 @@ function SignalSymbolPicker({
   const normalizedSymbols = useMemo(
     () => Array.from(new Set(symbols.map((symbol) => symbol.trim().toUpperCase()).filter(Boolean))),
     [symbols]
+  );
+  // 저장된 값은 '해제한 것'이므로, 화면이 쓰는 '켜진 것'은 여기서 뒤집어 만든다.
+  const selected = useMemo(
+    () => new Set(normalizedSymbols.filter((symbol) => !excluded.has(symbol))),
+    [normalizedSymbols, excluded]
   );
   const filteredSymbols = useMemo(() => {
     const needle = query.trim().toUpperCase();

@@ -120,7 +120,7 @@ export function StockSelectionPageView() {
   const qualityWinRateThreshold = usePulseStore((state) => state.qualityWinRateThreshold);
   const qualityRiskRewardThreshold = usePulseStore((state) => state.qualityRiskRewardThreshold);
   const streamOptionFilter = usePulseStore((state) => state.streamOptionFilter);
-  const selectedSignals = useStockSelectionStore((state) => state.selectedSignals);
+  const excludedSignals = useStockSelectionStore((state) => state.excludedSignals);
   const showSelectedOnly = useStockSelectionStore((state) => state.showSelectedOnly);
   const hydrateSelection = useStockSelectionStore((state) => state.hydrate);
   const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
@@ -222,7 +222,8 @@ export function StockSelectionPageView() {
         )
           return [];
         if (showFavoritesOnly && !favorites.has(symbol)) return [];
-        if (showSelectedOnly && !selectedSignals[option.id].has(symbol)) return [];
+        // 해제해도 종목은 목록에 그대로 남는다 — '선택시그널'로 좁혀 볼 때만 숨긴다.
+        if (showSelectedOnly && excludedSignals[option.id].has(symbol)) return [];
         if (query && !symbol.includes(query)) return [];
         return [{ option, stats }];
       });
@@ -240,7 +241,7 @@ export function StockSelectionPageView() {
     qualityWinRateThreshold,
     rowsByOption,
     searchQuery,
-    selectedSignals,
+    excludedSignals,
     streamOptionFilter,
     showFavoritesOnly,
     showSelectedOnly,
@@ -248,7 +249,13 @@ export function StockSelectionPageView() {
     sortKey,
   ]);
 
-  const pinnedStats = useMemo(() => buildPinnedStats(visibleRows), [visibleRows]);
+  // 상단 통계는 켜져 있는 시그널만 합산한다. 해제한 종목은 화면에는 남지만
+  // 여기서는 빠진다 — 그게 번개를 끄는 목적이다.
+  const statsRows = useMemo(
+    () => visibleRows.filter(({ option, stats }) => !excludedSignals[option.id].has(stats.symbol)),
+    [visibleRows, excludedSignals]
+  );
+  const pinnedStats = useMemo(() => buildPinnedStats(statsRows), [statsRows]);
   const handleSort = (key: SymbolStatsSortKey) => {
     if (sortKey === key) setSortDirection((direction) => (direction === 'desc' ? 'asc' : 'desc'));
     else {
