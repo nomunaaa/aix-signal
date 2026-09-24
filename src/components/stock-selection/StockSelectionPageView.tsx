@@ -55,6 +55,8 @@ const OPTIONS: readonly OptionDefinition[] = [
   { id: 'W3', selection: { stream: 'WAVE', trendMode: 'nonTrend' } },
 ];
 
+const OPTION_ORDER = new Map(OPTIONS.map((option, index) => [option.id, index]));
+
 const TRADING_CATEGORIES: readonly TradingCategory[] = ['E2X2'];
 const METRIC_HEADER_CLASS = 'overflow-hidden px-1 py-2 text-center align-middle font-medium';
 const BORDERED_METRIC_HEADER_CLASS = `${METRIC_HEADER_CLASS} border-l border-border/60`;
@@ -207,9 +209,9 @@ export function StockSelectionPageView() {
 
   const visibleRows = useMemo(() => {
     const query = searchQuery.trim().toUpperCase();
-    return OPTIONS.filter((option) => streamOptionFilter[option.id]).flatMap((option) => {
+    const rows = OPTIONS.filter((option) => streamOptionFilter[option.id]).flatMap((option) => {
       const optionRows = rowsByOption.get(option.id)!;
-      let rows = allSymbols.flatMap((symbol): StockSelectionRow[] => {
+      return allSymbols.flatMap((symbol): StockSelectionRow[] => {
         const stats = optionRows.get(symbol);
         if (!stats || !hasPositiveLongTermProfit(stats)) return [];
         if (
@@ -227,11 +229,19 @@ export function StockSelectionPageView() {
         if (query && !symbol.includes(query)) return [];
         return [{ option, stats }];
       });
-      if (sortKey) {
-        rows = [...rows].sort((a, b) => compareRows(a, b, sortKey));
-        if (sortDirection === 'desc') rows.reverse();
-      }
-      return rows;
+    });
+
+    // 정렬은 시그널 종류별로 나눠서 하지 않고 전체 행에 한 번에 건다. 종류별로
+    // 돌리면 P1이 전부 먼저, 그다음 B2… 순으로 묶여서 승률보다 시그널 종류가
+    // 사실상 1순위가 되어 버린다. 값이 같을 때만 종류·심볼 순으로 정리한다.
+    if (!sortKey) return rows;
+    const direction = sortDirection === 'desc' ? -1 : 1;
+    return [...rows].sort((a, b) => {
+      const delta = compareRows(a, b, sortKey) * direction;
+      if (delta !== 0) return delta;
+      const optionDelta = OPTION_ORDER.get(a.option.id)! - OPTION_ORDER.get(b.option.id)!;
+      if (optionDelta !== 0) return optionDelta;
+      return a.stats.symbol.localeCompare(b.stats.symbol);
     });
   }, [
     allSymbols,
