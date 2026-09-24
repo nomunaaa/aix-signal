@@ -1763,8 +1763,13 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
             waveCycle,
             category
           );
-          const openCount = signalOpenCount(pulse.signal, wave.signal);
-          const openSignalPoint = signalPoint(pulse.signal, wave.signal);
+          // 점수는 스트림이 아니라 열려 있는 사이클 수로 센다 — Beat는 Pulse와 같은
+          // 1분봉이라 barinterval로는 구분되지 않지만, 사이클이 하나 더 열린 만큼
+          // 그대로 4점이 더해진다.
+          const pulseOpenCycles = pulseCycles.length;
+          const waveOpenCycles = waveCycles.length;
+          const openCount = signalOpenCount(pulseOpenCycles, waveOpenCycles);
+          const openSignalPoint = signalPoint(pulseOpenCycles, waveOpenCycles);
           const trendAdjustmentPoint =
             trendSignalAdjustmentPoint(pulse) + trendSignalAdjustmentPoint(wave);
 
@@ -1778,7 +1783,7 @@ export function TrendV8PageContent({ useMock = false }: TrendV8PageContentProps)
             signalOpenCount: openCount,
             signalPoint: openSignalPoint,
             trendAdjustmentPoint,
-            sortPoint: calculateTrendBoardPoint({ pulse, wave }),
+            sortPoint: calculateTrendBoardPoint({ pulse, wave, pulseOpenCycles, waveOpenCycles }),
           };
         });
       })
