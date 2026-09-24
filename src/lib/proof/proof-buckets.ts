@@ -594,6 +594,12 @@ function finalizeSlice(
     minPnlPerEntryNotionalRate: round8(minPnlRate),
     winRate: winRateDecimal(winCount, isCombined ? acc.count * 2 : acc.count),
     winLossRatio: winLossRatioFromAverages(avgWin, avgLossAbs),
+    // 합산 가능한 원재료를 그대로 실어 둔다 — 이걸 들고 다녀야 여러 슬라이스를
+    // 합친 뒤에도 손익비를 정확히 다시 계산할 수 있다.
+    winCount,
+    lossCount,
+    winsPerEntryNotionalRateSum: round8(winsRateSum),
+    lossesPerEntryNotionalRateAbsSum: round8(lossesRateAbsSum),
     avgHoldSec: Math.round(acc.holdSecSum / acc.count),
   };
 }

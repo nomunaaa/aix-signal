@@ -1,4 +1,5 @@
 import type { ProofCycleStatsSlice } from '@/lib/mock/proof-mock';
+import { winLossRatioFromAverages } from '@/lib/proof/proof-stats';
 import { PROOF_COPY, type ProofLanguage } from './proofCopy';
 
 export type { ProofLanguage };
@@ -47,8 +48,17 @@ export function combineProofCycleStats(
 ): ProofCycleStatsSlice {
   const cycleCount = slices.reduce((sum, slice) => sum + slice.cycleCount, 0);
   const presentSlices = slices.filter((slice) => slice.cycleCount > 0);
-  const ratioWeight = slices.reduce(
-    (sum, slice) => sum + (slice.winLossRatio == null ? 0 : slice.cycleCount),
+  // 손익비는 (평균 수익 / 평균 손실)이라 슬라이스별 비율을 가중평균해도 전체 비율이
+  // 되지 않는다. 승패 건수와 금액 합계를 먼저 더한 뒤 같은 함수로 다시 계산해야
+  // 상단 합계와 아래 종목 행의 손익비가 어긋나지 않는다.
+  const winCount = slices.reduce((sum, slice) => sum + slice.winCount, 0);
+  const lossCount = slices.reduce((sum, slice) => sum + slice.lossCount, 0);
+  const winsPerEntryNotionalRateSum = slices.reduce(
+    (sum, slice) => sum + slice.winsPerEntryNotionalRateSum,
+    0
+  );
+  const lossesPerEntryNotionalRateAbsSum = slices.reduce(
+    (sum, slice) => sum + slice.lossesPerEntryNotionalRateAbsSum,
     0
   );
   const timestamps = slices
@@ -78,17 +88,15 @@ export function combineProofCycleStats(
     minPnlPerEntryNotionalRate: presentSlices.length
       ? Math.min(...presentSlices.map((slice) => slice.minPnlPerEntryNotionalRate))
       : 0,
-    winRate:
-      cycleCount > 0
-        ? slices.reduce((sum, slice) => sum + slice.winRate * slice.cycleCount, 0) / cycleCount
-        : 0,
-    winLossRatio:
-      ratioWeight > 0
-        ? slices.reduce(
-            (sum, slice) => sum + (slice.winLossRatio ?? 0) * slice.cycleCount,
-            0
-          ) / ratioWeight
-        : null,
+    winRate: cycleCount > 0 ? winCount / cycleCount : 0,
+    winLossRatio: winLossRatioFromAverages(
+      winCount > 0 ? winsPerEntryNotionalRateSum / winCount : 0,
+      lossCount > 0 ? lossesPerEntryNotionalRateAbsSum / lossCount : 0
+    ),
+    winCount,
+    lossCount,
+    winsPerEntryNotionalRateSum,
+    lossesPerEntryNotionalRateAbsSum,
     avgHoldSec:
       cycleCount > 0
         ? Math.round(

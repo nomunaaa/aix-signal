@@ -18,6 +18,10 @@ function slice(overrides: Partial<ProofCycleStatsSlice> = {}): ProofCycleStatsSl
     minPnlPerEntryNotionalRate: 0,
     winRate: 0,
     winLossRatio: null,
+    winCount: 0,
+    lossCount: 0,
+    winsPerEntryNotionalRateSum: 0,
+    lossesPerEntryNotionalRateAbsSum: 0,
     avgHoldSec: null,
     ...overrides,
   };
