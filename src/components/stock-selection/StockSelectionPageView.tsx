@@ -17,7 +17,6 @@ import { combineProofCycleStats, proofLanguageFromCode } from '@/components/proo
 import {
   hasPositiveLongTermProfit,
   meetsQualityThresholdsForPeriod,
-  type ProofQualityPeriod,
 } from '@/components/proof/symbolQuality';
 import { getSymbolsFromEnv } from '@/config/symbols';
 import type { ProofPageMock, ProofSymbolStatsRow, ProofTotalStatsRow } from '@/lib/mock/proof-mock';
@@ -125,7 +124,10 @@ export function StockSelectionPageView() {
   const excludedSignals = useStockSelectionStore((state) => state.excludedSignals);
   const showSelectedOnly = useStockSelectionStore((state) => state.showSelectedOnly);
   const hydrateSelection = useStockSelectionStore((state) => state.hydrate);
-  const [qualityPeriod, setQualityPeriod] = useState<ProofQualityPeriod>('last30d');
+  // 기간은 화면마다 따로 들지 않고 스토어 하나만 본다 — 히스토리의 기간 선택과
+  // 같은 값이라, 로컬 state로 두면 화면을 옮길 때마다 기간이 되돌아간다.
+  const qualityPeriod = usePulseStore((state) => state.qualityPeriod);
+  const setQualityPeriod = usePulseStore((state) => state.setQualityPeriod);
   const [toolbarHeight, setToolbarHeight] = useState(0);
   const [seed, setSeed] = useState(DEFAULT_SHARED_SIMULATION_INPUT.capital);
   const [entryRatio, setEntryRatio] = useState(DEFAULT_SHARED_SIMULATION_INPUT.capitalRatio);

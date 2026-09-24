@@ -163,11 +163,24 @@ function readTradingCategoryFiltersFromStorage(): TradingCategory[] {
 
 function readHistoryDatePeriodFromStorage(): HistoryDatePeriod {
   const saved = readPulseStorageItem(HISTORY_DATE_PERIOD_STORAGE_KEY);
-  if (saved === '90d' || saved === 'all') return saved;
-  return '30d';
+  if (saved === '30d' || saved === '90d' || saved === 'all') return saved;
+  return 'all';
 }
 
 export type QualityPeriod = 'last30d' | 'last3mo' | 'all';
+
+/**
+ * historyDatePeriod와 qualityPeriod는 같은 '기간' 설정을 화면마다 다른 이름으로
+ * 부르고 있을 뿐이다. 둘을 따로 들고 있으면 한쪽만 바뀌어 화면끼리 어긋나므로,
+ * 저장은 historyDatePeriod 하나로만 하고 다른 쪽은 항상 여기서 변환해 맞춘다.
+ */
+export function qualityPeriodFromDatePeriod(period: HistoryDatePeriod): QualityPeriod {
+  return period === '30d' ? 'last30d' : period === '90d' ? 'last3mo' : 'all';
+}
+
+export function datePeriodFromQualityPeriod(period: QualityPeriod): HistoryDatePeriod {
+  return period === 'last30d' ? '30d' : period === 'last3mo' ? '90d' : 'all';
+}
 
 function clampQualityNumber(value: unknown, min: number, max: number, fallback: number): number {
   const numeric = Number(value);
@@ -350,6 +363,9 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
   sectionColumnVisibility: {},
   favorites: readFavoritesFromStorage(),
   ...readQualityFiltersFromStorage(),
+  // 기간만큼은 저장된 quality 값이 아니라 historyDatePeriod에서 파생시킨다 —
+  // 예전에 따로 저장된 값이 남아 있어도 두 화면이 서로 다른 기간으로 시작하지 않는다.
+  qualityPeriod: qualityPeriodFromDatePeriod(readHistoryDatePeriodFromStorage()),
 
   completeGate: (strategy, kairosOpt, stream) => {
     localStorage.setItem(KAIROS_OPT_KEY, String(kairosOpt));
@@ -398,10 +414,17 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
     writePulseStorageItem(TREND_MODE_FILTER_STORAGE_KEY, JSON.stringify(trendModeFilter));
     set({ trendModeFilter });
   },
-  setHistoryDatePeriod: (historyDatePeriod) => {
-    writePulseStorageItem(HISTORY_DATE_PERIOD_STORAGE_KEY, historyDatePeriod);
-    set({ historyDatePeriod });
-  },
+  setHistoryDatePeriod: (historyDatePeriod) =>
+    set((state) => {
+      writePulseStorageItem(HISTORY_DATE_PERIOD_STORAGE_KEY, historyDatePeriod);
+      const qualityPeriod = qualityPeriodFromDatePeriod(historyDatePeriod);
+      writeQualityFiltersToStorage({
+        qualityWinRateThreshold: state.qualityWinRateThreshold,
+        qualityRiskRewardThreshold: state.qualityRiskRewardThreshold,
+        qualityPeriod,
+      });
+      return { historyDatePeriod, qualityPeriod };
+    }),
   toggleTradingCategoryFilter: (category) =>
     set((state) => {
       const current = state.tradingCategoryFilters;
@@ -630,6 +653,8 @@ export const usePulseStore = create<PulseStore>((set, get) => ({
         qualityRiskRewardThreshold: state.qualityRiskRewardThreshold,
         qualityPeriod: period,
       });
-      return { qualityPeriod: period };
+      const historyDatePeriod = datePeriodFromQualityPeriod(period);
+      writePulseStorageItem(HISTORY_DATE_PERIOD_STORAGE_KEY, historyDatePeriod);
+      return { qualityPeriod: period, historyDatePeriod };
     }),
 }));
